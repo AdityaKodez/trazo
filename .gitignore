@@ -9,3 +9,5 @@ packages/trazo/dist/
 .DS_Store
 .dev-*.log
 .tmp-*
+
+.vercel
