@@ -1,4 +1,4 @@
-import type { StickerDef } from "../scribble";
+import type { StickerDef } from "../core";
 
 export const flowerRedDef: StickerDef = {
   id: "flower-red",

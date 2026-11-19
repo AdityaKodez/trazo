@@ -55,12 +55,12 @@ function DrawerContent({
       <DrawerPrimitive.Content
         data-slot="drawer-content"
         className={cn(
-          "group/drawer-content fixed z-50 flex h-auto flex-col bg-popover text-sm text-popover-foreground ring-1 ring-inset ring-foreground/10 data-[vaul-drawer-direction=bottom]:inset-x-0 data-[vaul-drawer-direction=bottom]:bottom-0 data-[vaul-drawer-direction=bottom]:mt-16 data-[vaul-drawer-direction=bottom]:max-h-[86dvh] data-[vaul-drawer-direction=bottom]:rounded-t-2xl",
+          "group/drawer-content fixed z-50 flex h-auto flex-col bg-popover text-sm text-popover-foreground shadow-[0_-12px_40px_-8px_rgba(0,0,0,0.16)] ring-1 ring-inset ring-foreground/10 data-[vaul-drawer-direction=bottom]:inset-x-0 data-[vaul-drawer-direction=bottom]:bottom-0 data-[vaul-drawer-direction=bottom]:mt-12 data-[vaul-drawer-direction=bottom]:max-h-[88dvh] data-[vaul-drawer-direction=bottom]:rounded-t-[24px]",
           className,
         )}
         {...props}
       >
-        <div className="mx-auto mt-3 h-1 w-12 shrink-0 rounded-full bg-muted-foreground/25" />
+        <div className="mx-auto mb-0.5 mt-2.5 h-1 w-10 shrink-0 rounded-full bg-foreground/15" />
         {children}
       </DrawerPrimitive.Content>
     </DrawerPortal>

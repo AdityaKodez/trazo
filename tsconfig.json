@@ -20,7 +20,8 @@
     ],
     "paths": {
       "@/*": ["./*"],
-      "trazo": ["./packages/trazo/src/index.ts"]
+      "trazo": ["./packages/trazo/src/index.ts"],
+      "trazo/svg": ["./packages/trazo/src/svg.ts"]
     }
   },
   "include": [

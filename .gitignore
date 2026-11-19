@@ -4,5 +4,8 @@ out/
 build/
 packages/trazo/dist/
 *.tgz
+*.tsbuildinfo
 .env*.local
 .DS_Store
+.dev-*.log
+.tmp-*

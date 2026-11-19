@@ -1,25 +1,91 @@
 export {
   Sticker,
   createStickerComponent,
-  resolveConcreteColor,
-  toSvgString,
   type NamedStickerProps,
-  type StickerCategory,
-  type StickerDef,
-  type StickerLayer,
   type StickerProps,
-  type ToSvgStringOptions,
 } from "./scribble";
 
-import { createStickerComponent, type StickerDef } from "./scribble";
-import { oceanStickers, babySquidDef, conchShellDef, flapjackOctopusDef, seahorseDef, shrimpDef, starfishDef, seaTurtleDef, redOctopusDef, blueMinnowDef, redCrabDef, pearlClamDef, pinkJellyfishDef, dolphinDef, scallopShellDef, stripedFishDef, seaBubbleDef } from "./catalog/ocean";
-import { arrowsStickers, curlyArrowDef, spiralDef, squareSpiralDef, loopRibbonDef, zigzagScribbleDef, loopArrowOrangeDef, verticalZigzagDef, downArrowDef, peachCoilDef, skyCoilDef } from "./catalog/arrows";
-import { natureStickers, flowerRedDef, puffyCloudDef, flowerYellowDef, oceanWavesDef, sunBurstDef, splashDropsDef, tripleZigzagDef, spikyGrassDef, scallopedWaveDef } from "./catalog/nature";
-import { heartsStickers, crownRaysDef, heartBurstDef, sixStarDef, heartChevronDef, solidStarDef, sparkleFourDef, sparkleCrossDef, bowtieLoopDef, tripleHeartSwirlDef, doubleHeartsDef, starOutlineDef, crosshairBurstDef } from "./catalog/hearts";
-import { symbolsStickers, diamondDef, angerMarkDef, triangleDef, circleRingDef, asteriskDef, lightningBoltDef, questionMarkDef, exclamationMarkDef, diagonalHatchDef, hashtagDef } from "./catalog/symbols";
-import { catsStickers, heartCatDef, daisyCatDef, huggingCatsDef, flowerCatDef, bowtieCatDef, stackedCatsDef, cheeringCatDef, heartHugDef } from "./catalog/cats";
+export * from "./svg";
+
+import { createStickerComponent } from "./scribble";
 import {
-  charactersStickers,
+  babySquidDef,
+  conchShellDef,
+  flapjackOctopusDef,
+  seahorseDef,
+  shrimpDef,
+  starfishDef,
+  seaTurtleDef,
+  redOctopusDef,
+  blueMinnowDef,
+  redCrabDef,
+  pearlClamDef,
+  pinkJellyfishDef,
+  dolphinDef,
+  scallopShellDef,
+  stripedFishDef,
+  seaBubbleDef,
+} from "./catalog/ocean";
+import {
+  curlyArrowDef,
+  spiralDef,
+  squareSpiralDef,
+  loopRibbonDef,
+  zigzagScribbleDef,
+  loopArrowOrangeDef,
+  verticalZigzagDef,
+  downArrowDef,
+  peachCoilDef,
+  skyCoilDef,
+} from "./catalog/arrows";
+import {
+  flowerRedDef,
+  puffyCloudDef,
+  flowerYellowDef,
+  oceanWavesDef,
+  sunBurstDef,
+  splashDropsDef,
+  tripleZigzagDef,
+  spikyGrassDef,
+  scallopedWaveDef,
+} from "./catalog/nature";
+import {
+  crownRaysDef,
+  heartBurstDef,
+  sixStarDef,
+  heartChevronDef,
+  solidStarDef,
+  sparkleFourDef,
+  sparkleCrossDef,
+  bowtieLoopDef,
+  tripleHeartSwirlDef,
+  doubleHeartsDef,
+  starOutlineDef,
+  crosshairBurstDef,
+} from "./catalog/hearts";
+import {
+  diamondDef,
+  angerMarkDef,
+  triangleDef,
+  circleRingDef,
+  asteriskDef,
+  lightningBoltDef,
+  questionMarkDef,
+  exclamationMarkDef,
+  diagonalHatchDef,
+  hashtagDef,
+} from "./catalog/symbols";
+import {
+  heartCatDef,
+  daisyCatDef,
+  huggingCatsDef,
+  flowerCatDef,
+  bowtieCatDef,
+  stackedCatsDef,
+  cheeringCatDef,
+  heartHugDef,
+} from "./catalog/cats";
+import {
   littleGreenAlienDef,
   pinkDinoDef,
   spiderManDef,
@@ -27,224 +93,73 @@ import {
   woodyWinkDef,
 } from "./catalog/characters";
 
-export { oceanStickers, arrowsStickers, natureStickers, heartsStickers, symbolsStickers, catsStickers, charactersStickers };
-export {
-  babySquidDef,
-  conchShellDef,
-  flapjackOctopusDef,
-  seahorseDef,
-  shrimpDef,
-  starfishDef,
-  seaTurtleDef,
-  redOctopusDef,
-  blueMinnowDef,
-  redCrabDef,
-  pearlClamDef,
-  pinkJellyfishDef,
-  dolphinDef,
-  scallopShellDef,
-  stripedFishDef,
-  seaBubbleDef,
-  curlyArrowDef,
-  diamondDef,
-  crownRaysDef,
-  spiralDef,
-  flowerRedDef,
-  heartBurstDef,
-  puffyCloudDef,
-  angerMarkDef,
-  triangleDef,
-  flowerYellowDef,
-  circleRingDef,
-  oceanWavesDef,
-  sixStarDef,
-  sunBurstDef,
-  squareSpiralDef,
-  splashDropsDef,
-  heartChevronDef,
-  asteriskDef,
-  solidStarDef,
-  loopRibbonDef,
-  sparkleFourDef,
-  lightningBoltDef,
-  sparkleCrossDef,
-  questionMarkDef,
-  exclamationMarkDef,
-  bowtieLoopDef,
-  zigzagScribbleDef,
-  tripleZigzagDef,
-  diagonalHatchDef,
-  loopArrowOrangeDef,
-  verticalZigzagDef,
-  downArrowDef,
-  peachCoilDef,
-  tripleHeartSwirlDef,
-  hashtagDef,
-  doubleHeartsDef,
-  starOutlineDef,
-  crosshairBurstDef,
-  spikyGrassDef,
-  skyCoilDef,
-  scallopedWaveDef,
-  heartCatDef,
-  daisyCatDef,
-  huggingCatsDef,
-  flowerCatDef,
-  bowtieCatDef,
-  stackedCatsDef,
-  cheeringCatDef,
-  heartHugDef,
-  pinkDinoDef,
-  spiderManDef,
-  stitchDef,
-  littleGreenAlienDef,
-  woodyWinkDef,
-};
-
-export const BabySquid = createStickerComponent(babySquidDef);
-export const ConchShell = createStickerComponent(conchShellDef);
-export const FlapjackOctopus = createStickerComponent(flapjackOctopusDef);
-export const Seahorse = createStickerComponent(seahorseDef);
-export const Shrimp = createStickerComponent(shrimpDef);
-export const Starfish = createStickerComponent(starfishDef);
-export const SeaTurtle = createStickerComponent(seaTurtleDef);
-export const RedOctopus = createStickerComponent(redOctopusDef);
-export const BlueMinnow = createStickerComponent(blueMinnowDef);
-export const RedCrab = createStickerComponent(redCrabDef);
-export const PearlClam = createStickerComponent(pearlClamDef);
-export const PinkJellyfish = createStickerComponent(pinkJellyfishDef);
-export const Dolphin = createStickerComponent(dolphinDef);
-export const ScallopShell = createStickerComponent(scallopShellDef);
-export const StripedFish = createStickerComponent(stripedFishDef);
-export const SeaBubble = createStickerComponent(seaBubbleDef);
-export const CurlyArrow = createStickerComponent(curlyArrowDef);
-export const Diamond = createStickerComponent(diamondDef);
-export const CrownRays = createStickerComponent(crownRaysDef);
-export const Spiral = createStickerComponent(spiralDef);
-export const FlowerRed = createStickerComponent(flowerRedDef);
-export const HeartBurst = createStickerComponent(heartBurstDef);
-export const PuffyCloud = createStickerComponent(puffyCloudDef);
-export const AngerMark = createStickerComponent(angerMarkDef);
-export const Triangle = createStickerComponent(triangleDef);
-export const FlowerYellow = createStickerComponent(flowerYellowDef);
-export const CircleRing = createStickerComponent(circleRingDef);
-export const OceanWaves = createStickerComponent(oceanWavesDef);
-export const SixStar = createStickerComponent(sixStarDef);
-export const SunBurst = createStickerComponent(sunBurstDef);
-export const SquareSpiral = createStickerComponent(squareSpiralDef);
-export const SplashDrops = createStickerComponent(splashDropsDef);
-export const HeartChevron = createStickerComponent(heartChevronDef);
-export const Asterisk = createStickerComponent(asteriskDef);
-export const SolidStar = createStickerComponent(solidStarDef);
-export const LoopRibbon = createStickerComponent(loopRibbonDef);
-export const SparkleFour = createStickerComponent(sparkleFourDef);
-export const LightningBolt = createStickerComponent(lightningBoltDef);
-export const SparkleCross = createStickerComponent(sparkleCrossDef);
-export const QuestionMark = createStickerComponent(questionMarkDef);
-export const ExclamationMark = createStickerComponent(exclamationMarkDef);
-export const BowtieLoop = createStickerComponent(bowtieLoopDef);
-export const ZigzagScribble = createStickerComponent(zigzagScribbleDef);
-export const TripleZigzag = createStickerComponent(tripleZigzagDef);
-export const DiagonalHatch = createStickerComponent(diagonalHatchDef);
-export const LoopArrowOrange = createStickerComponent(loopArrowOrangeDef);
-export const VerticalZigzag = createStickerComponent(verticalZigzagDef);
-export const DownArrow = createStickerComponent(downArrowDef);
-export const PeachCoil = createStickerComponent(peachCoilDef);
-export const TripleHeartSwirl = createStickerComponent(tripleHeartSwirlDef);
-export const Hashtag = createStickerComponent(hashtagDef);
-export const DoubleHearts = createStickerComponent(doubleHeartsDef);
-export const StarOutline = createStickerComponent(starOutlineDef);
-export const CrosshairBurst = createStickerComponent(crosshairBurstDef);
-export const SpikyGrass = createStickerComponent(spikyGrassDef);
-export const SkyCoil = createStickerComponent(skyCoilDef);
-export const ScallopedWave = createStickerComponent(scallopedWaveDef);
-export const HeartCat = createStickerComponent(heartCatDef);
-export const DaisyCat = createStickerComponent(daisyCatDef);
-export const HuggingCats = createStickerComponent(huggingCatsDef);
-export const FlowerCat = createStickerComponent(flowerCatDef);
-export const BowtieCat = createStickerComponent(bowtieCatDef);
-export const StackedCats = createStickerComponent(stackedCatsDef);
-export const CheeringCat = createStickerComponent(cheeringCatDef);
-export const HeartHug = createStickerComponent(heartHugDef);
-export const PinkDino = createStickerComponent(pinkDinoDef);
-export const SpiderMan = createStickerComponent(spiderManDef);
-export const Stitch = createStickerComponent(stitchDef);
-export const LittleGreenAlien = createStickerComponent(littleGreenAlienDef);
-export const WoodyWink = createStickerComponent(woodyWinkDef);
-
-export const trazoCatalog: readonly StickerDef[] = [
-  babySquidDef,
-  conchShellDef,
-  flapjackOctopusDef,
-  seahorseDef,
-  shrimpDef,
-  starfishDef,
-  seaTurtleDef,
-  redOctopusDef,
-  blueMinnowDef,
-  redCrabDef,
-  pearlClamDef,
-  pinkJellyfishDef,
-  dolphinDef,
-  scallopShellDef,
-  stripedFishDef,
-  seaBubbleDef,
-  curlyArrowDef,
-  diamondDef,
-  crownRaysDef,
-  spiralDef,
-  flowerRedDef,
-  heartBurstDef,
-  puffyCloudDef,
-  angerMarkDef,
-  triangleDef,
-  flowerYellowDef,
-  circleRingDef,
-  oceanWavesDef,
-  sixStarDef,
-  sunBurstDef,
-  squareSpiralDef,
-  splashDropsDef,
-  heartChevronDef,
-  asteriskDef,
-  solidStarDef,
-  loopRibbonDef,
-  sparkleFourDef,
-  lightningBoltDef,
-  sparkleCrossDef,
-  questionMarkDef,
-  exclamationMarkDef,
-  bowtieLoopDef,
-  zigzagScribbleDef,
-  tripleZigzagDef,
-  diagonalHatchDef,
-  loopArrowOrangeDef,
-  verticalZigzagDef,
-  downArrowDef,
-  peachCoilDef,
-  tripleHeartSwirlDef,
-  hashtagDef,
-  doubleHeartsDef,
-  starOutlineDef,
-  crosshairBurstDef,
-  spikyGrassDef,
-  skyCoilDef,
-  scallopedWaveDef,
-  heartCatDef,
-  daisyCatDef,
-  huggingCatsDef,
-  flowerCatDef,
-  bowtieCatDef,
-  stackedCatsDef,
-  cheeringCatDef,
-  heartHugDef,
-  pinkDinoDef,
-  spiderManDef,
-  stitchDef,
-  littleGreenAlienDef,
-  woodyWinkDef,
-];
-
-export function findSticker(id: string): StickerDef | undefined {
-  return trazoCatalog.find((item) => item.id === id);
-}
+export const BabySquid = /*#__PURE__*/ createStickerComponent(babySquidDef);
+export const ConchShell = /*#__PURE__*/ createStickerComponent(conchShellDef);
+export const FlapjackOctopus = /*#__PURE__*/ createStickerComponent(flapjackOctopusDef);
+export const Seahorse = /*#__PURE__*/ createStickerComponent(seahorseDef);
+export const Shrimp = /*#__PURE__*/ createStickerComponent(shrimpDef);
+export const Starfish = /*#__PURE__*/ createStickerComponent(starfishDef);
+export const SeaTurtle = /*#__PURE__*/ createStickerComponent(seaTurtleDef);
+export const RedOctopus = /*#__PURE__*/ createStickerComponent(redOctopusDef);
+export const BlueMinnow = /*#__PURE__*/ createStickerComponent(blueMinnowDef);
+export const RedCrab = /*#__PURE__*/ createStickerComponent(redCrabDef);
+export const PearlClam = /*#__PURE__*/ createStickerComponent(pearlClamDef);
+export const PinkJellyfish = /*#__PURE__*/ createStickerComponent(pinkJellyfishDef);
+export const Dolphin = /*#__PURE__*/ createStickerComponent(dolphinDef);
+export const ScallopShell = /*#__PURE__*/ createStickerComponent(scallopShellDef);
+export const StripedFish = /*#__PURE__*/ createStickerComponent(stripedFishDef);
+export const SeaBubble = /*#__PURE__*/ createStickerComponent(seaBubbleDef);
+export const CurlyArrow = /*#__PURE__*/ createStickerComponent(curlyArrowDef);
+export const Diamond = /*#__PURE__*/ createStickerComponent(diamondDef);
+export const CrownRays = /*#__PURE__*/ createStickerComponent(crownRaysDef);
+export const Spiral = /*#__PURE__*/ createStickerComponent(spiralDef);
+export const FlowerRed = /*#__PURE__*/ createStickerComponent(flowerRedDef);
+export const HeartBurst = /*#__PURE__*/ createStickerComponent(heartBurstDef);
+export const PuffyCloud = /*#__PURE__*/ createStickerComponent(puffyCloudDef);
+export const AngerMark = /*#__PURE__*/ createStickerComponent(angerMarkDef);
+export const Triangle = /*#__PURE__*/ createStickerComponent(triangleDef);
+export const FlowerYellow = /*#__PURE__*/ createStickerComponent(flowerYellowDef);
+export const CircleRing = /*#__PURE__*/ createStickerComponent(circleRingDef);
+export const OceanWaves = /*#__PURE__*/ createStickerComponent(oceanWavesDef);
+export const SixStar = /*#__PURE__*/ createStickerComponent(sixStarDef);
+export const SunBurst = /*#__PURE__*/ createStickerComponent(sunBurstDef);
+export const SquareSpiral = /*#__PURE__*/ createStickerComponent(squareSpiralDef);
+export const SplashDrops = /*#__PURE__*/ createStickerComponent(splashDropsDef);
+export const HeartChevron = /*#__PURE__*/ createStickerComponent(heartChevronDef);
+export const Asterisk = /*#__PURE__*/ createStickerComponent(asteriskDef);
+export const SolidStar = /*#__PURE__*/ createStickerComponent(solidStarDef);
+export const LoopRibbon = /*#__PURE__*/ createStickerComponent(loopRibbonDef);
+export const SparkleFour = /*#__PURE__*/ createStickerComponent(sparkleFourDef);
+export const LightningBolt = /*#__PURE__*/ createStickerComponent(lightningBoltDef);
+export const SparkleCross = /*#__PURE__*/ createStickerComponent(sparkleCrossDef);
+export const QuestionMark = /*#__PURE__*/ createStickerComponent(questionMarkDef);
+export const ExclamationMark = /*#__PURE__*/ createStickerComponent(exclamationMarkDef);
+export const BowtieLoop = /*#__PURE__*/ createStickerComponent(bowtieLoopDef);
+export const ZigzagScribble = /*#__PURE__*/ createStickerComponent(zigzagScribbleDef);
+export const TripleZigzag = /*#__PURE__*/ createStickerComponent(tripleZigzagDef);
+export const DiagonalHatch = /*#__PURE__*/ createStickerComponent(diagonalHatchDef);
+export const LoopArrowOrange = /*#__PURE__*/ createStickerComponent(loopArrowOrangeDef);
+export const VerticalZigzag = /*#__PURE__*/ createStickerComponent(verticalZigzagDef);
+export const DownArrow = /*#__PURE__*/ createStickerComponent(downArrowDef);
+export const PeachCoil = /*#__PURE__*/ createStickerComponent(peachCoilDef);
+export const TripleHeartSwirl = /*#__PURE__*/ createStickerComponent(tripleHeartSwirlDef);
+export const Hashtag = /*#__PURE__*/ createStickerComponent(hashtagDef);
+export const DoubleHearts = /*#__PURE__*/ createStickerComponent(doubleHeartsDef);
+export const StarOutline = /*#__PURE__*/ createStickerComponent(starOutlineDef);
+export const CrosshairBurst = /*#__PURE__*/ createStickerComponent(crosshairBurstDef);
+export const SpikyGrass = /*#__PURE__*/ createStickerComponent(spikyGrassDef);
+export const SkyCoil = /*#__PURE__*/ createStickerComponent(skyCoilDef);
+export const ScallopedWave = /*#__PURE__*/ createStickerComponent(scallopedWaveDef);
+export const HeartCat = /*#__PURE__*/ createStickerComponent(heartCatDef);
+export const DaisyCat = /*#__PURE__*/ createStickerComponent(daisyCatDef);
+export const HuggingCats = /*#__PURE__*/ createStickerComponent(huggingCatsDef);
+export const FlowerCat = /*#__PURE__*/ createStickerComponent(flowerCatDef);
+export const BowtieCat = /*#__PURE__*/ createStickerComponent(bowtieCatDef);
+export const StackedCats = /*#__PURE__*/ createStickerComponent(stackedCatsDef);
+export const CheeringCat = /*#__PURE__*/ createStickerComponent(cheeringCatDef);
+export const HeartHug = /*#__PURE__*/ createStickerComponent(heartHugDef);
+export const PinkDino = /*#__PURE__*/ createStickerComponent(pinkDinoDef);
+export const SpiderMan = /*#__PURE__*/ createStickerComponent(spiderManDef);
+export const Stitch = /*#__PURE__*/ createStickerComponent(stitchDef);
+export const LittleGreenAlien = /*#__PURE__*/ createStickerComponent(littleGreenAlienDef);
+export const WoodyWink = /*#__PURE__*/ createStickerComponent(woodyWinkDef);

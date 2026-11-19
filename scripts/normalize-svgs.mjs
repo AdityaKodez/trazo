@@ -89,7 +89,7 @@ function main() {
   for (const category of categories) {
     const items = allItems.filter((item) => item.category === category);
     const lines = [
-      `import type { StickerDef } from "../scribble";`,
+      `import type { StickerDef } from "../core";`,
       ``,
     ];
 
@@ -124,76 +124,75 @@ function main() {
     );
   }
 
-  const indexLines = [
+  const categoryImports = categories.map((category) => {
+    const vars = allItems
+      .filter((i) => i.category === category)
+      .map((i) => i.defVarName)
+      .join(", ");
+    return `import { ${category}Stickers, ${vars} } from "./catalog/${category}";`;
+  });
+
+  const svgLines = [
     `export {`,
-    `  Sticker,`,
-    `  createStickerComponent,`,
     `  resolveConcreteColor,`,
     `  toSvgString,`,
-    `  type NamedStickerProps,`,
     `  type StickerCategory,`,
     `  type StickerDef,`,
     `  type StickerLayer,`,
-    `  type StickerProps,`,
     `  type ToSvgStringOptions,`,
-    `} from "./scribble";`,
+    `} from "./core";`,
     ``,
-    `import { createStickerComponent, type StickerDef } from "./scribble";`,
-    `import { oceanStickers, ${allItems
-      .filter((i) => i.category === "ocean")
-      .map((i) => i.defVarName)
-      .join(", ")} } from "./catalog/ocean";`,
-    `import { arrowsStickers, ${allItems
-      .filter((i) => i.category === "arrows")
-      .map((i) => i.defVarName)
-      .join(", ")} } from "./catalog/arrows";`,
-    `import { natureStickers, ${allItems
-      .filter((i) => i.category === "nature")
-      .map((i) => i.defVarName)
-      .join(", ")} } from "./catalog/nature";`,
-    `import { heartsStickers, ${allItems
-      .filter((i) => i.category === "hearts")
-      .map((i) => i.defVarName)
-      .join(", ")} } from "./catalog/hearts";`,
-    `import { symbolsStickers, ${allItems
-      .filter((i) => i.category === "symbols")
-      .map((i) => i.defVarName)
-      .join(", ")} } from "./catalog/symbols";`,
-    `import { catsStickers, ${allItems
-      .filter((i) => i.category === "cats")
-      .map((i) => i.defVarName)
-      .join(", ")} } from "./catalog/cats";`,
-    `import { charactersStickers, ${allItems
-      .filter((i) => i.category === "characters")
-      .map((i) => i.defVarName)
-      .join(", ")} } from "./catalog/characters";`,
+    `import type { StickerDef } from "./core";`,
+    ...categoryImports,
     ``,
-    `export { oceanStickers, arrowsStickers, natureStickers, heartsStickers, symbolsStickers, catsStickers, charactersStickers };`,
+    `export { ${categories.map((c) => `${c}Stickers`).join(", ")} };`,
     `export {`,
     `  ${allItems.map((i) => i.defVarName).join(",\n  ")},`,
     `};`,
     ``,
+    `export const trazoCatalog: readonly StickerDef[] = [`,
+    ...allItems.map((i) => `  ${i.defVarName},`),
+    `];`,
+    ``,
+    `export function findSticker(id: string): StickerDef | undefined {`,
+    `  return trazoCatalog.find((item) => item.id === id);`,
+    `}`,
+    ``,
   ];
 
-  for (const item of allItems) {
-    indexLines.push(
-      `export const ${item.componentName} = createStickerComponent(${item.defVarName});`,
-    );
-  }
-
-  indexLines.push(``);
-  indexLines.push(`export const trazoCatalog: readonly StickerDef[] = [`);
-  for (const item of allItems) {
-    indexLines.push(`  ${item.defVarName},`);
-  }
-  indexLines.push(`];`);
-  indexLines.push(``);
-  indexLines.push(
-    `export function findSticker(id: string): StickerDef | undefined {`,
+  fs.writeFileSync(
+    path.join(rootDir, "packages/trazo/src/svg.ts"),
+    svgLines.join("\n"),
+    "utf8",
   );
-  indexLines.push(`  return trazoCatalog.find((item) => item.id === id);`);
-  indexLines.push(`}`);
-  indexLines.push(``);
+
+  const indexCategoryImports = categories.map((category) => {
+    const vars = allItems
+      .filter((i) => i.category === category)
+      .map((i) => i.defVarName)
+      .join(", ");
+    return `import { ${vars} } from "./catalog/${category}";`;
+  });
+
+  const indexLines = [
+    `export {`,
+    `  Sticker,`,
+    `  createStickerComponent,`,
+    `  type NamedStickerProps,`,
+    `  type StickerProps,`,
+    `} from "./scribble";`,
+    ``,
+    `export * from "./svg";`,
+    ``,
+    `import { createStickerComponent } from "./scribble";`,
+    ...indexCategoryImports,
+    ``,
+    ...allItems.map(
+      (item) =>
+        `export const ${item.componentName} = /*#__PURE__*/ createStickerComponent(${item.defVarName});`,
+    ),
+    ``,
+  ];
 
   fs.writeFileSync(
     path.join(rootDir, "packages/trazo/src/index.ts"),

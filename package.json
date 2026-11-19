@@ -7,7 +7,7 @@
     "build": "npm run pkg:build && next build",
     "start": "next start",
     "lint": "eslint",
-    "pkg:build": "tsc -p packages/trazo/tsconfig.json"
+    "pkg:build": "node packages/trazo/scripts/build.mjs"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",

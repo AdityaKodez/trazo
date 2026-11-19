@@ -1,6 +1,12 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@property --scrollbar-alpha {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+
 @custom-variant data-open {
   &:where([data-state="open"]),
   &:where([data-open]:not([data-open="false"])) {
@@ -140,73 +146,52 @@
   }
 
   .palette-scroll {
-    scrollbar-width: thin;
-    scrollbar-color: color-mix(in oklab, var(--foreground) 18%, transparent) transparent;
+    --scrollbar-alpha: 0;
+    transition: --scrollbar-alpha 320ms var(--motion-ease-standard);
   }
 
-  .trazo-range {
-    height: 20px;
-    appearance: none;
+  .palette-scroll[data-scrolling="true"] {
+    --scrollbar-alpha: 0.22;
+    transition-duration: 90ms;
+  }
+
+  .palette-scroll::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  .palette-scroll::-webkit-scrollbar-track,
+  .palette-scroll::-webkit-scrollbar-corner {
     background: transparent;
-    cursor: pointer;
   }
 
-  .trazo-range::-webkit-slider-runnable-track {
-    height: 4px;
-    border-radius: 999px;
-    background: linear-gradient(
-      to right,
-      var(--foreground) var(--range-progress, 50%),
-      color-mix(in oklab, var(--foreground) 12%, transparent) var(--range-progress, 50%)
+  .palette-scroll::-webkit-scrollbar-thumb {
+    border: 3px solid transparent;
+    border-radius: 9999px;
+    background-color: color-mix(
+      in srgb,
+      var(--foreground) calc(var(--scrollbar-alpha) * 100%),
+      transparent
     );
+    background-clip: content-box;
   }
 
-  .trazo-range::-moz-range-track {
-    height: 4px;
-    border-radius: 999px;
-    background: color-mix(in oklab, var(--foreground) 12%, transparent);
+  .palette-scroll::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in srgb, var(--foreground) 38%, transparent);
   }
 
-  .trazo-range::-moz-range-progress {
-    height: 4px;
-    border-radius: 999px;
-    background: var(--foreground);
+  .palette-scroll::-webkit-scrollbar-thumb:active {
+    background-color: color-mix(in srgb, var(--foreground) 52%, transparent);
   }
 
-  .trazo-range::-webkit-slider-thumb {
-    appearance: none;
-    margin-top: -6px;
-    width: 16px;
-    height: 16px;
-    border-radius: 999px;
-    background: var(--foreground);
-    box-shadow: 0 0 0 3px var(--background), 0 1px 4px rgba(0, 0, 0, 0.2);
-    transition: transform var(--motion-duration-fast) var(--motion-ease-standard);
-  }
+  @supports not selector(::-webkit-scrollbar) {
+    .palette-scroll {
+      scrollbar-width: thin;
+      scrollbar-color: transparent transparent;
+    }
 
-  .trazo-range::-moz-range-thumb {
-    width: 16px;
-    height: 16px;
-    border: 0;
-    border-radius: 999px;
-    background: var(--foreground);
-    box-shadow: 0 0 0 3px var(--background), 0 1px 4px rgba(0, 0, 0, 0.2);
-    transition: transform var(--motion-duration-fast) var(--motion-ease-standard);
-  }
-
-  .trazo-range:hover::-webkit-slider-thumb,
-  .trazo-range:active::-webkit-slider-thumb {
-    transform: scale(1.15);
-  }
-
-  .trazo-range:hover::-moz-range-thumb,
-  .trazo-range:active::-moz-range-thumb {
-    transform: scale(1.15);
-  }
-
-  .trazo-range:focus-visible {
-    outline: 2px solid var(--ring);
-    outline-offset: 4px;
-    border-radius: 999px;
+    .palette-scroll[data-scrolling="true"] {
+      scrollbar-color: color-mix(in srgb, var(--foreground) 22%, transparent) transparent;
+    }
   }
 }

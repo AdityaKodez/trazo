@@ -178,8 +178,8 @@ export function InstallCommand({
       )}
     >
       {/* Unified full-width top header bar with package manager tabs and copy action */}
-      <div className="flex items-center justify-between border-b bg-muted/45 px-2.5 py-1.5">
-        <div className="flex items-center gap-1">
+      <div className="flex items-center justify-between gap-1 border-b bg-muted/45 px-2 py-1.5 sm:px-2.5">
+        <div className="flex items-center gap-0.5 sm:gap-1">
           {PACKAGE_MANAGERS.map((pm) => {
             const Icon = PM_ICONS[pm];
             const isActive = manager === pm;
@@ -190,7 +190,7 @@ export function InstallCommand({
                 onClick={() => writeManager(pm)}
                 aria-pressed={isActive}
                 className={cn(
-                  "relative flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-mono text-[11px] micro-transition active:scale-[0.97]",
+                  "relative flex items-center gap-1 rounded-lg px-2 py-1.5 font-mono text-[11px] micro-transition active:scale-[0.97] sm:gap-1.5 sm:px-2.5 sm:py-1",
                   isActive
                     ? "text-foreground"
                     : "text-muted-foreground hover:text-foreground",
@@ -218,7 +218,7 @@ export function InstallCommand({
               type="button"
               onClick={() => void copy(command)}
               aria-label="Copy install command"
-              className="flex size-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground micro-transition hover:bg-background hover:text-foreground active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground micro-transition hover:bg-background hover:text-foreground active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:size-7"
             >
               <CopyStatusIcon status={status} />
             </button>
@@ -236,9 +236,9 @@ export function InstallCommand({
       </div>
 
       {/* Command line body */}
-      <div className="relative flex items-center px-4 py-3">
+      <div className="relative flex items-center px-3.5 py-2.5 sm:px-4 sm:py-3">
         <div className="blueprint-bg pointer-events-none absolute inset-0 opacity-35" />
-        <code className="relative min-w-0 flex-1 overflow-x-auto whitespace-pre font-mono text-[13px] leading-relaxed text-foreground">
+        <code className="palette-scroll relative min-w-0 flex-1 overflow-x-auto whitespace-pre font-mono text-[12.5px] leading-relaxed text-foreground sm:text-[13px]">
           <AnimatePresence mode="wait" initial={false}>
             <motion.span
               key={manager}

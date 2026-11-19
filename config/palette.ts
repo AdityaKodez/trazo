@@ -82,6 +82,21 @@ export function findPaletteOption(id: PaletteId): PaletteOption {
 }
 
 /**
+ * Returns a concrete hex color override for single-color palettes,
+ * or `undefined` in default multi-color ("mix") mode so stickers render their native layers.
+ */
+export function resolveStickerColor(paletteId: PaletteId): string | undefined {
+  if (paletteId === "mix") {
+    return undefined;
+  }
+  if (paletteId === "ink") {
+    return INK_HEX;
+  }
+  const swatch = paletteOptions.find((item) => item.id === paletteId);
+  return swatch?.hex ?? INK_HEX;
+}
+
+/**
  * Returns a concrete hex color for any sticker under the active palette mode.
  * Never returns a CSS variable so canvas PNG exports and copied SVG snippets always resolve.
  */
@@ -89,12 +104,5 @@ export function resolveStickerHex(
   def: StickerDef,
   paletteId: PaletteId,
 ): string {
-  if (paletteId === "ink") {
-    return INK_HEX;
-  }
-  if (paletteId === "mix") {
-    return def.mixColor;
-  }
-  const swatch = paletteOptions.find((item) => item.id === paletteId);
-  return swatch?.hex ?? INK_HEX;
+  return resolveStickerColor(paletteId) ?? def.mixColor;
 }

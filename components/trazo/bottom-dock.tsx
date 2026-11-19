@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { trazoCatalog } from "trazo";
@@ -34,7 +35,7 @@ const liftSpring = { type: "spring", stiffness: 600, damping: 24, mass: 0.4 } as
 const enterSpring = { type: "spring", stiffness: 380, damping: 30 } as const;
 
 const PANEL_CLASS =
-  "flex items-center rounded-[22px] bg-popover/92 p-1.5 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_14px_36px_-10px_rgba(0,0,0,0.18)] ring-1 ring-foreground/[0.07] backdrop-blur-md";
+  "flex items-center rounded-[20px] bg-popover/92 p-1 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_14px_36px_-10px_rgba(0,0,0,0.18)] ring-1 ring-foreground/[0.07] backdrop-blur-md sm:rounded-[22px] sm:p-1.5";
 
 function SwatchDot({
   option,
@@ -190,14 +191,19 @@ function MobileColorPicker() {
         <button
           type="button"
           aria-label={`Color: ${activeOption.label}`}
-          className="flex h-11 items-center gap-2 rounded-2xl pl-2 pr-3 text-xs font-medium text-foreground micro-transition hover:bg-muted active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="flex h-10 items-center gap-2 rounded-2xl pl-2 pr-3 text-xs font-medium text-foreground micro-transition hover:bg-muted active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:h-11"
         >
-          <SwatchDot option={activeOption} className="size-7" />
-          <span className="whitespace-nowrap">{activeOption.label}</span>
+          <SwatchDot option={activeOption} className="size-6 sm:size-7" />
+          <span className="max-w-[92px] truncate whitespace-nowrap">{activeOption.label}</span>
         </button>
       </PopoverTrigger>
-      <PopoverContent side="top" align="center" sideOffset={12} className="w-72 rounded-2xl p-3">
-        <div className="mb-2 flex items-center justify-between px-0.5">
+      <PopoverContent
+        side="top"
+        align="center"
+        sideOffset={12}
+        className="w-[min(296px,calc(100vw-1.5rem))] rounded-2xl p-3"
+      >
+        <div className="mb-2.5 flex items-center justify-between px-0.5">
           <span className="text-xs font-medium text-foreground">Crayon palette</span>
           <span className="font-caveat text-lg leading-none text-muted-foreground">
             {activeOption.label}
@@ -213,13 +219,13 @@ function MobileColorPicker() {
                 aria-pressed={isSelected}
                 onClick={() => pick(option.id)}
                 className={cn(
-                  "flex min-h-16 flex-col items-center justify-center gap-1.5 rounded-xl px-1.5 py-2 text-[11px] font-medium micro-transition active:scale-[0.96]",
+                  "flex min-h-[68px] flex-col items-center justify-center gap-1.5 rounded-xl px-1.5 py-2 text-[11px] font-medium micro-transition active:scale-[0.95]",
                   isSelected
                     ? "bg-muted text-foreground ring-2 ring-foreground"
                     : "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
                 )}
               >
-                <SwatchDot option={option} className="size-8" />
+                <SwatchDot option={option} className="size-7" />
                 <span className="truncate">{option.label}</span>
               </button>
             );
@@ -231,7 +237,7 @@ function MobileColorPicker() {
 }
 
 export function BottomDock() {
-  const { paletteId, centerCanvas, openLibraryGrid } = useTrazo();
+  const { paletteId, centerCanvas } = useTrazo();
   const modKey = useModKey();
   const activeOption = findPaletteOption(paletteId);
 
@@ -239,7 +245,7 @@ export function BottomDock() {
     <nav
       aria-label="Canvas controls"
       data-no-pan=""
-      className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-30 flex -translate-x-1/2 items-center gap-2"
+      className="fixed bottom-[max(0.875rem,env(safe-area-inset-bottom))] left-1/2 z-30 flex max-w-[calc(100vw-1.25rem)] -translate-x-1/2 items-center gap-1.5 sm:bottom-[max(1rem,env(safe-area-inset-bottom))] sm:gap-2"
     >
       <DeckPanel index={0}>
         <Tooltip>
@@ -248,11 +254,11 @@ export function BottomDock() {
               type="button"
               onClick={centerCanvas}
               aria-label="Center canvas"
-              className="group flex h-11 items-center gap-2 rounded-2xl pl-1 pr-1 micro-transition hover:bg-muted active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:pr-3"
+              className="group flex h-10 items-center gap-2 rounded-2xl px-1 micro-transition hover:bg-muted active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:h-11 sm:pl-1 sm:pr-3"
             >
               <TrazoMark
                 option={activeOption}
-                className="size-9 transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:-rotate-6 group-hover:scale-105"
+                className="size-8 transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:-rotate-6 group-hover:scale-105 sm:size-9"
               />
               <span className="hidden font-caveat text-[26px] font-bold leading-none tracking-tight text-foreground sm:inline">
                 trazo
@@ -273,14 +279,14 @@ export function BottomDock() {
       </DeckPanel>
 
       <DeckPanel index={2} className="bg-foreground ring-foreground">
-        <button
-          type="button"
-          onClick={openLibraryGrid}
+        <Link
+          href="/library"
+          scroll={false}
           aria-label="Open sticker library"
           aria-keyshortcuts="Meta+K Control+K"
-          className="flex h-11 items-center gap-2 rounded-2xl pl-3 pr-2 text-sm font-medium text-background micro-transition hover:bg-background/10 active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-background"
+          className="flex h-10 items-center gap-1.5 rounded-2xl pl-3 pr-2 text-[13px] font-medium text-background micro-transition hover:bg-background/10 active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-background sm:h-11 sm:gap-2 sm:text-sm"
         >
-          <LayoutGrid className="size-[18px] shrink-0" />
+          <LayoutGrid className="size-[17px] shrink-0 sm:size-[18px]" />
           <span>Library</span>
           <span className="rounded-lg bg-background/15 px-1.5 py-1 font-mono text-[10px] leading-none text-background/80 sm:hidden">
             {trazoCatalog.length}
@@ -288,7 +294,7 @@ export function BottomDock() {
           <kbd className="hidden whitespace-nowrap rounded-lg bg-background/15 px-1.5 py-1 font-sans text-[10px] leading-none text-background/80 sm:inline">
             {modKey} K
           </kbd>
-        </button>
+        </Link>
       </DeckPanel>
     </nav>
   );
