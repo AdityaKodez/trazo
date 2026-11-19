@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  memo,
   useEffect,
   useMemo,
   useRef,
@@ -241,6 +242,88 @@ async function downloadStickerPng(
   }
 }
 
+interface LibraryTileProps {
+  item: StickerDef;
+  isActive: boolean;
+  color: string | undefined;
+  reduceMotion: boolean | null;
+  onHover: (id: string) => void;
+  onOpen: (id: string) => void;
+  onLocate: (id: string) => void;
+}
+
+const LibraryTile = memo(function LibraryTile({
+  item,
+  isActive,
+  color,
+  reduceMotion,
+  onHover,
+  onOpen,
+  onLocate,
+}: LibraryTileProps) {
+  return (
+    <div
+      id={optionId(item.id)}
+      role="option"
+      aria-selected={isActive}
+      onPointerMove={() => onHover(item.id)}
+      onClick={() => onOpen(item.id)}
+      className="group relative flex cursor-pointer flex-col items-center gap-1.5 rounded-2xl px-2 pb-2.5 pt-3.5"
+    >
+      {isActive ? (
+        <motion.span
+          aria-hidden
+          layoutId="library-active-tile"
+          transition={reduceMotion ? { duration: 0 } : highlightSpring}
+          className="absolute inset-0 rounded-2xl bg-muted/80 ring-1 ring-inset ring-foreground/[0.06]"
+        />
+      ) : null}
+      <span className="relative flex size-14 items-center justify-center">
+        <Sticker
+          def={item}
+          size={48}
+          color={color}
+          className={cn(
+            "transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]",
+            isActive && !reduceMotion && "-rotate-6 scale-110",
+          )}
+        />
+      </span>
+      <span
+        className={cn(
+          "relative w-full truncate text-center text-[11px] font-medium transition-colors duration-150",
+          isActive ? "text-foreground" : "text-muted-foreground",
+        )}
+      >
+        {item.name}
+      </span>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            tabIndex={-1}
+            onClick={(event) => {
+              event.stopPropagation();
+              onLocate(item.id);
+            }}
+            aria-label={`Locate ${item.name} on canvas`}
+            className={cn(
+              "absolute right-1.5 top-1.5 flex size-7 items-center justify-center rounded-full text-foreground/60 micro-transition hover:bg-background hover:text-foreground hover:shadow-[0_1px_2px_rgba(0,0,0,0.08)]",
+              isActive ? "scale-100 opacity-100" : "pointer-events-none scale-75 opacity-0",
+            )}
+          >
+            <Compass className="size-4" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Locate on canvas</p>
+        </TooltipContent>
+      </Tooltip>
+    </div>
+  );
+});
+
 function LibraryPalette({
   Title,
   Description,
@@ -261,6 +344,7 @@ function LibraryPalette({
     setOverlayOpen,
   } = useTrazo();
   const reduceMotion = useReducedMotion();
+  const tileColor = stickerColor(paletteId);
   const modKey = useModKey();
   const gridRef = useRef<HTMLDivElement | null>(null);
   const tabsRef = useRef<HTMLDivElement | null>(null);
@@ -556,73 +640,18 @@ function LibraryPalette({
               isMobile ? "min-h-0 flex-1" : "min-h-0 max-h-[min(50dvh,400px)] flex-1",
             )}
           >
-            {filteredStickers.map((item) => {
-              const isActive = item.id === activeId;
-              return (
-                <div
-                  key={item.id}
-                  id={optionId(item.id)}
-                  role="option"
-                  aria-selected={isActive}
-                  onPointerMove={() => {
-                    if (hoveredId !== item.id) setHoveredId(item.id);
-                  }}
-                  onClick={() => openStickerDetail(item.id)}
-                  className="group relative flex cursor-pointer flex-col items-center gap-1.5 rounded-2xl px-2 pb-2.5 pt-3.5"
-                >
-                  {isActive ? (
-                    <motion.span
-                      aria-hidden
-                      layoutId="library-active-tile"
-                      transition={reduceMotion ? { duration: 0 } : highlightSpring}
-                      className="absolute inset-0 rounded-2xl bg-muted/80 ring-1 ring-inset ring-foreground/[0.06]"
-                    />
-                  ) : null}
-                  <span className="relative flex size-14 items-center justify-center">
-                    <Sticker
-                      def={item}
-                      size={48}
-                      color={stickerColor(paletteId)}
-                      className={cn(
-                        "transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]",
-                        isActive && !reduceMotion && "-rotate-6 scale-110",
-                      )}
-                    />
-                  </span>
-                  <span
-                    className={cn(
-                      "relative w-full truncate text-center text-[11px] font-medium transition-colors duration-150",
-                      isActive ? "text-foreground" : "text-muted-foreground",
-                    )}
-                  >
-                    {item.name}
-                  </span>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        tabIndex={-1}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          locateOnCanvas(item.id);
-                        }}
-                        aria-label={`Locate ${item.name} on canvas`}
-                        className={cn(
-                          "absolute right-1.5 top-1.5 flex size-7 items-center justify-center rounded-full text-foreground/60 micro-transition hover:bg-background hover:text-foreground hover:shadow-[0_1px_2px_rgba(0,0,0,0.08)]",
-                          isActive ? "scale-100 opacity-100" : "pointer-events-none scale-75 opacity-0",
-                        )}
-                      >
-                        <Compass className="size-4" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Locate on canvas</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              );
-            })}
+            {filteredStickers.map((item) => (
+              <LibraryTile
+                key={item.id}
+                item={item}
+                isActive={item.id === activeId}
+                color={tileColor}
+                reduceMotion={reduceMotion}
+                onHover={setHoveredId}
+                onOpen={openStickerDetail}
+                onLocate={locateOnCanvas}
+              />
+            ))}
           </div>
         )}
       </div>

@@ -10,6 +10,7 @@ import {
 } from "motion/react";
 import {
   useCallback,
+  memo,
   useEffect,
   useRef,
   useState,
@@ -106,6 +107,164 @@ function rubberBandClamp(value: number, min: number, max: number, factor = 0.28)
   return value;
 }
 
+interface CanvasStickerProps {
+  placement: CanvasStickerPlacement;
+  index: number;
+  color: string | undefined;
+  posScaleX: number;
+  posScaleY: number;
+  stickerScale: number;
+  isMobileViewport: boolean;
+  isShaking: boolean;
+  reduceMotion: boolean | null;
+  onFocusSticker: (
+    placement: CanvasStickerPlacement,
+    event: FocusEvent<HTMLButtonElement>,
+  ) => void;
+  onClickSticker: (id: string) => void;
+}
+
+const CanvasSticker = memo(function CanvasSticker({
+  placement,
+  index,
+  color: stickerColor,
+  posScaleX,
+  posScaleY,
+  stickerScale,
+  isMobileViewport,
+  isShaking,
+  reduceMotion,
+  onFocusSticker,
+  onClickSticker,
+}: CanvasStickerProps) {
+  const def = findSticker(placement.id);
+  if (!def) return null;
+
+  const px = Math.round(placement.x * posScaleX);
+  const py = Math.round(placement.y * posScaleY);
+  const renderedSize = Math.round(placement.size * stickerScale);
+  const radialDist = Math.hypot(placement.x, placement.y);
+  const staggerDelay = Math.min(
+    0.42,
+    (radialDist / 1150) * 0.34 + (index % 5) * 0.016,
+  );
+  const hoverTilt = placement.rotate + (placement.rotate >= 0 ? -8 : 8);
+
+  return (
+    <div
+      style={{
+        transform: `translate3d(${px}px, ${py}px, 0) translate(-50%, -50%)`,
+      }}
+      className="absolute left-0 top-0 w-max"
+    >
+      {/* Outer wrapper owns the one-time staggered pop entrance on page load */}
+      <motion.div
+        initial={
+          reduceMotion
+            ? false
+            : { opacity: 0, scale: 0.72, y: 14, rotate: -10 }
+        }
+        animate={{ opacity: 1, scale: 1, y: 0, rotate: 0 }}
+        transition={{
+          type: "spring",
+          duration: 0.44,
+          bounce: 0.34,
+          delay: staggerDelay,
+        }}
+      >
+        {/* Middle wrapper owns transient locate-on-canvas shake without clashing with hover/tap */}
+        <motion.div
+          animate={
+            isShaking
+              ? reduceMotion
+                ? LOCATE_PULSE_ANIMATE
+                : LOCATE_SHAKE_ANIMATE
+              : LOCATE_REST_ANIMATE
+          }
+          transition={
+            isShaking
+              ? reduceMotion
+                ? LOCATE_PULSE_TRANSITION
+                : LOCATE_SHAKE_TRANSITION
+              : LOCATE_REST_TRANSITION
+          }
+        >
+          {/* Inner button owns zero-latency hover & press physics */}
+          <motion.button
+            type="button"
+            aria-label={`Inspect ${def.name} sticker`}
+            onFocus={(event) => onFocusSticker(placement, event)}
+            onClick={() => onClickSticker(def.id)}
+            initial={false}
+            animate={{
+              rotate: placement.rotate,
+              scale: 1,
+              y: 0,
+            }}
+            whileHover={
+              reduceMotion || isMobileViewport
+                ? undefined
+                : {
+                    scale: 1.18,
+                    rotate: hoverTilt,
+                    y: -8,
+                  }
+            }
+            whileTap={
+              reduceMotion
+                ? undefined
+                : {
+                    scale: 0.92,
+                    rotate: placement.rotate,
+                    y: -1,
+                  }
+            }
+            transition={{
+              type: "spring",
+              stiffness: 520,
+              damping: 20,
+              mass: 0.48,
+            }}
+            className="group relative flex items-center justify-center rounded-3xl p-2 outline-none focus-visible:ring-2 focus-visible:ring-ring sm:p-3"
+          >
+            <Sticker
+              def={def}
+              size={renderedSize}
+              color={stickerColor}
+              className="pointer-events-none relative z-10 drop-shadow-[0_2px_3px_rgba(0,0,0,0.04)] transition-[filter,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] sm:group-hover:drop-shadow-[0_10px_14px_rgba(0,0,0,0.14)]"
+            />
+
+            {/* Origin-aware springy hover / focus name pill */}
+            <span className="pointer-events-none absolute -bottom-6 left-1/2 z-20 hidden -translate-x-1/2 translate-y-1.5 scale-95 whitespace-nowrap rounded-full bg-foreground px-2.5 py-0.5 text-[11px] font-medium text-background opacity-0 shadow-sm transition-all duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:scale-100 group-focus-visible:opacity-100 sm:block">
+              {def.name}
+            </span>
+
+            {/* Handwritten Caveat margin note on key stickers (desktop/tablet where perimeter has room) */}
+            {placement.marginNote ? (
+              <span
+                aria-hidden
+                className={cn(
+                  "pointer-events-none absolute hidden whitespace-nowrap font-caveat text-[19px] leading-none text-muted-foreground/80 transition-colors duration-150 sm:block sm:group-hover:text-foreground",
+                  placement.noteSide === "top" &&
+                    "-top-5 left-1/2 -translate-x-1/2",
+                  placement.noteSide === "bottom" &&
+                    "-bottom-5 left-1/2 -translate-x-1/2 sm:group-hover:opacity-0",
+                  placement.noteSide === "left" &&
+                    "right-full mr-2 top-1/2 -translate-y-1/2",
+                  placement.noteSide === "right" &&
+                    "left-full ml-2 top-1/2 -translate-y-1/2",
+                )}
+              >
+                {placement.marginNote}
+              </span>
+            ) : null}
+          </motion.button>
+        </motion.div>
+      </motion.div>
+    </div>
+  );
+});
+
 export function TrazoCanvas() {
   const {
     paletteId,
@@ -171,6 +330,9 @@ export function TrazoCanvas() {
     window.addEventListener("resize", updateSize);
     return () => window.removeEventListener("resize", updateSize);
   }, []);
+
+  const stickerColor =
+    paletteId === "ink" ? "var(--scribble-ink)" : resolveStickerColor(paletteId);
 
   const isMobileViewport = viewportSize.width < 640;
   const isTabletViewport = viewportSize.width >= 640 && viewportSize.width < 768;
@@ -374,35 +536,38 @@ export function TrazoCanvas() {
     targetY.set(clamp(targetY.get() - deltaY, -maxY, maxY));
   }
 
-  function handleStickerFocus(
-    placement: CanvasStickerPlacement,
-    event: FocusEvent<HTMLButtonElement>,
-  ) {
-    if (viewportRef.current) {
-      viewportRef.current.scrollLeft = 0;
-      viewportRef.current.scrollTop = 0;
-    }
-    if (!event.currentTarget.matches(":focus-visible")) return;
+  const handleStickerFocus = useCallback(
+    (placement: CanvasStickerPlacement, event: FocusEvent<HTMLButtonElement>) => {
+      if (viewportRef.current) {
+        viewportRef.current.scrollLeft = 0;
+        viewportRef.current.scrollTop = 0;
+      }
+      if (!event.currentTarget.matches(":focus-visible")) return;
 
-    const scaledX = placement.x * posScaleX;
-    const scaledY = placement.y * posScaleY;
-    const screenOffsetX = scaledX + targetX.get();
-    const screenOffsetY = scaledY + targetY.get();
-    const safeHalfW = viewportSize.width * 0.36;
-    const safeHalfH = viewportSize.height * 0.34;
+      const scaledX = placement.x * posScaleX;
+      const scaledY = placement.y * posScaleY;
+      const screenOffsetX = scaledX + targetX.get();
+      const screenOffsetY = scaledY + targetY.get();
+      const safeHalfW = viewportSize.width * 0.36;
+      const safeHalfH = viewportSize.height * 0.34;
 
-    if (
-      Math.abs(screenOffsetX) > safeHalfW ||
-      Math.abs(screenOffsetY) > safeHalfH
-    ) {
-      glideCameraTo(-scaledX, -scaledY);
-    }
-  }
+      if (
+        Math.abs(screenOffsetX) > safeHalfW ||
+        Math.abs(screenOffsetY) > safeHalfH
+      ) {
+        glideCameraTo(-scaledX, -scaledY);
+      }
+    },
+    [glideCameraTo, posScaleX, posScaleY, targetX, targetY, viewportSize.height, viewportSize.width],
+  );
 
-  function handleStickerClick(id: string) {
-    if (suppressNextClickRef.current) return;
-    openStickerDetail(id);
-  }
+  const handleStickerClick = useCallback(
+    (id: string) => {
+      if (suppressNextClickRef.current) return;
+      openStickerDetail(id);
+    },
+    [openStickerDetail],
+  );
 
   return (
     <div
@@ -511,145 +676,27 @@ export function TrazoCanvas() {
 
         {/* All crayon stickers with radial staggered pop-in on load + Emil Kowalski hover/tap physics */}
         {canvasPlacements.map((placement, index) => {
-          const def = findSticker(placement.id);
-          if (!def) return null;
-
-          const px = Math.round(placement.x * posScaleX);
-          const py = Math.round(placement.y * posScaleY);
-          const renderedSize = Math.round(placement.size * stickerScale);
-
-          const stickerColor =
-            paletteId === "ink"
-              ? "var(--scribble-ink)"
-              : resolveStickerColor(paletteId);
           const isShaking =
             shakingSticker !== null &&
             locatedSticker !== null &&
             shakingSticker.seq === locatedSticker.seq &&
-            shakingSticker.id === def.id;
-
-          // Radial stagger from (0, 0) so inner perimeter stickers pop first and ripple outward
-          const radialDist = Math.hypot(placement.x, placement.y);
-          const staggerDelay = Math.min(
-            0.42,
-            (radialDist / 1150) * 0.34 + (index % 5) * 0.016,
-          );
-          const hoverTilt =
-            placement.rotate + (placement.rotate >= 0 ? -8 : 8);
+            shakingSticker.id === placement.id;
 
           return (
-            <div
-              key={def.id}
-              style={{
-                transform: `translate3d(${px}px, ${py}px, 0) translate(-50%, -50%)`,
-              }}
-              className="absolute left-0 top-0 w-max"
-            >
-              {/* Outer wrapper owns the one-time staggered pop entrance on page load */}
-              <motion.div
-                initial={
-                  reduceMotion
-                    ? false
-                    : { opacity: 0, scale: 0.72, y: 14, rotate: -10 }
-                }
-                animate={{ opacity: 1, scale: 1, y: 0, rotate: 0 }}
-                transition={{
-                  type: "spring",
-                  duration: 0.44,
-                  bounce: 0.34,
-                  delay: staggerDelay,
-                }}
-              >
-                {/* Middle wrapper owns transient locate-on-canvas shake without clashing with hover/tap */}
-                <motion.div
-                  animate={
-                    isShaking
-                      ? reduceMotion
-                        ? LOCATE_PULSE_ANIMATE
-                        : LOCATE_SHAKE_ANIMATE
-                      : LOCATE_REST_ANIMATE
-                  }
-                  transition={
-                    isShaking
-                      ? reduceMotion
-                        ? LOCATE_PULSE_TRANSITION
-                        : LOCATE_SHAKE_TRANSITION
-                      : LOCATE_REST_TRANSITION
-                  }
-                >
-                  {/* Inner button owns zero-latency hover & press physics */}
-                  <motion.button
-                    type="button"
-                    aria-label={`Inspect ${def.name} sticker`}
-                    onFocus={(event) => handleStickerFocus(placement, event)}
-                    onClick={() => handleStickerClick(def.id)}
-                    initial={false}
-                    animate={{
-                      rotate: placement.rotate,
-                      scale: 1,
-                      y: 0,
-                    }}
-                    whileHover={
-                      reduceMotion || isMobileViewport
-                        ? undefined
-                        : {
-                            scale: 1.18,
-                            rotate: hoverTilt,
-                            y: -8,
-                          }
-                    }
-                    whileTap={
-                      reduceMotion
-                        ? undefined
-                        : {
-                            scale: 0.92,
-                            rotate: placement.rotate,
-                            y: -1,
-                          }
-                    }
-                    transition={{
-                      type: "spring",
-                      stiffness: 520,
-                      damping: 20,
-                      mass: 0.48,
-                    }}
-                    className="group relative flex items-center justify-center rounded-3xl p-2 outline-none focus-visible:ring-2 focus-visible:ring-ring sm:p-3"
-                  >
-                    <Sticker
-                      def={def}
-                      size={renderedSize}
-                      color={stickerColor}
-                      className="pointer-events-none relative z-10 drop-shadow-[0_2px_3px_rgba(0,0,0,0.04)] transition-[filter,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] sm:group-hover:drop-shadow-[0_10px_14px_rgba(0,0,0,0.14)]"
-                    />
-
-                    {/* Origin-aware springy hover / focus name pill */}
-                    <span className="pointer-events-none absolute -bottom-6 left-1/2 z-20 hidden -translate-x-1/2 translate-y-1.5 scale-95 whitespace-nowrap rounded-full bg-foreground px-2.5 py-0.5 text-[11px] font-medium text-background opacity-0 shadow-sm transition-all duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:scale-100 group-focus-visible:opacity-100 sm:block">
-                      {def.name}
-                    </span>
-
-                    {/* Handwritten Caveat margin note on key stickers (desktop/tablet where perimeter has room) */}
-                    {placement.marginNote ? (
-                      <span
-                        aria-hidden
-                        className={cn(
-                          "pointer-events-none absolute hidden whitespace-nowrap font-caveat text-[19px] leading-none text-muted-foreground/80 transition-colors duration-150 sm:block sm:group-hover:text-foreground",
-                          placement.noteSide === "top" &&
-                            "-top-5 left-1/2 -translate-x-1/2",
-                          placement.noteSide === "bottom" &&
-                            "-bottom-5 left-1/2 -translate-x-1/2 sm:group-hover:opacity-0",
-                          placement.noteSide === "left" &&
-                            "right-full mr-2 top-1/2 -translate-y-1/2",
-                          placement.noteSide === "right" &&
-                            "left-full ml-2 top-1/2 -translate-y-1/2",
-                        )}
-                      >
-                        {placement.marginNote}
-                      </span>
-                    ) : null}
-                  </motion.button>
-                </motion.div>
-              </motion.div>
-            </div>
+            <CanvasSticker
+              key={placement.id}
+              placement={placement}
+              index={index}
+              color={stickerColor}
+              posScaleX={posScaleX}
+              posScaleY={posScaleY}
+              stickerScale={stickerScale}
+              isMobileViewport={isMobileViewport}
+              isShaking={isShaking}
+              reduceMotion={reduceMotion}
+              onFocusSticker={handleStickerFocus}
+              onClickSticker={handleStickerClick}
+            />
           );
         })}
       </motion.div>
