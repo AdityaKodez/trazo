@@ -57,6 +57,12 @@ const zoneAnchors: readonly ZoneAnchor[] = [
     x: 1065,
     y: 685,
   },
+  {
+    id: "characters",
+    label: "Characters",
+    x: -1065,
+    y: 685,
+  },
 ] as const;
 
 export const canvasZones: readonly ZoneAnchor[] = zoneAnchors.map((zone) => ({
@@ -567,6 +573,45 @@ const stickerPlacements: readonly CanvasStickerPlacement[] = [
     y: 875,
     size: 106,
     rotate: 4,
+  },
+
+  // ---------------------------------------------------------------------------
+  // SOUTH-WEST QUADRANT: Characters (5 stickers)
+  // ---------------------------------------------------------------------------
+  {
+    id: "spider-man",
+    x: -1250,
+    y: 775,
+    size: 112,
+    rotate: -5,
+  },
+  {
+    id: "pink-dino",
+    x: -1065,
+    y: 760,
+    size: 110,
+    rotate: 6,
+  },
+  {
+    id: "stitch",
+    x: -880,
+    y: 780,
+    size: 120,
+    rotate: -4,
+  },
+  {
+    id: "little-green-alien",
+    x: -1264,
+    y: 579,
+    size: 126,
+    rotate: 5,
+  },
+  {
+    id: "woody-wink",
+    x: -860,
+    y: 576,
+    size: 118,
+    rotate: -5,
   },
 ] as const;
 

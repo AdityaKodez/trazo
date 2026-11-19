@@ -51,7 +51,15 @@ function main() {
     "utf8",
   );
 
-  const categories = ["ocean", "arrows", "nature", "hearts", "symbols", "cats"];
+  const categories = [
+    "ocean",
+    "arrows",
+    "nature",
+    "hearts",
+    "symbols",
+    "cats",
+    "characters",
+  ];
   const catalogDir = path.join(rootDir, "packages/trazo/src/catalog");
   fs.mkdirSync(catalogDir, { recursive: true });
 
@@ -155,8 +163,12 @@ function main() {
       .filter((i) => i.category === "cats")
       .map((i) => i.defVarName)
       .join(", ")} } from "./catalog/cats";`,
+    `import { charactersStickers, ${allItems
+      .filter((i) => i.category === "characters")
+      .map((i) => i.defVarName)
+      .join(", ")} } from "./catalog/characters";`,
     ``,
-    `export { oceanStickers, arrowsStickers, natureStickers, heartsStickers, symbolsStickers, catsStickers };`,
+    `export { oceanStickers, arrowsStickers, natureStickers, heartsStickers, symbolsStickers, catsStickers, charactersStickers };`,
     `export {`,
     `  ${allItems.map((i) => i.defVarName).join(",\n  ")},`,
     `};`,

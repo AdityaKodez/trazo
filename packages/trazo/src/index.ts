@@ -18,8 +18,16 @@ import { natureStickers, flowerRedDef, puffyCloudDef, flowerYellowDef, oceanWave
 import { heartsStickers, crownRaysDef, heartBurstDef, sixStarDef, heartChevronDef, solidStarDef, sparkleFourDef, sparkleCrossDef, bowtieLoopDef, tripleHeartSwirlDef, doubleHeartsDef, starOutlineDef, crosshairBurstDef } from "./catalog/hearts";
 import { symbolsStickers, diamondDef, angerMarkDef, triangleDef, circleRingDef, asteriskDef, lightningBoltDef, questionMarkDef, exclamationMarkDef, diagonalHatchDef, hashtagDef } from "./catalog/symbols";
 import { catsStickers, heartCatDef, daisyCatDef, huggingCatsDef, flowerCatDef, bowtieCatDef, stackedCatsDef, cheeringCatDef, heartHugDef } from "./catalog/cats";
+import {
+  charactersStickers,
+  littleGreenAlienDef,
+  pinkDinoDef,
+  spiderManDef,
+  stitchDef,
+  woodyWinkDef,
+} from "./catalog/characters";
 
-export { oceanStickers, arrowsStickers, natureStickers, heartsStickers, symbolsStickers, catsStickers };
+export { oceanStickers, arrowsStickers, natureStickers, heartsStickers, symbolsStickers, catsStickers, charactersStickers };
 export {
   babySquidDef,
   conchShellDef,
@@ -86,6 +94,11 @@ export {
   stackedCatsDef,
   cheeringCatDef,
   heartHugDef,
+  pinkDinoDef,
+  spiderManDef,
+  stitchDef,
+  littleGreenAlienDef,
+  woodyWinkDef,
 };
 
 export const BabySquid = createStickerComponent(babySquidDef);
@@ -153,6 +166,11 @@ export const BowtieCat = createStickerComponent(bowtieCatDef);
 export const StackedCats = createStickerComponent(stackedCatsDef);
 export const CheeringCat = createStickerComponent(cheeringCatDef);
 export const HeartHug = createStickerComponent(heartHugDef);
+export const PinkDino = createStickerComponent(pinkDinoDef);
+export const SpiderMan = createStickerComponent(spiderManDef);
+export const Stitch = createStickerComponent(stitchDef);
+export const LittleGreenAlien = createStickerComponent(littleGreenAlienDef);
+export const WoodyWink = createStickerComponent(woodyWinkDef);
 
 export const trazoCatalog: readonly StickerDef[] = [
   babySquidDef,
@@ -220,6 +238,11 @@ export const trazoCatalog: readonly StickerDef[] = [
   stackedCatsDef,
   cheeringCatDef,
   heartHugDef,
+  pinkDinoDef,
+  spiderManDef,
+  stitchDef,
+  littleGreenAlienDef,
+  woodyWinkDef,
 ];
 
 export function findSticker(id: string): StickerDef | undefined {
