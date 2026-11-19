@@ -1,4 +1,4 @@
-# trazo
+# trazo-stickers
 
 Hand-drawn, wax-textured crayon sticker SVGs baked into clean vector paths. Tree-shakeable React components and framework-agnostic standalone SVG strings.
 
@@ -7,13 +7,13 @@ Browse, recolor, and copy every sticker live at **[trazo.akoder.xyz](https://tra
 ## Install
 
 ```bash
-npm install trazo
+npm install trazo-stickers
 ```
 
 ```bash
-pnpm add trazo
-yarn add trazo
-bun add trazo
+pnpm add trazo-stickers
+yarn add trazo-stickers
+bun add trazo-stickers
 ```
 
 ## React usage
@@ -21,7 +21,7 @@ bun add trazo
 Import individual stickers for automatic tree-shaking:
 
 ```tsx
-import { Dolphin, HeartCat, CurlyArrow } from "trazo";
+import { Dolphin, HeartCat, CurlyArrow } from "trazo-stickers";
 
 export function Example() {
   return (
@@ -49,12 +49,12 @@ export function Example() {
 | `title` | `string` | `undefined` | Adds `<title>` and `role="img"` for accessibility (decorative `aria-hidden` when omitted) |
 | `...props` | `SVGProps<SVGSVGElement>` | — | Standard SVG attributes (`className`, `style`, etc.) |
 
-## Vanilla JS / No React (`trazo/svg`)
+## Vanilla JS / No React (`trazo-stickers/svg`)
 
-Use the `trazo/svg` entry point in non-React apps (Node, Astro, Svelte, Vue, or plain HTML) — it has zero React dependency:
+Use the `trazo-stickers/svg` entry point in non-React apps (Node, Astro, Svelte, Vue, or plain HTML) — it has zero React dependency:
 
 ```ts
-import { dolphinDef, findSticker, toSvgString } from "trazo/svg";
+import { dolphinDef, findSticker, toSvgString } from "trazo-stickers/svg";
 
 // Tree-shakeable single sticker import
 const svg = toSvgString(dolphinDef, {

@@ -8,10 +8,10 @@ export const PACKAGE_MANAGERS: readonly PackageManager[] = [
 ] as const;
 
 export const installCommands: Record<PackageManager, string> = {
-  npm: "npm i trazo",
-  pnpm: "pnpm add trazo",
-  yarn: "yarn add trazo",
-  bun: "bun add trazo",
+  npm: "npm i trazo-stickers",
+  pnpm: "pnpm add trazo-stickers",
+  yarn: "yarn add trazo-stickers",
+  bun: "bun add trazo-stickers",
 };
 
 export const siteConfig = {
