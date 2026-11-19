@@ -1,0 +1,69 @@
+# Trazo
+
+Hand-drawn crayon stickers for the web. 70 wax-textured SVG stickers (sea creatures, cats, hearts, arrows, stars, clouds, emphasis marks) baked into clean vector paths. Recolor them live, copy the SVG, or install them from npm.
+
+**Site:** [trazo.akoder.xyz](https://trazo.akoder.xyz) · **npm:** [`trazo-stickers`](https://www.npmjs.com/package/trazo-stickers)
+
+## Install
+
+```bash
+npm i trazo-stickers
+```
+
+```tsx
+import { Dolphin, HeartCat } from "trazo-stickers";
+
+<Dolphin size={64} />
+<HeartCat size={56} color="#ef4444" rotate={-8} />
+```
+
+Not using React? Import from `trazo-stickers/svg` to get plain SVG strings. Full props and examples are in [`packages/trazo/README.md`](packages/trazo/README.md).
+
+## What's in this repo
+
+| Path | What it is |
+| --- | --- |
+| `app/`, `components/`, `config/`, `lib/` | The Trazo site: a Next.js app with a pannable sticker canvas and a library with a detail dialog for each sticker |
+| `packages/trazo/` | The `trazo-stickers` npm package: sticker catalog, React components, SVG helpers, build script |
+
+## Run the site locally
+
+Requires Node.js 20+ and npm.
+
+```bash
+git clone https://github.com/AdityaKodez/trazo.git
+cd trazo
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+| Script | What it does |
+| --- | --- |
+| `npm run dev` | Start the dev server |
+| `npm run build` | Build the package, then the site |
+| `npm start` | Serve the production build |
+| `npm run lint` | Run ESLint |
+| `npm run pkg:build` | Build only `packages/trazo` into `packages/trazo/dist` |
+
+## Working on the package
+
+Stickers live in `packages/trazo/src/catalog/`, one file per category. The site imports them straight from `packages/trazo/src` through a path alias in `tsconfig.json`. To produce the publishable `packages/trazo/dist` (not committed), run `npm run pkg:build`. To publish:
+
+```bash
+cd packages/trazo
+npm publish
+```
+
+`prepublishOnly` rebuilds `dist` first.
+
+## Stack
+
+Next.js 16, React 19, Tailwind CSS 4, Motion, Radix UI, Vaul.
+
+## License
+
+MIT © [Aditya Ojha](https://www.akoder.xyz). See [`packages/trazo/LICENSE`](packages/trazo/LICENSE).
+
+Made by [@AdiKodez](https://x.com/AdiKodez).
