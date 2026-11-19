@@ -1,10 +1,11 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -20,18 +21,23 @@ export const LOCATE_SHAKE_DELAY_MS = 180;
 export type OverlayView = "grid" | "detail";
 export type CategoryFilter = "all" | StickerCategory;
 
-function parseOverlayRoute(pathname: string): {
-  overlayOpen: boolean;
-  overlayView: OverlayView;
-  stickerId: string | null;
-} {
+interface OverlayState {
+  open: boolean;
+  view: OverlayView;
+  stickerId: string;
+}
+
+const DEFAULT_STICKER_ID = "seahorse";
+
+function parseOverlayRoute(pathname: string): OverlayState {
+  const closed: OverlayState = { open: false, view: "grid", stickerId: DEFAULT_STICKER_ID };
   const segments = pathname.split("/").filter(Boolean);
   if (segments[0] !== "library") {
-    return { overlayOpen: false, overlayView: "grid", stickerId: null };
+    return closed;
   }
 
   if (segments.length === 1) {
-    return { overlayOpen: true, overlayView: "grid", stickerId: null };
+    return { open: true, view: "grid", stickerId: DEFAULT_STICKER_ID };
   }
 
   if (segments.length === 2) {
@@ -39,20 +45,16 @@ function parseOverlayRoute(pathname: string): {
     try {
       rawId = decodeURIComponent(rawId);
     } catch {
-      return { overlayOpen: false, overlayView: "grid", stickerId: null };
+      return closed;
     }
 
     const sticker = findSticker(rawId);
     if (sticker) {
-      return {
-        overlayOpen: true,
-        overlayView: "detail",
-        stickerId: sticker.id,
-      };
+      return { open: true, view: "detail", stickerId: sticker.id };
     }
   }
 
-  return { overlayOpen: false, overlayView: "grid", stickerId: null };
+  return closed;
 }
 
 export interface CameraGlideTarget {
@@ -93,15 +95,11 @@ interface TrazoContextValue {
 const TrazoContext = createContext<TrazoContextValue | null>(null);
 
 export function TrazoProvider({ children }: { children: ReactNode }) {
-  const router = useRouter();
   const pathname = usePathname();
-  const routeState = useMemo(() => parseOverlayRoute(pathname), [pathname]);
 
   const [paletteId, setPaletteId] = useState<PaletteId>("mix");
-  const [lastView, setLastView] = useState<OverlayView>(routeState.overlayView);
-  const [lastStickerId, setLastStickerId] = useState<string>(
-    routeState.stickerId ?? "seahorse",
-  );
+  const [overlay, setOverlay] = useState<OverlayState>(() => parseOverlayRoute(pathname));
+  const overlayRef = useRef(overlay);
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSize, setSelectedSize] = useState<number>(48);
@@ -114,59 +112,65 @@ export function TrazoProvider({ children }: { children: ReactNode }) {
     seq: 0,
   });
 
-  // Keep the closing view and sticker stable during the Dialog/Drawer exit animation
-  if (routeState.overlayOpen) {
-    if (routeState.overlayView !== lastView) {
-      setLastView(routeState.overlayView);
-    }
-    if (routeState.stickerId && routeState.stickerId !== lastStickerId) {
-      setLastStickerId(routeState.stickerId);
-    }
-  }
-
-  const overlayOpen = routeState.overlayOpen;
-  const overlayView = routeState.overlayOpen ? routeState.overlayView : lastView;
-  const activeStickerId = routeState.stickerId ?? lastStickerId;
+  const overlayOpen = overlay.open;
+  const overlayView = overlay.view;
 
   const selectedSticker = useMemo(
-    () => findSticker(activeStickerId) ?? trazoCatalog[0],
-    [activeStickerId],
+    () => findSticker(overlay.stickerId) ?? trazoCatalog[0],
+    [overlay.stickerId],
   );
+
+  const applyOverlay = useCallback((next: OverlayState, path: string) => {
+    overlayRef.current = next;
+    setOverlay(next);
+    if (window.location.pathname !== path) {
+      window.history.pushState(null, "", path);
+    }
+  }, []);
+
+  useEffect(() => {
+    function handlePopState() {
+      const next = parseOverlayRoute(window.location.pathname);
+      const current = overlayRef.current;
+      const merged: OverlayState = next.open ? next : { ...current, open: false };
+      overlayRef.current = merged;
+      setOverlay(merged);
+    }
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  const closeOverlay = useCallback(() => {
+    applyOverlay({ ...overlayRef.current, open: false }, "/");
+  }, [applyOverlay]);
+
+  const openLibraryGrid = useCallback(() => {
+    applyOverlay({ ...overlayRef.current, open: true, view: "grid" }, "/library");
+  }, [applyOverlay]);
 
   const setOverlayOpen = useCallback(
     (open: boolean) => {
       if (open) {
-        if (!routeState.overlayOpen) {
-          router.push("/library", { scroll: false });
-        }
-      } else if (pathname !== "/") {
-        router.push("/", { scroll: false });
+        if (!overlayRef.current.open) openLibraryGrid();
+      } else {
+        closeOverlay();
       }
     },
-    [pathname, routeState.overlayOpen, router],
+    [closeOverlay, openLibraryGrid],
   );
-
-  const openLibraryGrid = useCallback(() => {
-    if (pathname !== "/library") {
-      router.push("/library", { scroll: false });
-    }
-  }, [pathname, router]);
 
   const openStickerDetail = useCallback(
     (id: string) => {
-      const target = `/library/${encodeURIComponent(id)}`;
-      if (pathname !== target) {
-        router.push(target, { scroll: false });
-      }
+      applyOverlay(
+        { open: true, view: "detail", stickerId: id },
+        `/library/${encodeURIComponent(id)}`,
+      );
     },
-    [pathname, router],
+    [applyOverlay],
   );
 
-  const backToGrid = useCallback(() => {
-    if (pathname !== "/library") {
-      router.push("/library", { scroll: false });
-    }
-  }, [pathname, router]);
+  const backToGrid = openLibraryGrid;
 
   const locateOnCanvas = useCallback(
     (id: string) => {
@@ -175,9 +179,7 @@ export function TrazoProvider({ children }: { children: ReactNode }) {
         typeof window !== "undefined" &&
         window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-      if (pathname !== "/") {
-        router.push("/", { scroll: false });
-      }
+      closeOverlay();
       seqRef.current += 1;
       setLocatedSticker({ id, seq: seqRef.current });
       setCameraTarget({
@@ -187,13 +189,11 @@ export function TrazoProvider({ children }: { children: ReactNode }) {
       });
       playLocateShakeSound(prefersReducedMotion ? 0 : LOCATE_SHAKE_DELAY_MS);
     },
-    [pathname, router],
+    [closeOverlay],
   );
 
   const centerCanvas = useCallback(() => {
-    if (pathname !== "/") {
-      router.push("/", { scroll: false });
-    }
+    closeOverlay();
     setLocatedSticker(null);
     seqRef.current += 1;
     setCameraTarget({
@@ -201,7 +201,7 @@ export function TrazoProvider({ children }: { children: ReactNode }) {
       y: 0,
       seq: seqRef.current,
     });
-  }, [pathname, router]);
+  }, [closeOverlay]);
 
   const value = useMemo<TrazoContextValue>(
     () => ({
