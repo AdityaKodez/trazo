@@ -28,7 +28,7 @@ Not using React? Import from `trazo-stickers/svg` to get plain SVG strings. Full
 
 ## Run the site locally
 
-Requires Node.js 20+ and npm.
+Requires Node.js 20.9 or newer and npm.
 
 ```bash
 git clone https://github.com/AdityaKodez/trazo.git
@@ -64,6 +64,6 @@ Next.js 16, React 19, Tailwind CSS 4, Motion, Radix UI, Vaul.
 
 ## License
 
-MIT © [Aditya Ojha](https://www.akoder.xyz). See [`packages/trazo/LICENSE`](packages/trazo/LICENSE).
+MIT © [Aditya Ojha](https://www.akoder.xyz). See [`LICENSE`](LICENSE).
 
 Made by [@AdiKodez](https://x.com/AdiKodez).
