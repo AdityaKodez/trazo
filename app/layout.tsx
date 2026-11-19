@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Caveat, DM_Sans, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import type { ReactNode } from "react";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -72,6 +73,11 @@ export default function RootLayout({
     >
       <body className="antialiased">
         <TooltipProvider>{children}</TooltipProvider>
+        <Script
+          defer
+          src="https://talvess.app/script.js"
+          data-website-id="021c9712-faed-478f-a94b-a771e1692c49"
+        />
       </body>
     </html>
   );

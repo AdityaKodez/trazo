@@ -31,7 +31,7 @@ export const siteConfig = {
   },
   author: {
     name: "Aditya Ojha",
-    url: "https://akoder.xyz",
+    url: "https://www.akoder.xyz/?utm_source=experiment&utm_medium=redirect&utm_campaign=trazo",
     github: "https://github.com/AdityaKodez",
     x: "https://x.com/AdiKodez",
   },

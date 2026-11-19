@@ -20,6 +20,7 @@ import {
   type StickerDef,
 } from "trazo";
 
+import { akoderMarkLayers } from "@/config/akoder-mark";
 import { siteConfig } from "@/config/site";
 
 export const alt = "Trazo · Hand-drawn crayon sticker SVGs for React and web";
@@ -188,6 +189,48 @@ export default function OpenGraphImage() {
             }}
           >
             trazo
+          </div>
+        </div>
+
+        <div
+          style={{
+            position: "absolute",
+            right: 40,
+            bottom: 32,
+            display: "flex",
+            alignItems: "center",
+            gap: "2px",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              fontFamily: "Caveat",
+              fontWeight: 700,
+              fontSize: "38px",
+              lineHeight: 1,
+              color: INK,
+              whiteSpace: "pre",
+            }}
+          >
+            {"made by "}
+          </div>
+          <svg viewBox="0 1 16 15" width="38" height="36" fill="none">
+            {akoderMarkLayers.map((layer) => (
+              <path key={layer.fill} d={layer.d} fill={layer.fill} />
+            ))}
+          </svg>
+          <div
+            style={{
+              display: "flex",
+              fontFamily: "Caveat",
+              fontWeight: 700,
+              fontSize: "38px",
+              lineHeight: 1,
+              color: INK,
+            }}
+          >
+            ditya
           </div>
         </div>
       </div>
