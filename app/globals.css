@@ -1,0 +1,212 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant data-open {
+  &:where([data-state="open"]),
+  &:where([data-open]:not([data-open="false"])) {
+    @slot;
+  }
+}
+
+@custom-variant data-closed {
+  &:where([data-state="closed"]),
+  &:where([data-closed]:not([data-closed="false"])) {
+    @slot;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-scribble-paper: var(--scribble-paper);
+  --color-scribble-ink: var(--scribble-ink);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-caveat: var(--font-caveat);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+}
+
+:root {
+  color-scheme: light;
+  --motion-duration-fast: 160ms;
+  --motion-duration-base: 200ms;
+  --motion-ease-standard: cubic-bezier(0.23, 1, 0.32, 1);
+  --scribble-paper: #ffffff;
+  --scribble-ink: #181715;
+  --background: #ffffff;
+  --foreground: #181715;
+  --card: #ffffff;
+  --card-foreground: #181715;
+  --popover: #ffffff;
+  --popover-foreground: #181715;
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #181715;
+  --muted: #f4f4f5;
+  --muted-foreground: #686662;
+  --accent: #f4f4f5;
+  --accent-foreground: #181715;
+  --destructive: #dc2626;
+  --success: #16a34a;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: #71717a;
+  --radius: 0.5rem;
+}
+
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply font-sans;
+  }
+
+  body {
+    @apply bg-background text-foreground selection:bg-foreground/15 selection:text-foreground;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+}
+
+@layer components {
+  .font-caveat {
+    font-family: var(--font-caveat), cursive;
+  }
+
+  .micro-transition {
+    transition-property: transform, background-color, border-color, color, opacity, box-shadow;
+    transition-duration: var(--motion-duration-base);
+    transition-timing-function: var(--motion-ease-standard);
+  }
+
+  .paper-dot-grid {
+    background-image: radial-gradient(
+      color-mix(in oklab, var(--foreground) 13%, transparent) 1px,
+      transparent 1px
+    );
+    background-size: 22px 22px;
+  }
+
+  .preview-dark {
+    --scribble-paper: #181715;
+    --scribble-ink: #f4f4f5;
+    --foreground: #f4f4f5;
+  }
+
+  .blueprint-bg {
+    background-image:
+      repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        rgba(0, 0, 0, 0.015) 10px,
+        rgba(0, 0, 0, 0.015) 11px
+      ),
+      repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 10px,
+        rgba(0, 0, 0, 0.015) 10px,
+        rgba(0, 0, 0, 0.015) 11px
+      );
+  }
+
+  .palette-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--foreground) 18%, transparent) transparent;
+  }
+
+  .trazo-range {
+    height: 20px;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .trazo-range::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 999px;
+    background: linear-gradient(
+      to right,
+      var(--foreground) var(--range-progress, 50%),
+      color-mix(in oklab, var(--foreground) 12%, transparent) var(--range-progress, 50%)
+    );
+  }
+
+  .trazo-range::-moz-range-track {
+    height: 4px;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--foreground) 12%, transparent);
+  }
+
+  .trazo-range::-moz-range-progress {
+    height: 4px;
+    border-radius: 999px;
+    background: var(--foreground);
+  }
+
+  .trazo-range::-webkit-slider-thumb {
+    appearance: none;
+    margin-top: -6px;
+    width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    background: var(--foreground);
+    box-shadow: 0 0 0 3px var(--background), 0 1px 4px rgba(0, 0, 0, 0.2);
+    transition: transform var(--motion-duration-fast) var(--motion-ease-standard);
+  }
+
+  .trazo-range::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--foreground);
+    box-shadow: 0 0 0 3px var(--background), 0 1px 4px rgba(0, 0, 0, 0.2);
+    transition: transform var(--motion-duration-fast) var(--motion-ease-standard);
+  }
+
+  .trazo-range:hover::-webkit-slider-thumb,
+  .trazo-range:active::-webkit-slider-thumb {
+    transform: scale(1.15);
+  }
+
+  .trazo-range:hover::-moz-range-thumb,
+  .trazo-range:active::-moz-range-thumb {
+    transform: scale(1.15);
+  }
+
+  .trazo-range:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 4px;
+    border-radius: 999px;
+  }
+}

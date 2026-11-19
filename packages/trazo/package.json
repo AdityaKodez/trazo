@@ -1,0 +1,36 @@
+{
+  "name": "trazo",
+  "version": "0.1.0",
+  "description": "Hand-drawn crayon sticker SVGs for React and web interfaces.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "keywords": [
+    "svg",
+    "stickers",
+    "crayon",
+    "scribbles",
+    "hand-drawn",
+    "icons",
+    "react"
+  ],
+  "author": "Aditya Ojha",
+  "license": "MIT",
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  }
+}

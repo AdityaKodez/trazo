@@ -1,0 +1,12 @@
+⚠ Warning: Next.js ignored package-lock.json in C:\Users\akcll because it would include your home directory (C:\Users\akcll).
+ To use this directory, set `turbopack.root` in your Next.js config.
+
+⨯ Another next dev server is already running.
+
+- Local:        http://127.0.0.1:3005
+- PID:          17436
+- Dir:          C:\Users\akcll\OneDrive\Desktop\trazo
+- Log:          .next\dev\logs\next-development.log
+
+You can access the existing server at http://127.0.0.1:3005,
+or run taskkill /PID 17436 /F to stop it and start a new one.
