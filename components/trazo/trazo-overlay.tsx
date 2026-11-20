@@ -823,7 +823,7 @@ function StickerDetailView({
             ].join("\n");
 
       return [
-        `import { ${selectedSticker.componentName} } from "trazo";`,
+        `import { ${selectedSticker.componentName} } from "trazo-stickers";`,
         ``,
         jsx,
       ].join("\n");
@@ -838,7 +838,7 @@ function StickerDetailView({
     }
 
     return [
-      `import { findSticker, toSvgString } from "trazo/svg";`,
+      `import { findSticker, toSvgString } from "trazo-stickers/svg";`,
       ``,
       `const sticker = findSticker("${selectedSticker.id}")!;`,
       `const svg = toSvgString(sticker, {`,

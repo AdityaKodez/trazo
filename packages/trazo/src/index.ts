@@ -48,6 +48,7 @@ import {
   tripleZigzagDef,
   spikyGrassDef,
   scallopedWaveDef,
+  earthDef,
 } from "./catalog/nature";
 import {
   crownRaysDef,
@@ -163,3 +164,4 @@ export const SpiderMan = /*#__PURE__*/ createStickerComponent(spiderManDef);
 export const Stitch = /*#__PURE__*/ createStickerComponent(stitchDef);
 export const LittleGreenAlien = /*#__PURE__*/ createStickerComponent(littleGreenAlienDef);
 export const WoodyWink = /*#__PURE__*/ createStickerComponent(woodyWinkDef);
+export const Earth = /*#__PURE__*/ createStickerComponent(earthDef);

@@ -211,7 +211,7 @@ const stickerPlacements: readonly CanvasStickerPlacement[] = [
   },
 
   // ---------------------------------------------------------------------------
-  // NORTH QUADRANTS: Nature & weather (9 stickers)
+  // NORTH QUADRANTS: Nature & weather (10 stickers)
   // ---------------------------------------------------------------------------
   {
     id: "puffy-cloud",
@@ -275,6 +275,13 @@ const stickerPlacements: readonly CanvasStickerPlacement[] = [
     y: -815,
     size: 90,
     rotate: 4,
+  },
+  {
+    id: "earth",
+    x: 140,
+    y: -650,
+    size: 110,
+    rotate: -5,
   },
 
   // ---------------------------------------------------------------------------

@@ -51,6 +51,7 @@ import {
   tripleZigzagDef,
   spikyGrassDef,
   scallopedWaveDef,
+  earthDef,
 } from "./catalog/nature";
 import {
   heartsStickers,
@@ -180,6 +181,7 @@ export {
   stitchDef,
   littleGreenAlienDef,
   woodyWinkDef,
+  earthDef,
 };
 
 export const trazoCatalog: readonly StickerDef[] = [
@@ -253,6 +255,7 @@ export const trazoCatalog: readonly StickerDef[] = [
   stitchDef,
   littleGreenAlienDef,
   woodyWinkDef,
+  earthDef,
 ];
 
 export function findSticker(id: string): StickerDef | undefined {
