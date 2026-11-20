@@ -133,22 +133,42 @@ function Kbd({ children, className }: { children: ReactNode; className?: string 
 function MiniPaletteBar() {
   const { paletteId, setPaletteId } = useTrazo();
   const reduceMotion = useReducedMotion();
+  const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    const current = paletteOptions.findIndex((item) => item.id === paletteId);
+    let next: number;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") next = current + 1;
+    else if (event.key === "ArrowLeft" || event.key === "ArrowUp") next = current - 1;
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = paletteOptions.length - 1;
+    else return;
+    event.preventDefault();
+    const index = (next + paletteOptions.length) % paletteOptions.length;
+    setPaletteId(paletteOptions[index].id);
+    buttonRefs.current[index]?.focus();
+  }
 
   return (
     <div
       role="radiogroup"
       aria-label="Preview palette"
+      onKeyDown={handleKeyDown}
       data-vaul-no-drag=""
       className="inline-flex w-full items-center justify-between gap-0.5 rounded-full bg-muted/50 p-1 ring-1 ring-inset ring-foreground/[0.08] sm:w-fit sm:justify-start"
     >
-      {paletteOptions.map((option: PaletteOption) => {
+      {paletteOptions.map((option: PaletteOption, index) => {
         const isSelected = paletteId === option.id;
         return (
           <button
             key={option.id}
+            ref={(node) => {
+              buttonRefs.current[index] = node;
+            }}
             type="button"
             role="radio"
             aria-checked={isSelected}
+            tabIndex={isSelected ? 0 : -1}
             aria-label={option.label}
             title={option.label}
             onClick={() => setPaletteId(option.id)}
@@ -991,7 +1011,7 @@ function StickerDetailView({
                 </Tooltip>
               ) : (
                 <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
-                  Multi
+                  Original
                 </span>
               )
             }
