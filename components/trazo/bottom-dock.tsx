@@ -281,16 +281,13 @@ export function BottomDock() {
         <button
           type="button"
           onClick={openLibraryGrid}
-          aria-label="Open sticker library"
+          aria-label={`Open sticker library (${trazoCatalog.length} stickers)`}
           aria-keyshortcuts="Meta+K Control+K"
           className="flex h-10 items-center gap-1.5 rounded-2xl pl-3 pr-2 text-[13px] font-medium text-background micro-transition hover:bg-background/10 active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-background sm:h-11 sm:gap-2 sm:text-sm"
         >
           <LayoutGrid className="size-[17px] shrink-0 sm:size-[18px]" />
           <span>Library</span>
-          <span className="rounded-lg bg-background/15 px-1.5 py-1 font-mono text-[10px] leading-none text-background/80 sm:hidden">
-            {trazoCatalog.length}
-          </span>
-          <kbd className="hidden whitespace-nowrap rounded-lg bg-background/15 px-1.5 py-1 font-sans text-[10px] leading-none text-background/80 sm:inline">
+          <kbd aria-hidden className="hidden whitespace-nowrap rounded-lg bg-background/15 px-1.5 py-1 font-sans text-[10px] leading-none text-background/80 sm:inline">
             {modKey} K
           </kbd>
         </button>

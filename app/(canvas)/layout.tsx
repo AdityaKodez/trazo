@@ -20,8 +20,8 @@ export default async function CanvasLayout({
   return (
     <TrazoProvider>
       <main className="relative h-dvh w-screen overflow-hidden">
-        <TrazoCanvas />
         <TopBar stars={stars} />
+        <TrazoCanvas />
         <BottomDock />
         <TrazoOverlay />
         {children}

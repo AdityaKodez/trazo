@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { Starfish } from "trazo";
 
-import { AkoderMark, GitHubLogo, XLogo } from "@/components/trazo/icons";
+import { AkoderMark, GitHubLogo } from "@/components/trazo/icons";
 import {
   Tooltip,
   TooltipContent,
@@ -104,7 +104,7 @@ export function TopBar({ stars }: { stars: number | null }) {
 
   return (
     <header className="pointer-events-none fixed inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] z-30 flex items-center justify-between gap-2 sm:inset-x-4 sm:top-[max(1rem,env(safe-area-inset-top))]">
-      {/* Author attribution + X link */}
+      {/* Author attribution */}
       <motion.div
         data-no-pan=""
         initial={reduceMotion ? false : { opacity: 0, y: -12, scale: 0.96 }}
@@ -123,7 +123,7 @@ export function TopBar({ stars }: { stars: number | null }) {
             >
               <span className="font-caveat text-[18px] leading-none text-muted-foreground/85 transition-colors group-hover:text-foreground">
                 by
-              </span>
+              </span>{" "}
               <span className="inline-flex items-baseline font-medium text-foreground">
                 <AkoderMark className="mr-[0.5px] inline-block size-[13px] shrink-0 translate-y-[1.5px] transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:-rotate-6 group-hover:scale-110" />
                 <span className="sr-only">A</span>
@@ -133,25 +133,6 @@ export function TopBar({ stars }: { stars: number | null }) {
           </TooltipTrigger>
           <TooltipContent side="bottom" align="start">
             <p>{siteConfig.author.name} · akoder.xyz</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <span aria-hidden className="mx-0.5 h-4 w-px bg-foreground/10" />
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <a
-              href={siteConfig.author.x}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Follow @AdiKodez on X (opens in a new tab)"
-              className="flex size-8 items-center justify-center rounded-[14px] text-muted-foreground outline-none micro-transition hover:bg-muted hover:text-foreground active:scale-[0.94] focus-visible:ring-2 focus-visible:ring-ring sm:size-9"
-            >
-              <XLogo className="size-3.5" />
-            </a>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            <p>@AdiKodez on X</p>
           </TooltipContent>
         </Tooltip>
       </motion.div>
