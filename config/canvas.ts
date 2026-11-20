@@ -1,4 +1,4 @@
-import { trazoCatalog, type StickerCategory } from "trazo";
+import type { StickerCategory } from "trazo";
 
 export const CANVAS_WORLD = {
   width: 3456,
@@ -97,7 +97,7 @@ const stickerPlacements: readonly CanvasStickerPlacement[] = [
     y: -245,
     size: 98,
     rotate: -7,
-    marginNote: "Click any sea creature",
+    marginNote: "Click a sticker to customize",
     noteSide: "top",
   },
   {
@@ -120,7 +120,7 @@ const stickerPlacements: readonly CanvasStickerPlacement[] = [
     y: -235,
     size: 106,
     rotate: 7,
-    marginNote: "Pastel mix or ink stamp",
+    marginNote: "Recolor from the dock below",
     noteSide: "top",
   },
   {
@@ -621,99 +621,6 @@ export const canvasPlacements: readonly CanvasStickerPlacement[] =
     x: Math.round(placement.x * CANVAS_SPREAD),
     y: Math.round(placement.y * CANVAS_SPREAD),
   }));
-
-export interface CanvasFunFact {
-  id: string;
-  text: string;
-  /** World X coordinate relative to (0, 0) center. */
-  x: number;
-  /** World Y coordinate relative to (0, 0) center. */
-  y: number;
-  /** Gentle sketchbook tilt in degrees. */
-  rotate: number;
-  /** Crayon accent color for the tiny hand-drawn underline. */
-  accent: string;
-}
-
-const totalVectorPaths = trazoCatalog.reduce(
-  (sum, sticker) => sum + (sticker.layers?.length ?? 1),
-  0,
-);
-
-const rawFunFacts: readonly CanvasFunFact[] = [
-  {
-    id: "colorblind-crayon-maker",
-    text: "Crayola's senior maker molded 1.4 billion crayons over 37 years — then retired and revealed he was colorblind.",
-    x: -625,
-    y: -350,
-    rotate: -3,
-    accent: "#f97316",
-  },
-  {
-    id: "crayon-smell-trademark",
-    text: "That nostalgic crayon smell comes from beef fat — and Crayola legally trademarked the scent.",
-    x: 542,
-    y: -333,
-    rotate: 3,
-    accent: "#38bdf8",
-  },
-  {
-    id: "vectors-before-pixels",
-    text: "Vector art is older than pixels — 1950s computers didn't have enough memory to store a pixel grid.",
-    x: 842,
-    y: -167,
-    rotate: -2,
-    accent: "#ec4899",
-  },
-  {
-    id: "doodling-memory",
-    text: "Doodling during a boring call actually makes you remember 29% more of what was said.",
-    x: -908,
-    y: -183,
-    rotate: 3,
-    accent: "#16a34a",
-  },
-  {
-    id: "warhol-floppies",
-    text: "Andy Warhol painted digital art on an Amiga in 1985 — then left the floppy disks forgotten for 29 years.",
-    x: 625,
-    y: -733,
-    rotate: -3,
-    accent: "#a855f7",
-  },
-  {
-    id: "bombsight-art",
-    text: "In the 1960s, a British artist wired up surplus WWII bombsight computers to draw swirling ink art.",
-    x: -642,
-    y: 533,
-    rotate: 2,
-    accent: "#ef4444",
-  },
-  {
-    id: "drawing-beats-writing",
-    text: "Sketching even a terrible stick figure of a word helps you remember it twice as well as writing it down.",
-    x: 192,
-    y: 617,
-    rotate: -3,
-    accent: "#2563eb",
-  },
-  {
-    id: "trazo-build-lore",
-    text: `~1B tokens, ${totalVectorPaths} hand-baked vector paths, and zero sleep went into these ${trazoCatalog.length} stickers.`,
-    x: 642,
-    y: 533,
-    rotate: 3,
-    accent: "#eab308",
-  },
-] as const;
-
-export const canvasFunFacts: readonly CanvasFunFact[] = rawFunFacts.map(
-  (fact) => ({
-    ...fact,
-    x: Math.round(fact.x * CANVAS_SPREAD),
-    y: Math.round(fact.y * CANVAS_SPREAD),
-  }),
-);
 
 export function findCanvasPlacement(id: string): CanvasStickerPlacement | undefined {
   return canvasPlacements.find((item) => item.id === id);

@@ -23,7 +23,7 @@ export const INK_HEX = "#1f1e1b";
 export const paletteOptions: readonly PaletteOption[] = [
   {
     id: "mix",
-    label: "Crayon mix",
+    label: "Original colors",
     hex: "#f97316",
     kind: "mix",
   },

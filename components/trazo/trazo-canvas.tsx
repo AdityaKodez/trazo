@@ -15,6 +15,7 @@ import {
   useRef,
   useState,
   type FocusEvent,
+  type KeyboardEvent,
   type PointerEvent,
   type WheelEvent,
 } from "react";
@@ -27,7 +28,6 @@ import {
 } from "@/components/trazo/trazo-experience";
 import {
   CANVAS_WORLD,
-  canvasFunFacts,
   canvasPlacements,
   canvasZones,
   type CanvasStickerPlacement,
@@ -36,6 +36,7 @@ import { resolveStickerColor } from "@/config/palette";
 import { cn } from "@/lib/utils";
 
 const DRAG_THRESHOLD_PX = 5;
+const KEYBOARD_PAN_STEP_PX = 120;
 
 // Silky weighted paper follow spring: responsive during drag, plush on settle
 const PAPER_FOLLOW_SPRING = {
@@ -235,11 +236,13 @@ const CanvasSticker = memo(function CanvasSticker({
             />
 
             {/* Origin-aware springy hover / focus name pill */}
-            <span className="pointer-events-none absolute -bottom-6 left-1/2 z-20 hidden -translate-x-1/2 translate-y-1.5 scale-95 whitespace-nowrap rounded-full bg-foreground px-2.5 py-0.5 text-[11px] font-medium text-background opacity-0 shadow-sm transition-all duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:scale-100 group-focus-visible:opacity-100 sm:block">
+            {" "}
+            <span aria-hidden className="pointer-events-none absolute -bottom-6 left-1/2 z-20 hidden -translate-x-1/2 translate-y-1.5 scale-95 whitespace-nowrap rounded-full bg-foreground px-2.5 py-0.5 text-[11px] font-medium text-background opacity-0 shadow-sm transition-all duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:scale-100 group-focus-visible:opacity-100 sm:block">
               {def.name}
             </span>
 
             {/* Handwritten Caveat margin note on key stickers (desktop/tablet where perimeter has room) */}
+            {placement.marginNote ? " " : null}
             {placement.marginNote ? (
               <span
                 aria-hidden
@@ -536,6 +539,41 @@ export function TrazoCanvas() {
     targetY.set(clamp(targetY.get() - deltaY, -maxY, maxY));
   }
 
+  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    // Only pan when the canvas surface itself has focus, not a sticker button.
+    if (event.target !== event.currentTarget) return;
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+
+    const step = event.shiftKey ? KEYBOARD_PAN_STEP_PX * 3 : KEYBOARD_PAN_STEP_PX;
+    let dx = 0;
+    let dy = 0;
+    switch (event.key) {
+      case "ArrowLeft":
+        dx = step;
+        break;
+      case "ArrowRight":
+        dx = -step;
+        break;
+      case "ArrowUp":
+        dy = step;
+        break;
+      case "ArrowDown":
+        dy = -step;
+        break;
+      case "Home":
+        event.preventDefault();
+        glideCameraTo(0, 0);
+        return;
+      default:
+        return;
+    }
+    event.preventDefault();
+    stopCameraAnimations();
+    const { maxX, maxY } = getPanBounds();
+    targetX.set(clamp(targetX.get() + dx, -maxX, maxX));
+    targetY.set(clamp(targetY.get() + dy, -maxY, maxY));
+  }
+
   const handleStickerFocus = useCallback(
     (placement: CanvasStickerPlacement, event: FocusEvent<HTMLButtonElement>) => {
       if (viewportRef.current) {
@@ -577,12 +615,17 @@ export function TrazoCanvas() {
       onPointerUp={handlePointerEnd}
       onPointerCancel={handlePointerEnd}
       onWheel={handleWheel}
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
+      role="region"
+      aria-roledescription="canvas"
+      aria-label="Sticker canvas. Use arrow keys to pan, Home to recenter, Tab to move between stickers."
       onScroll={(event) => {
         event.currentTarget.scrollLeft = 0;
         event.currentTarget.scrollTop = 0;
       }}
       className={cn(
-        "relative h-dvh w-screen overflow-hidden select-none bg-background touch-none",
+        "relative h-dvh w-screen overflow-hidden select-none bg-background touch-none outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
         isDragging ? "cursor-grabbing" : "cursor-grab",
       )}
     >
@@ -608,6 +651,16 @@ export function TrazoCanvas() {
           className="paper-dot-grid pointer-events-none absolute"
         />
 
+        {/* Centered Home View at (0, heroOffsetY) */}
+        <div
+          style={{
+            transform: `translate3d(0px, ${heroOffsetY}px, 0) translate(-50%, -50%)`,
+          }}
+          className="absolute left-0 top-0 w-max"
+        >
+          <HomeView />
+        </div>
+
         {/* Single-line handwritten zone labels (never wrap, zero wireframe subtitles) */}
         {canvasZones.map((zone) => {
           const zx = Math.round(zone.x * posScaleX);
@@ -627,52 +680,6 @@ export function TrazoCanvas() {
             </div>
           );
         })}
-
-        {/* Sketchbook margin fun facts scattered across outer canvas pockets */}
-        {canvasFunFacts.map((fact) => {
-          const fx = Math.round(fact.x * posScaleX);
-          const fy = Math.round(fact.y * posScaleY);
-          return (
-            <div
-              key={fact.id}
-              aria-hidden
-              style={{
-                transform: `translate3d(${fx}px, ${fy}px, 0) translate(-50%, -50%) rotate(${fact.rotate}deg)`,
-              }}
-              className="pointer-events-none absolute left-0 top-0 w-[176px] text-center sm:w-[216px]"
-            >
-              <div className="inline-flex flex-col items-center gap-1.5">
-                <p className="font-caveat text-[17px] leading-[1.18] text-muted-foreground/85 text-balance sm:text-[20px] sm:leading-[1.16]">
-                  {fact.text}
-                </p>
-                <svg
-                  viewBox="0 0 44 6"
-                  width="40"
-                  height="5"
-                  fill="none"
-                  className="opacity-70"
-                >
-                  <path
-                    d="M2 3.8C10 1.4 18 5.2 26 2.8C32 1.2 38 3.6 42 2.4"
-                    stroke={fact.accent}
-                    strokeWidth="2.2"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </div>
-            </div>
-          );
-        })}
-
-        {/* Centered Home View at (0, heroOffsetY) */}
-        <div
-          style={{
-            transform: `translate3d(0px, ${heroOffsetY}px, 0) translate(-50%, -50%)`,
-          }}
-          className="absolute left-0 top-0 w-max"
-        >
-          <HomeView />
-        </div>
 
         {/* All crayon stickers with radial staggered pop-in on load + Emil Kowalski hover/tap physics */}
         {canvasPlacements.map((placement, index) => {
