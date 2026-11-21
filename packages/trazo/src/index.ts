@@ -93,6 +93,20 @@ import {
   stitchDef,
   woodyWinkDef,
 } from "./catalog/characters";
+import {
+  yellowPencilDef,
+  blueCrayonDef,
+  crayonBoxDef,
+  highlighterDef,
+  spiralNotebookDef,
+  bookStackDef,
+  openBookDef,
+  schoolBackpackDef,
+  schoolEraserDef,
+  woodenRulerDef,
+  craftScissorsDef,
+  pencilSharpenerDef,
+} from "./catalog/school";
 
 export const BabySquid = /*#__PURE__*/ createStickerComponent(babySquidDef);
 export const ConchShell = /*#__PURE__*/ createStickerComponent(conchShellDef);
@@ -165,3 +179,15 @@ export const Stitch = /*#__PURE__*/ createStickerComponent(stitchDef);
 export const LittleGreenAlien = /*#__PURE__*/ createStickerComponent(littleGreenAlienDef);
 export const WoodyWink = /*#__PURE__*/ createStickerComponent(woodyWinkDef);
 export const Earth = /*#__PURE__*/ createStickerComponent(earthDef);
+export const YellowPencil = /*#__PURE__*/ createStickerComponent(yellowPencilDef);
+export const BlueCrayon = /*#__PURE__*/ createStickerComponent(blueCrayonDef);
+export const CrayonBox = /*#__PURE__*/ createStickerComponent(crayonBoxDef);
+export const Highlighter = /*#__PURE__*/ createStickerComponent(highlighterDef);
+export const SpiralNotebook = /*#__PURE__*/ createStickerComponent(spiralNotebookDef);
+export const BookStack = /*#__PURE__*/ createStickerComponent(bookStackDef);
+export const OpenBook = /*#__PURE__*/ createStickerComponent(openBookDef);
+export const SchoolBackpack = /*#__PURE__*/ createStickerComponent(schoolBackpackDef);
+export const SchoolEraser = /*#__PURE__*/ createStickerComponent(schoolEraserDef);
+export const WoodenRuler = /*#__PURE__*/ createStickerComponent(woodenRulerDef);
+export const CraftScissors = /*#__PURE__*/ createStickerComponent(craftScissorsDef);
+export const PencilSharpener = /*#__PURE__*/ createStickerComponent(pencilSharpenerDef);

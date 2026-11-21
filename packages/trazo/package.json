@@ -1,7 +1,7 @@
 {
   "name": "trazo-stickers",
-  "version": "0.1.5",
-  "description": "Hand-drawn crayon sticker SVGs for React and web interfaces.",
+  "version": "0.2.0",
+  "description": "Hand-drawn crayon sticker SVGs for React, Vue, and web interfaces.",
   "homepage": "https://trazo.akoder.xyz",
   "type": "module",
   "sideEffects": false,
@@ -14,6 +14,11 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
+    "./vue": {
+      "types": "./dist/vue.d.ts",
+      "import": "./dist/vue.js",
+      "default": "./dist/vue.js"
+    },
     "./svg": {
       "types": "./dist/svg.d.ts",
       "import": "./dist/svg.js",
@@ -22,6 +27,7 @@
   },
   "files": [
     "dist",
+    "skills",
     "README.md",
     "LICENSE"
   ],
@@ -36,15 +42,20 @@
     "scribbles",
     "hand-drawn",
     "icons",
-    "react"
+    "react",
+    "vue"
   ],
   "author": "Aditya Ojha",
   "license": "MIT",
   "peerDependencies": {
-    "react": ">=18.0.0"
+    "react": ">=18.0.0",
+    "vue": "^3.0.0"
   },
   "peerDependenciesMeta": {
     "react": {
+      "optional": true
+    },
+    "vue": {
       "optional": true
     }
   }

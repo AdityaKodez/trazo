@@ -1,6 +1,6 @@
 # trazo-stickers
 
-Hand-drawn, wax-textured crayon sticker SVGs baked into clean vector paths. Tree-shakeable React components and framework-agnostic standalone SVG strings.
+Hand-drawn, wax-textured crayon sticker SVGs baked into clean vector paths. Tree-shakeable React and Vue components plus standalone SVG strings.
 
 Browse, recolor, and copy every sticker live at **[trazo.akoder.xyz](https://trazo.akoder.xyz)**.
 
@@ -49,9 +49,25 @@ export function Example() {
 | `title` | `string` | `undefined` | Adds `<title>` and `role="img"` for accessibility (decorative `aria-hidden` when omitted) |
 | `...props` | `SVGProps<SVGSVGElement>` | — | Standard SVG attributes (`className`, `style`, etc.) |
 
-## Vanilla JS / No React (`trazo-stickers/svg`)
+## Vue 3 and Nuxt (`trazo-stickers/vue`)
 
-Use the `trazo-stickers/svg` entry point in non-React apps (Node, Astro, Svelte, Vue, or plain HTML) — it has zero React dependency:
+Import each sticker you use in your Vue or Nuxt app:
+
+```vue
+<script setup>
+import { HeartCat } from "trazo-stickers/vue";
+</script>
+
+<template>
+  <HeartCat :size="56" color="#ef4444" :rotate="-8" title="Heart cat" />
+</template>
+```
+
+Vue stickers share the React `size`, `color`, `rotate`, and `title` props. Vue attributes such as `class` and `style` pass through to the SVG.
+
+## Standalone SVG (`trazo-stickers/svg`)
+
+Use the `trazo-stickers/svg` entry point for plain SVG strings. It works in Node, Astro, Svelte, and plain HTML without framework dependencies:
 
 ```ts
 import { dolphinDef, findSticker, toSvgString } from "trazo-stickers/svg";

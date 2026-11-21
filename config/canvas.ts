@@ -63,6 +63,12 @@ const zoneAnchors: readonly ZoneAnchor[] = [
     x: -1065,
     y: 685,
   },
+  {
+    id: "school",
+    label: "School & desk",
+    x: 1050,
+    y: -685,
+  },
 ] as const;
 
 export const canvasZones: readonly ZoneAnchor[] = zoneAnchors.map((zone) => ({
@@ -619,6 +625,96 @@ const stickerPlacements: readonly CanvasStickerPlacement[] = [
     y: 576,
     size: 118,
     rotate: -5,
+  },
+
+  // ---------------------------------------------------------------------------
+  // NORTH-EAST QUADRANT: School & desk accessories (12 stickers)
+  // ---------------------------------------------------------------------------
+  {
+    id: "pencil-sharpener",
+    x: 560,
+    y: -855,
+    size: 98,
+    rotate: -6,
+  },
+  {
+    id: "crayon-box",
+    x: 755,
+    y: -865,
+    size: 108,
+    rotate: 5,
+  },
+  {
+    id: "yellow-pencil",
+    x: 960,
+    y: -865,
+    size: 104,
+    rotate: -6,
+  },
+  {
+    id: "blue-crayon",
+    x: 1155,
+    y: -860,
+    size: 104,
+    rotate: 6,
+  },
+  {
+    id: "highlighter",
+    x: 1335,
+    y: -835,
+    size: 102,
+    rotate: -5,
+  },
+  {
+    id: "spiral-notebook",
+    x: 680,
+    y: -690,
+    size: 104,
+    rotate: -5,
+    marginNote: "School & desk kit",
+    noteSide: "left",
+  },
+  {
+    id: "book-stack",
+    x: 865,
+    y: -715,
+    size: 108,
+    rotate: 4,
+  },
+  {
+    id: "open-book",
+    x: 1215,
+    y: -700,
+    size: 108,
+    rotate: -4,
+  },
+  {
+    id: "school-backpack",
+    x: 1355,
+    y: -645,
+    size: 108,
+    rotate: 5,
+  },
+  {
+    id: "school-eraser",
+    x: 945,
+    y: -555,
+    size: 98,
+    rotate: 6,
+  },
+  {
+    id: "wooden-ruler",
+    x: 1125,
+    y: -545,
+    size: 104,
+    rotate: -5,
+  },
+  {
+    id: "craft-scissors",
+    x: 1315,
+    y: -475,
+    size: 104,
+    rotate: 6,
   },
 ] as const;
 

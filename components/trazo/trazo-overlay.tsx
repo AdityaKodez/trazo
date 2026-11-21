@@ -35,6 +35,7 @@ import {
   Ruler,
   Search,
   Sun,
+  VueLogo,
   X,
 } from "@/components/trazo/icons";
 import {
@@ -71,7 +72,7 @@ import { usePreviewTheme, writePreviewTheme } from "@/lib/use-preview-theme";
 import { cn } from "@/lib/utils";
 
 const SIZE_STEPS = [16, 24, 32, 48, 64, 80, 96, 112, 128] as const;
-type CodeTab = "react" | "js";
+type CodeTab = "react" | "vue" | "js";
 
 const CATEGORY_TABS: readonly {
   id: CategoryFilter;
@@ -86,6 +87,7 @@ const CATEGORY_TABS: readonly {
   { id: "symbols", label: "Symbols", icon: findSticker("lightning-bolt") },
   { id: "cats", label: "Cats", icon: findSticker("hugging-cats") },
   { id: "characters", label: "Characters", icon: findSticker("little-green-alien") },
+  { id: "school", label: "School", icon: findSticker("yellow-pencil") },
 ] as const;
 
 const MIX_GRADIENT =
@@ -412,6 +414,7 @@ function LibraryPalette({
       symbols: 0,
       cats: 0,
       characters: 0,
+      school: 0,
     };
     for (const item of trazoCatalog) {
       map[item.category] += 1;
@@ -804,29 +807,38 @@ function StickerDetailView({
   );
 
   const codeSnippet = useMemo(() => {
-    if (codeTab === "react") {
-      const props = [`size={${size}}`];
+    if (codeTab !== "js") {
+      const isVue = codeTab === "vue";
+      const { componentName } = selectedSticker;
+      const props = [isVue ? `:size="${size}"` : `size={${size}}`];
       if (concreteColor) {
         props.push(`color="${concreteColor}"`);
       }
       if (rotation !== 0) {
-        props.push(`rotate={${rotation}}`);
+        props.push(isVue ? `:rotate="${rotation}"` : `rotate={${rotation}}`);
       }
 
-      const jsx =
+      const component =
         props.length === 1
-          ? `<${selectedSticker.componentName} ${props[0]} />`
+          ? `<${componentName} ${props[0]} />`
           : [
-              `<${selectedSticker.componentName}`,
+              `<${componentName}`,
               ...props.map((prop) => `  ${prop}`),
               `/>`,
             ].join("\n");
 
-      return [
-        `import { ${selectedSticker.componentName} } from "trazo-stickers";`,
-        ``,
-        jsx,
-      ].join("\n");
+      const importLine = `import { ${componentName} } from "trazo-stickers${isVue ? "/vue" : ""}";`;
+      return isVue
+        ? [
+            "<script setup>",
+            importLine,
+            "</script>",
+            "",
+            "<template>",
+            ...component.split("\n").map((line) => `  ${line}`),
+            "</template>",
+          ].join("\n")
+        : [importLine, "", component].join("\n");
     }
 
     const optionLines = [`  size: ${size},`];
@@ -1055,6 +1067,7 @@ function StickerDetailView({
                 {(
                   [
                     { id: "react", icon: ReactLogo, label: "React" },
+                    { id: "vue", icon: VueLogo, label: "Vue" },
                     { id: "js", icon: JavaScriptLogo, label: "JavaScript" },
                   ] as const
                 ).map((tab) => {

@@ -7,11 +7,13 @@ export const PACKAGE_MANAGERS: readonly PackageManager[] = [
   "bun",
 ] as const;
 
+const npmPackage = "trazo-stickers";
+
 export const installCommands: Record<PackageManager, string> = {
-  npm: "npm i trazo-stickers",
-  pnpm: "pnpm add trazo-stickers",
-  yarn: "yarn add trazo-stickers",
-  bun: "bun add trazo-stickers",
+  npm: `npm i ${npmPackage}`,
+  pnpm: `pnpm add ${npmPackage}`,
+  yarn: `yarn add ${npmPackage}`,
+  bun: `bun add ${npmPackage}`,
 };
 
 export const siteConfig = {
@@ -21,6 +23,8 @@ export const siteConfig = {
   url: "https://trazo.akoder.xyz",
   repo: "AdityaKodez/trazo",
   github: "https://github.com/AdityaKodez/trazo",
+  npmPackage,
+  npm: `https://www.npmjs.com/package/${npmPackage}`,
   title: "Trazo · Hand-drawn crayon sticker SVGs for React and web",
   description:
     "Bold, wax-textured crayon sticker SVGs baked into clean vector paths. Tree-shakeable React components and standalone SVG strings.",

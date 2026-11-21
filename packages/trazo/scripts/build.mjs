@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const pkgDir = path.resolve(__dirname, "..");
@@ -55,3 +55,29 @@ function walk(dir) {
 }
 
 walk(distDir);
+
+const svg = await import(pathToFileURL(path.join(distDir, "svg.js")).href);
+const vueStickers = svg.trazoCatalog.map((def) => {
+  const { componentName } = def;
+  const definitionName = `${componentName.charAt(0).toLowerCase()}${componentName.slice(1)}Def`;
+  if (svg[definitionName] !== def) {
+    throw new Error(`Missing SVG export ${definitionName} for ${def.id}`);
+  }
+  return { componentName, definitionName };
+});
+
+fs.writeFileSync(path.join(distDir, "vue.js"), [
+  `import { createVueSticker } from "./vue-sticker.js";`,
+  `import { ${vueStickers.map(({ definitionName }) => definitionName).join(", ")} } from "./svg.js";`,
+  ...vueStickers.map(({ componentName, definitionName }) =>
+    `export const ${componentName} = /*#__PURE__*/ createVueSticker(${definitionName});`,
+  ),
+  "",
+].join("\n"));
+
+fs.writeFileSync(path.join(distDir, "vue.d.ts"), [
+  `import type { createVueSticker } from "./vue-sticker.js";`,
+  `type VueSticker = ReturnType<typeof createVueSticker>;`,
+  ...vueStickers.map(({ componentName }) => `export declare const ${componentName}: VueSticker;`),
+  "",
+].join("\n"));

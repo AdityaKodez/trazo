@@ -1,6 +1,6 @@
 # Trazo
 
-Hand-drawn crayon stickers for the web. 70 wax-textured SVG stickers (sea creatures, cats, hearts, arrows, stars, clouds, emphasis marks) baked into clean vector paths. Recolor them live, copy the SVG, or install them from npm.
+Hand-drawn crayon stickers for the web. 83 wax-textured SVG stickers (sea creatures, cats, school accessories, hearts, arrows, stars, clouds, emphasis marks) baked into clean vector paths. Recolor them live, copy the SVG, or install them from npm.
 
 **Site:** [trazo.akoder.xyz](https://trazo.akoder.xyz) · **npm:** [`trazo-stickers`](https://www.npmjs.com/package/trazo-stickers)
 
@@ -17,14 +17,14 @@ import { Dolphin, HeartCat } from "trazo-stickers";
 <HeartCat size={56} color="#ef4444" rotate={-8} />
 ```
 
-Not using React? Import from `trazo-stickers/svg` to get plain SVG strings. Full props and examples are in [`packages/trazo/README.md`](packages/trazo/README.md).
+Use `trazo-stickers/vue` for native Vue 3 and Nuxt components, or `trazo-stickers/svg` for plain SVG strings. Full props and examples are in [`packages/trazo/README.md`](packages/trazo/README.md).
 
 ## What's in this repo
 
 | Path | What it is |
 | --- | --- |
 | `app/`, `components/`, `config/`, `lib/` | The Trazo site: a Next.js app with a pannable sticker canvas and a library with a detail dialog for each sticker |
-| `packages/trazo/` | The `trazo-stickers` npm package: sticker catalog, React components, SVG helpers, build script |
+| `packages/trazo/` | The `trazo-stickers` npm package: sticker catalog, React and Vue components, SVG helpers, build script |
 
 ## Run the site locally
 

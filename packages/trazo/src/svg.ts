@@ -100,6 +100,21 @@ import {
   stitchDef,
   woodyWinkDef,
 } from "./catalog/characters";
+import {
+  schoolStickers,
+  yellowPencilDef,
+  blueCrayonDef,
+  crayonBoxDef,
+  highlighterDef,
+  spiralNotebookDef,
+  bookStackDef,
+  openBookDef,
+  schoolBackpackDef,
+  schoolEraserDef,
+  woodenRulerDef,
+  craftScissorsDef,
+  pencilSharpenerDef,
+} from "./catalog/school";
 
 export {
   oceanStickers,
@@ -109,6 +124,7 @@ export {
   symbolsStickers,
   catsStickers,
   charactersStickers,
+  schoolStickers,
 };
 export {
   babySquidDef,
@@ -182,6 +198,18 @@ export {
   littleGreenAlienDef,
   woodyWinkDef,
   earthDef,
+  yellowPencilDef,
+  blueCrayonDef,
+  crayonBoxDef,
+  highlighterDef,
+  spiralNotebookDef,
+  bookStackDef,
+  openBookDef,
+  schoolBackpackDef,
+  schoolEraserDef,
+  woodenRulerDef,
+  craftScissorsDef,
+  pencilSharpenerDef,
 };
 
 export const trazoCatalog: readonly StickerDef[] = [
@@ -256,6 +284,18 @@ export const trazoCatalog: readonly StickerDef[] = [
   littleGreenAlienDef,
   woodyWinkDef,
   earthDef,
+  yellowPencilDef,
+  blueCrayonDef,
+  crayonBoxDef,
+  highlighterDef,
+  spiralNotebookDef,
+  bookStackDef,
+  openBookDef,
+  schoolBackpackDef,
+  schoolEraserDef,
+  woodenRulerDef,
+  craftScissorsDef,
+  pencilSharpenerDef,
 ];
 
 export function findSticker(id: string): StickerDef | undefined {

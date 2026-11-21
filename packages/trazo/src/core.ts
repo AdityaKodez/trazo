@@ -5,7 +5,8 @@ export type StickerCategory =
   | "hearts"
   | "symbols"
   | "cats"
-  | "characters";
+  | "characters"
+  | "school";
 
 export interface StickerLayer {
   d: string;

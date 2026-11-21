@@ -268,7 +268,7 @@ const CanvasSticker = memo(function CanvasSticker({
   );
 });
 
-export function TrazoCanvas() {
+export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
   const {
     paletteId,
     openStickerDetail,
@@ -658,7 +658,7 @@ export function TrazoCanvas() {
           }}
           className="absolute left-0 top-0 w-max"
         >
-          <HomeView />
+          <HomeView npmDownloads={npmDownloads} />
         </div>
 
         {/* Single-line handwritten zone labels (never wrap, zero wireframe subtitles) */}

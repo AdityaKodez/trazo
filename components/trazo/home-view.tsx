@@ -23,7 +23,7 @@ function SponsorContact() {
   );
 }
 
-export function HomeView() {
+export function HomeView({ npmDownloads }: { npmDownloads: number | null }) {
   const reduceMotion = useReducedMotion();
 
   return (
@@ -61,6 +61,24 @@ export function HomeView() {
       >
         <InstallCommand />
       </motion.div>
+
+      {npmDownloads !== null && (
+        <motion.a
+          data-no-pan=""
+          href={siteConfig.npm}
+          target="_blank"
+          rel="noopener noreferrer"
+          initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.28, delay: 0.15, ease: easeOutQuart }}
+          className="mt-2.5 inline-flex items-center gap-1 text-xs tabular-nums text-muted-foreground outline-none transition-colors duration-200 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+        >
+          {npmDownloads.toLocaleString("en-US")} npm{" "}
+          {npmDownloads === 1 ? "download" : "downloads"} in the last 7 days
+          <ArrowUpRight className="size-3" />
+          <span className="sr-only"> (opens in a new tab)</span>
+        </motion.a>
+      )}
 
       <motion.div
         data-no-pan=""

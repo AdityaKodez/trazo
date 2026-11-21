@@ -100,6 +100,14 @@ export function ReactLogo(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function VueLogo(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
+      <path d="M0 2.4h4.8L12 15 19.2 2.4H24L12 23.2 0 2.4Zm5.9 0h3.3L12 7.2l2.8-4.8h3.3L12 13 5.9 2.4Z" />
+    </svg>
+  );
+}
+
 export function JavaScriptLogo(props: SVGProps<SVGSVGElement>) {
   return (
     <svg

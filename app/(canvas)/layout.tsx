@@ -7,6 +7,7 @@ import { TrazoProvider } from "@/components/trazo/trazo-experience";
 import { TrazoOverlay } from "@/components/trazo/trazo-overlay";
 import { siteConfig } from "@/config/site";
 import { fetchGitHubStars } from "@/lib/github";
+import { fetchNpmDownloads } from "@/lib/npm";
 
 export const revalidate = 300;
 
@@ -15,13 +16,16 @@ export default async function CanvasLayout({
 }: Readonly<{
   children: ReactNode;
 }>) {
-  const stars = await fetchGitHubStars(siteConfig.repo);
+  const [stars, npmDownloads] = await Promise.all([
+    fetchGitHubStars(siteConfig.repo),
+    fetchNpmDownloads(siteConfig.npmPackage),
+  ]);
 
   return (
     <TrazoProvider>
       <main className="relative h-dvh w-screen overflow-hidden">
         <TopBar stars={stars} />
-        <TrazoCanvas />
+        <TrazoCanvas npmDownloads={npmDownloads} />
         <BottomDock />
         <TrazoOverlay />
         {children}

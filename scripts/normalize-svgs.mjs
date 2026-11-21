@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { formatCatalogFile, optimizeSticker } from "./optimize-catalog.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "..");
@@ -59,6 +60,7 @@ function main() {
     "symbols",
     "cats",
     "characters",
+    "school",
   ];
   const catalogDir = path.join(rootDir, "packages/trazo/src/catalog");
   fs.mkdirSync(catalogDir, { recursive: true });
@@ -67,7 +69,7 @@ function main() {
     if (/<filter|style=|id=/i.test(item.d)) {
       throw new Error(`Invalid SVG attributes found in ${item.id}`);
     }
-    return {
+    return optimizeSticker({
       id: item.id,
       componentName: toPascalCase(item.id),
       defVarName: toCamelCase(item.id),
@@ -83,43 +85,14 @@ function main() {
             fill: ly.fill.toLowerCase(),
           }))
         : undefined,
-    };
+    });
   });
 
   for (const category of categories) {
     const items = allItems.filter((item) => item.category === category);
-    const lines = [
-      `import type { StickerDef } from "../core";`,
-      ``,
-    ];
-
-    for (const item of items) {
-      lines.push(`export const ${item.defVarName}: StickerDef = {`);
-      lines.push(`  id: ${JSON.stringify(item.id)},`);
-      lines.push(`  componentName: ${JSON.stringify(item.componentName)},`);
-      lines.push(`  name: ${JSON.stringify(item.name)},`);
-      lines.push(`  category: ${JSON.stringify(item.category)},`);
-      lines.push(`  mixColor: ${JSON.stringify(item.mixColor)},`);
-      lines.push(`  tags: ${JSON.stringify(item.tags)},`);
-      lines.push(`  viewBox: ${JSON.stringify(item.viewBox)},`);
-      lines.push(`  d: ${JSON.stringify(item.d)},`);
-      if (item.layers && item.layers.length > 0) {
-        lines.push(`  layers: ${JSON.stringify(item.layers)},`);
-      }
-      lines.push(`};`);
-      lines.push(``);
-    }
-
-    lines.push(
-      `export const ${category}Stickers: readonly StickerDef[] = [${items
-        .map((i) => i.defVarName)
-        .join(", ")}];`,
-    );
-    lines.push(``);
-
     fs.writeFileSync(
       path.join(catalogDir, `${category}.ts`),
-      lines.join("\n"),
+      formatCatalogFile(category, items),
       "utf8",
     );
   }
