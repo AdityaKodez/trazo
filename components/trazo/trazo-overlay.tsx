@@ -22,12 +22,12 @@ import {
 
 import {
   ArrowLeft,
-  ArrowUpRight,
   Check,
   Code,
   Compass,
   Copy,
   Download,
+  GitHubLogo,
   ImageDown,
   JavaScriptLogo,
   Moon,
@@ -101,6 +101,7 @@ const CATEGORY_TABS: readonly {
 const MIX_GRADIENT =
   "conic-gradient(from 0deg, #ef4444, #f97316, #eab308, #16a34a, #38bdf8, #2563eb, #ec4899, #ef4444)";
 const highlightSpring = { type: "spring", stiffness: 700, damping: 45, mass: 0.5 } as const;
+const flipSpring = { type: "spring", stiffness: 420, damping: 24, mass: 0.55 } as const;
 const LISTBOX_ID = "trazo-sticker-listbox";
 
 type SlotComponent = ComponentType<{ className?: string; children: ReactNode }>;
@@ -782,6 +783,74 @@ function IconAction({
   );
 }
 
+function StarTrayButton({
+  stars,
+  onClick,
+}: {
+  stars: number | null;
+  onClick: () => void;
+}) {
+  const reduceMotion = useReducedMotion();
+  const [flipped, setFlipped] = useState(false);
+
+  return (
+    <a
+      href={siteConfig.github}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={onClick}
+      onPointerEnter={() => setFlipped(true)}
+      onPointerLeave={() => setFlipped(false)}
+      onFocus={() => setFlipped(true)}
+      onBlur={() => setFlipped(false)}
+      aria-label={
+        stars !== null
+          ? `Star Trazo on GitHub (${stars.toLocaleString("en-US")} stars, opens in a new tab)`
+          : "Star Trazo on GitHub (opens in a new tab)"
+      }
+      className={cn(
+        "group inline-flex h-7 items-center gap-1.5 rounded-full bg-background pl-2 text-xs font-medium text-foreground shadow-[0_1px_2px_rgba(0,0,0,0.06)] ring-1 ring-inset ring-foreground/[0.09] outline-none micro-transition hover:ring-foreground/20 active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-ring",
+        stars !== null ? "pr-1" : "pr-2.5",
+      )}
+    >
+      <span
+        aria-hidden
+        className="relative flex size-[18px] shrink-0 items-center justify-center [perspective:260px]"
+      >
+        {reduceMotion ? (
+          flipped ? (
+            <Starfish size={18} className="-rotate-6" />
+          ) : (
+            <GitHubLogo className="size-3.5 text-foreground" />
+          )
+        ) : (
+          <motion.span
+            animate={{
+              rotateY: flipped ? 180 : 0,
+              scale: flipped ? 1.1 : 1,
+            }}
+            transition={flipSpring}
+            className="relative flex size-full items-center justify-center [transform-style:preserve-3d]"
+          >
+            <span className="absolute inset-0 flex items-center justify-center [backface-visibility:hidden]">
+              <GitHubLogo className="size-3.5 text-foreground" />
+            </span>
+            <span className="absolute inset-0 flex items-center justify-center [backface-visibility:hidden] [transform:rotateY(180deg)]">
+              <Starfish size={18} className="-rotate-6" />
+            </span>
+          </motion.span>
+        )}
+      </span>
+      <span>Star</span>
+      {stars !== null ? (
+        <span className="inline-flex h-5 items-center rounded-full bg-muted px-1.5 font-mono text-[11px] tabular-nums text-muted-foreground transition-colors duration-150 group-hover:text-foreground">
+          {formatStarCount(stars)}
+        </span>
+      ) : null}
+    </a>
+  );
+}
+
 function StickerDetailView({
   Title,
   Description,
@@ -1267,31 +1336,7 @@ function StickerDetailView({
 
               {!justStarred ? (
                 <div className="flex shrink-0 items-center gap-1">
-                  <a
-                    href={siteConfig.github}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={handleStarClick}
-                    aria-label={
-                      stars !== null
-                        ? `Star Trazo on GitHub (${stars.toLocaleString("en-US")} stars, opens in a new tab)`
-                        : "Star Trazo on GitHub (opens in a new tab)"
-                    }
-                    className="inline-flex h-7 items-center gap-1.5 rounded-full bg-foreground px-2.5 text-xs font-medium text-background outline-none micro-transition hover:opacity-90 active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-                  >
-                    <span>Star</span>
-                    {stars !== null ? (
-                      <>
-                        <span aria-hidden className="text-background/45">
-                          ·
-                        </span>
-                        <span className="font-mono text-[11px] tabular-nums">
-                          {formatStarCount(stars)}
-                        </span>
-                      </>
-                    ) : null}
-                    <ArrowUpRight className="size-3 opacity-80" />
-                  </a>
+                  <StarTrayButton stars={stars} onClick={handleStarClick} />
                   <button
                     type="button"
                     onClick={handleDismissStarPrompt}
