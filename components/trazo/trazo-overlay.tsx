@@ -25,7 +25,6 @@ import {
   Check,
   Code,
   Compass,
-  Copy,
   Download,
   GitHubLogo,
   ImageDown,
@@ -57,6 +56,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { CopyStatusIcon } from "@/components/trazo/install-command";
 import { RotationDial } from "@/components/trazo/rotation-dial";
 import { findNearestStepIndex, SizeSlider } from "@/components/trazo/size-slider";
 import {
@@ -69,6 +69,7 @@ import {
   type PaletteOption,
 } from "@/config/palette";
 import { siteConfig } from "@/config/site";
+import { preloadCopySound } from "@/lib/sound";
 import { useCopy } from "@/lib/use-copy";
 import { useModKey } from "@/lib/use-mod-key";
 import { usePreviewTheme, writePreviewTheme } from "@/lib/use-preview-theme";
@@ -875,7 +876,7 @@ function StickerDetailView({
   const [codeTab, setCodeTab] = useState<CodeTab>("react");
   const previewTheme = usePreviewTheme();
   const darkPreview = previewTheme === "dark";
-  const codeCopy = useCopy();
+  const codeCopy = useCopy({ sound: true });
   const hexCopy = useCopy();
   const nameCopy = useCopy();
   const starPromptStatus = useStarPromptStatus();
@@ -1257,19 +1258,23 @@ function StickerDetailView({
                 <TooltipTrigger asChild>
                   <button
                     type="button"
+                    onPointerEnter={preloadCopySound}
+                    onFocus={preloadCopySound}
                     onClick={() => void handleCopyCode()}
                     aria-label={codeCopy.status === "copied" ? "Copied code snippet" : "Copy code snippet"}
                     className="inline-flex size-7 items-center justify-center rounded-[9px] text-muted-foreground outline-none micro-transition hover:bg-background/80 hover:text-foreground active:scale-[0.94] focus-visible:ring-2 focus-visible:ring-ring"
                   >
-                    {codeCopy.status === "copied" ? (
-                      <Check className="size-3.5 text-success" />
-                    ) : (
-                      <Copy className="size-3.5" />
-                    )}
+                    <CopyStatusIcon status={codeCopy.status} triggerKey={codeCopy.copySeq} />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>{codeCopy.status === "copied" ? "Copied" : "Copy"}</p>
+                  <p>
+                    {codeCopy.status === "copied"
+                      ? "Copied"
+                      : codeCopy.status === "error"
+                        ? "Copy failed"
+                        : "Copy"}
+                  </p>
                 </TooltipContent>
               </Tooltip>
             </div>

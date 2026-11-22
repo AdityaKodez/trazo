@@ -19,6 +19,7 @@ import {
   PACKAGE_MANAGERS,
   type PackageManager,
 } from "@/config/site";
+import { preloadCopySound } from "@/lib/sound";
 import { useCopy, type CopyStatus } from "@/lib/use-copy";
 import { cn } from "@/lib/utils";
 
@@ -115,13 +116,19 @@ export function usePackageManager(): PackageManager {
 
 export function CopyStatusIcon({
   status,
+  triggerKey,
   className,
 }: {
   status: CopyStatus;
+  triggerKey?: number;
   className?: string;
 }) {
   const reducedMotion = useReducedMotion();
   const Icon = status === "copied" ? Check : status === "error" ? X : Copy;
+  const iconKey =
+    status === "copied" && triggerKey !== undefined
+      ? `copied-${triggerKey}`
+      : status;
 
   return (
     <span
@@ -131,13 +138,39 @@ export function CopyStatusIcon({
         className,
       )}
     >
+      <AnimatePresence initial={false}>
+        {status === "copied" && !reducedMotion ? (
+          <motion.span
+            key={`pulse-${triggerKey ?? 0}`}
+            initial={{ scale: 0.7, opacity: 0.75 }}
+            animate={{ scale: 1.9, opacity: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.36, ease: [0.23, 1, 0.32, 1] }}
+            className="pointer-events-none absolute inset-0 rounded-full ring-[1.5px] ring-success/55"
+          />
+        ) : null}
+      </AnimatePresence>
       <AnimatePresence mode="popLayout" initial={false}>
         <motion.span
-          key={status}
-          initial={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.4, filter: "blur(3px)" }}
+          key={iconKey}
+          initial={
+            reducedMotion
+              ? { opacity: 0 }
+              : status === "copied"
+                ? { opacity: 0, scale: 0.55, filter: "blur(2px)" }
+                : { opacity: 0, scale: 0.5, filter: "blur(3px)" }
+          }
           animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-          exit={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.4, filter: "blur(3px)" }}
-          transition={{ type: "spring", duration: 0.3, bounce: 0.2 }}
+          exit={
+            reducedMotion
+              ? { opacity: 0 }
+              : { opacity: 0, scale: 0.5, filter: "blur(3px)" }
+          }
+          transition={
+            status === "copied"
+              ? { type: "spring", duration: 0.32, bounce: 0.3 }
+              : { type: "spring", duration: 0.28, bounce: 0.18 }
+          }
           className="absolute inset-0"
         >
           <Icon
@@ -161,7 +194,7 @@ export function InstallCommand({
   className?: string;
 }) {
   const manager = usePackageManager();
-  const { status, copy } = useCopy();
+  const { status, copy, copySeq } = useCopy({ sound: true });
   const reducedMotion = useReducedMotion();
   const pillId = useId();
   const pillTransition: Transition = reducedMotion
@@ -216,11 +249,13 @@ export function InstallCommand({
           <TooltipTrigger asChild>
             <button
               type="button"
+              onPointerEnter={preloadCopySound}
+              onFocus={preloadCopySound}
               onClick={() => void copy(command)}
               aria-label="Copy install command"
               className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground micro-transition hover:bg-background hover:text-foreground active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:size-7"
             >
-              <CopyStatusIcon status={status} />
+              <CopyStatusIcon status={status} triggerKey={copySeq} />
             </button>
           </TooltipTrigger>
           <TooltipContent>
