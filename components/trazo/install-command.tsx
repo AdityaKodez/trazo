@@ -114,13 +114,51 @@ export function usePackageManager(): PackageManager {
   );
 }
 
+export function CopyCooldownFill({
+  active,
+  triggerKey,
+}: {
+  active: boolean;
+  triggerKey?: number;
+}) {
+  const reducedMotion = useReducedMotion();
+
+  return (
+    <AnimatePresence initial={false}>
+      {active ? (
+        <motion.span
+          key={`copy-fill-${triggerKey ?? 0}`}
+          aria-hidden="true"
+          initial={reducedMotion ? { opacity: 0 } : { scaleX: 0, opacity: 1 }}
+          animate={reducedMotion ? { opacity: 1 } : { scaleX: 1, opacity: 1 }}
+          exit={{
+            opacity: 0,
+            transition: { duration: 0.22, ease: [0.23, 1, 0.32, 1] },
+          }}
+          transition={
+            reducedMotion
+              ? { duration: 0.14 }
+              : {
+                  scaleX: { duration: 0.26, ease: [0.22, 1, 0.36, 1] },
+                  opacity: { duration: 0.1, ease: [0.23, 1, 0.32, 1] },
+                }
+          }
+          className="pointer-events-none absolute inset-0 origin-left bg-foreground will-change-transform"
+        />
+      ) : null}
+    </AnimatePresence>
+  );
+}
+
 export function CopyStatusIcon({
   status,
   triggerKey,
+  copiedClassName = "text-success",
   className,
 }: {
   status: CopyStatus;
   triggerKey?: number;
+  copiedClassName?: string;
   className?: string;
 }) {
   const reducedMotion = useReducedMotion();
@@ -138,18 +176,6 @@ export function CopyStatusIcon({
         className,
       )}
     >
-      <AnimatePresence initial={false}>
-        {status === "copied" && !reducedMotion ? (
-          <motion.span
-            key={`pulse-${triggerKey ?? 0}`}
-            initial={{ scale: 0.7, opacity: 0.75 }}
-            animate={{ scale: 1.9, opacity: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.36, ease: [0.23, 1, 0.32, 1] }}
-            className="pointer-events-none absolute inset-0 rounded-full ring-[1.5px] ring-success/55"
-          />
-        ) : null}
-      </AnimatePresence>
       <AnimatePresence mode="popLayout" initial={false}>
         <motion.span
           key={iconKey}
@@ -168,15 +194,15 @@ export function CopyStatusIcon({
           }
           transition={
             status === "copied"
-              ? { type: "spring", duration: 0.32, bounce: 0.3 }
-              : { type: "spring", duration: 0.28, bounce: 0.18 }
+              ? { type: "spring", duration: 0.28, bounce: 0.22 }
+              : { type: "spring", duration: 0.24, bounce: 0.16 }
           }
           className="absolute inset-0"
         >
           <Icon
             className={cn(
               "size-full",
-              status === "copied" && "text-success",
+              status === "copied" && copiedClassName,
               status === "error" && "text-destructive",
             )}
           />
@@ -194,7 +220,7 @@ export function InstallCommand({
   className?: string;
 }) {
   const manager = usePackageManager();
-  const { status, copy, copySeq } = useCopy({ sound: true });
+  const { status, copy, copySeq, isCoolingDown } = useCopy({ sound: true });
   const reducedMotion = useReducedMotion();
   const pillId = useId();
   const pillTransition: Transition = reducedMotion
@@ -251,9 +277,18 @@ export function InstallCommand({
               type="button"
               onPointerEnter={preloadCopySound}
               onFocus={preloadCopySound}
-              onClick={() => void copy(command)}
-              aria-label="Copy install command"
-              className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground micro-transition hover:bg-background hover:text-foreground active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:size-7"
+              onClick={() => {
+                if (isCoolingDown) return;
+                void copy(command);
+              }}
+              aria-disabled={isCoolingDown || undefined}
+              aria-label={isCoolingDown ? "Copied install command" : "Copy install command"}
+              className={cn(
+                "flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground micro-transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:size-7",
+                isCoolingDown
+                  ? "cursor-default"
+                  : "hover:bg-background hover:text-foreground active:scale-[0.97]",
+              )}
             >
               <CopyStatusIcon status={status} triggerKey={copySeq} />
             </button>

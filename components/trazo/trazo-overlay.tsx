@@ -56,7 +56,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { CopyStatusIcon } from "@/components/trazo/install-command";
+import { CopyCooldownFill, CopyStatusIcon } from "@/components/trazo/install-command";
 import { RotationDial } from "@/components/trazo/rotation-dial";
 import { findNearestStepIndex, SizeSlider } from "@/components/trazo/size-slider";
 import {
@@ -1260,11 +1260,29 @@ function StickerDetailView({
                     type="button"
                     onPointerEnter={preloadCopySound}
                     onFocus={preloadCopySound}
-                    onClick={() => void handleCopyCode()}
+                    onClick={() => {
+                      if (codeCopy.isCoolingDown) return;
+                      void handleCopyCode();
+                    }}
+                    aria-disabled={codeCopy.isCoolingDown || undefined}
                     aria-label={codeCopy.status === "copied" ? "Copied code snippet" : "Copy code snippet"}
-                    className="inline-flex size-7 items-center justify-center rounded-[9px] text-muted-foreground outline-none micro-transition hover:bg-background/80 hover:text-foreground active:scale-[0.94] focus-visible:ring-2 focus-visible:ring-ring"
+                    className={cn(
+                      "relative inline-flex size-7 items-center justify-center overflow-hidden rounded-[9px] text-muted-foreground outline-none micro-transition focus-visible:ring-2 focus-visible:ring-ring",
+                      codeCopy.isCoolingDown
+                        ? "cursor-default bg-background/80 text-foreground"
+                        : "hover:bg-background/80 hover:text-foreground active:scale-[0.94]",
+                    )}
                   >
-                    <CopyStatusIcon status={codeCopy.status} triggerKey={codeCopy.copySeq} />
+                    <CopyCooldownFill
+                      active={codeCopy.isCoolingDown}
+                      triggerKey={codeCopy.copySeq}
+                    />
+                    <CopyStatusIcon
+                      status={codeCopy.status}
+                      triggerKey={codeCopy.copySeq}
+                      copiedClassName="text-background"
+                      className="z-10"
+                    />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>
