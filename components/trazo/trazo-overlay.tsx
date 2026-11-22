@@ -13,6 +13,7 @@ import {
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   findSticker,
+  Starfish,
   Sticker,
   toSvgString,
   trazoCatalog,
@@ -21,6 +22,7 @@ import {
 
 import {
   ArrowLeft,
+  ArrowUpRight,
   Check,
   Code,
   Compass,
@@ -66,9 +68,15 @@ import {
   resolveStickerColor,
   type PaletteOption,
 } from "@/config/palette";
+import { siteConfig } from "@/config/site";
 import { useCopy } from "@/lib/use-copy";
 import { useModKey } from "@/lib/use-mod-key";
 import { usePreviewTheme, writePreviewTheme } from "@/lib/use-preview-theme";
+import {
+  dismissStarPrompt,
+  markStarPromptStarred,
+  useStarPromptStatus,
+} from "@/lib/use-star-prompt";
 import { cn } from "@/lib/utils";
 
 const SIZE_STEPS = [16, 24, 32, 48, 64, 80, 96, 112, 128] as const;
@@ -216,12 +224,20 @@ function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
+function formatStarCount(count: number): string {
+  if (count >= 1000) {
+    const compact = (count / 1000).toFixed(count >= 10000 ? 0 : 1);
+    return `${compact.replace(/\.0$/, "")}k`;
+  }
+  return count.toLocaleString("en-US");
+}
+
 async function downloadStickerPng(
   def: StickerDef,
   size: number,
   concreteColor: string | undefined,
   rotate: number,
-) {
+): Promise<boolean> {
   const scale = 2;
   const exportSize = size * scale;
   const svgMarkup = toSvgString(def, {
@@ -249,7 +265,7 @@ async function downloadStickerPng(
     canvas.width = exportSize;
     canvas.height = exportSize;
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    if (!ctx) return false;
 
     ctx.drawImage(img, 0, 0, exportSize, exportSize);
     const pngBlob = await new Promise<Blob | null>((resolve) =>
@@ -258,7 +274,9 @@ async function downloadStickerPng(
     if (pngBlob) {
       const suffix = rotate !== 0 ? `-${size}px-${rotate}deg` : `-${size}px`;
       downloadBlob(pngBlob, `${def.id}${suffix}.png`);
+      return true;
     }
+    return false;
   } finally {
     URL.revokeObjectURL(url);
   }
@@ -767,9 +785,11 @@ function IconAction({
 function StickerDetailView({
   Title,
   Description,
+  stars,
 }: {
   Title: SlotComponent;
   Description: SlotComponent;
+  stars: number | null;
 }) {
   const {
     selectedSticker,
@@ -789,6 +809,46 @@ function StickerDetailView({
   const codeCopy = useCopy();
   const hexCopy = useCopy();
   const nameCopy = useCopy();
+  const starPromptStatus = useStarPromptStatus();
+  const [promptVerb, setPromptVerb] = useState<string | null>(null);
+  const [starPromptSeq, setStarPromptSeq] = useState(0);
+  const [justStarred, setJustStarred] = useState(false);
+  const starThankYouTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (starThankYouTimerRef.current !== null) {
+        window.clearTimeout(starThankYouTimerRef.current);
+      }
+    };
+  }, []);
+
+  function revealStarPrompt(verb: string) {
+    if (starPromptStatus !== "pending") return;
+    setPromptVerb(verb);
+    setStarPromptSeq((seq) => seq + 1);
+  }
+
+  function handleStarClick() {
+    markStarPromptStarred();
+    setJustStarred(true);
+    if (starThankYouTimerRef.current !== null) {
+      window.clearTimeout(starThankYouTimerRef.current);
+    }
+    starThankYouTimerRef.current = window.setTimeout(() => {
+      setJustStarred(false);
+      setPromptVerb(null);
+      starThankYouTimerRef.current = null;
+    }, 1500);
+  }
+
+  function handleDismissStarPrompt() {
+    dismissStarPrompt();
+    setPromptVerb(null);
+  }
+
+  const showStarTray =
+    (starPromptStatus === "pending" && promptVerb !== null) || justStarred;
 
   const concreteColor = resolveStickerColor(paletteId);
   const displayColor = stickerColor(paletteId);
@@ -863,6 +923,25 @@ function StickerDetailView({
     const blob = new Blob([svgMarkup], { type: "image/svg+xml;charset=utf-8" });
     const suffix = rotation !== 0 ? `-${size}px-${rotation}deg` : `-${size}px`;
     downloadBlob(blob, `${selectedSticker.id}${suffix}.svg`);
+    revealStarPrompt("SVG saved!");
+  }
+
+  async function handleDownloadPng() {
+    try {
+      const saved = await downloadStickerPng(selectedSticker, size, concreteColor, rotation);
+      if (saved) {
+        revealStarPrompt("PNG saved!");
+      }
+    } catch {
+      // Ignore rasterization errors so we do not falsely announce a saved PNG.
+    }
+  }
+
+  async function handleCopyCode() {
+    const copied = await codeCopy.copy(codeSnippet);
+    if (copied) {
+      revealStarPrompt("Copied!");
+    }
   }
 
   return (
@@ -1052,7 +1131,7 @@ function StickerDetailView({
               </button>
               <button
                 type="button"
-                onClick={() => void downloadStickerPng(selectedSticker, size, concreteColor, rotation)}
+                onClick={() => void handleDownloadPng()}
                 className="inline-flex h-8 items-center gap-1.5 rounded-full bg-muted px-3 text-xs font-medium text-foreground micro-transition hover:bg-foreground/[0.08] active:scale-[0.96]"
               >
                 <ImageDown className="size-3.5" />
@@ -1109,7 +1188,7 @@ function StickerDetailView({
                 <TooltipTrigger asChild>
                   <button
                     type="button"
-                    onClick={() => void codeCopy.copy(codeSnippet)}
+                    onClick={() => void handleCopyCode()}
                     aria-label={codeCopy.status === "copied" ? "Copied code snippet" : "Copy code snippet"}
                     className="inline-flex size-7 items-center justify-center rounded-[9px] text-muted-foreground outline-none micro-transition hover:bg-background/80 hover:text-foreground active:scale-[0.94] focus-visible:ring-2 focus-visible:ring-ring"
                   >
@@ -1139,6 +1218,94 @@ function StickerDetailView({
           </div>
         </div>
       </div>
+
+      {/* Expanding outer-tray GitHub star prompt after export/copy */}
+      <AnimatePresence initial={false}>
+        {showStarTray ? (
+          <motion.div
+            key="detail-star-tray"
+            initial={reduceMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
+            animate={reduceMotion ? { opacity: 1 } : { height: "auto", opacity: 1 }}
+            exit={reduceMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
+            transition={{ duration: 0.24, ease: [0.23, 1, 0.32, 1] }}
+            className="shrink-0 overflow-hidden"
+          >
+            <div
+              role="status"
+              aria-live="polite"
+              className="flex items-center justify-between gap-2 px-2 pb-0.5 pt-2 sm:px-2.5"
+            >
+              <div className="flex min-w-0 items-center gap-2">
+                <motion.span
+                  key={starPromptSeq}
+                  aria-hidden
+                  initial={reduceMotion ? false : { rotate: -6, scale: 0.88 }}
+                  animate={
+                    reduceMotion
+                      ? { rotate: -6, scale: 1 }
+                      : {
+                          rotate: [-6, -18, 10, -10, -6],
+                          scale: [0.9, 1.12, 1.08, 1.02, 1],
+                        }
+                  }
+                  transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
+                  className="flex size-5 shrink-0 items-center justify-center"
+                >
+                  <Starfish size={20} />
+                </motion.span>
+                <span className="truncate text-xs text-muted-foreground">
+                  {justStarred ? (
+                    <span className="font-medium text-foreground">Thanks for starring Trazo!</span>
+                  ) : (
+                    <>
+                      <span className="font-medium text-foreground">{promptVerb}</span>{" "}
+                      <span>Enjoying Trazo?</span>
+                    </>
+                  )}
+                </span>
+              </div>
+
+              {!justStarred ? (
+                <div className="flex shrink-0 items-center gap-1">
+                  <a
+                    href={siteConfig.github}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={handleStarClick}
+                    aria-label={
+                      stars !== null
+                        ? `Star Trazo on GitHub (${stars.toLocaleString("en-US")} stars, opens in a new tab)`
+                        : "Star Trazo on GitHub (opens in a new tab)"
+                    }
+                    className="inline-flex h-7 items-center gap-1.5 rounded-full bg-foreground px-2.5 text-xs font-medium text-background outline-none micro-transition hover:opacity-90 active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                  >
+                    <span>Star</span>
+                    {stars !== null ? (
+                      <>
+                        <span aria-hidden className="text-background/45">
+                          ·
+                        </span>
+                        <span className="font-mono text-[11px] tabular-nums">
+                          {formatStarCount(stars)}
+                        </span>
+                      </>
+                    ) : null}
+                    <ArrowUpRight className="size-3 opacity-80" />
+                  </a>
+                  <button
+                    type="button"
+                    onClick={handleDismissStarPrompt}
+                    aria-label="Dismiss star prompt"
+                    className="flex size-7 items-center justify-center rounded-full text-muted-foreground outline-none micro-transition hover:bg-background/85 hover:text-foreground active:scale-[0.92] focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }
@@ -1147,10 +1314,12 @@ function OverlayBody({
   Title,
   Description,
   isMobile,
+  stars,
 }: {
   Title: SlotComponent;
   Description: SlotComponent;
   isMobile: boolean;
+  stars: number | null;
 }) {
   const { overlayView } = useTrazo();
   const reduceMotion = useReducedMotion();
@@ -1169,14 +1338,14 @@ function OverlayBody({
         {overlayView === "grid" ? (
           <LibraryPalette Title={Title} Description={Description} isMobile={isMobile} />
         ) : (
-          <StickerDetailView Title={Title} Description={Description} />
+          <StickerDetailView Title={Title} Description={Description} stars={stars} />
         )}
       </motion.div>
     </AnimatePresence>
   );
 }
 
-export function TrazoOverlay() {
+export function TrazoOverlay({ stars }: { stars: number | null }) {
   const { overlayOpen, setOverlayOpen, openLibraryGrid, overlayView } = useTrazo();
   const isMobile = useIsMobile();
 
@@ -1247,7 +1416,7 @@ export function TrazoOverlay() {
           )}
         >
           <div className="flex min-h-0 flex-1 flex-col pt-1">
-            <OverlayBody Title={DrawerTitle} Description={DrawerDescription} isMobile />
+            <OverlayBody Title={DrawerTitle} Description={DrawerDescription} isMobile stars={stars} />
           </div>
         </DrawerContent>
       </Drawer>
@@ -1263,7 +1432,7 @@ export function TrazoOverlay() {
           overlayView === "grid" ? "max-w-[640px]" : "max-w-[480px]",
         )}
       >
-        <OverlayBody Title={DialogTitle} Description={DialogDescription} isMobile={false} />
+        <OverlayBody Title={DialogTitle} Description={DialogDescription} isMobile={false} stars={stars} />
       </DialogContent>
     </Dialog>
   );

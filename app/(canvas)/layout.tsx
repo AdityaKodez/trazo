@@ -27,7 +27,7 @@ export default async function CanvasLayout({
         <TopBar stars={stars} />
         <TrazoCanvas npmDownloads={npmDownloads} />
         <BottomDock />
-        <TrazoOverlay />
+        <TrazoOverlay stars={stars} />
         {children}
       </main>
     </TrazoProvider>
