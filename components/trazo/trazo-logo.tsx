@@ -22,12 +22,17 @@ export function TrazoMark({
     option.kind === "mix"
       ? `url(#${gradientId})`
       : option.kind === "ink"
-        ? "#ffffff"
+        ? "var(--scribble-ink)"
         : option.hex;
   const dotFill = option.kind === "mix" ? MIX_STOPS[MIX_STOPS.length - 1] : stroke;
 
   return (
-    <svg viewBox="0 0 32 32" aria-hidden className={cn("shrink-0", className)}>
+    <svg
+      viewBox="0 0 32 32"
+      fill="none"
+      aria-hidden
+      className={cn("shrink-0", className)}
+    >
       {option.kind === "mix" ? (
         <defs>
           <linearGradient
@@ -44,7 +49,6 @@ export function TrazoMark({
           </linearGradient>
         </defs>
       ) : null}
-      <rect width="32" height="32" rx="10" fill="var(--scribble-ink)" />
       <path
         d={siteConfig.markStroke}
         fill="none"

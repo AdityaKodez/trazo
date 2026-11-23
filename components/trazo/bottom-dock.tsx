@@ -253,7 +253,7 @@ export function BottomDock() {
               type="button"
               onClick={centerCanvas}
               aria-label="Center canvas"
-              className="group flex h-10 items-center gap-2 rounded-2xl px-1 micro-transition hover:bg-muted active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:h-11 sm:pl-1 sm:pr-3"
+              className="group flex h-10 items-center gap-0.5 rounded-2xl px-1 micro-transition hover:bg-muted active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:h-11 sm:pl-1 sm:pr-3"
             >
               <TrazoMark
                 option={activeOption}

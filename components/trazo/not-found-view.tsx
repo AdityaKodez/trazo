@@ -394,7 +394,7 @@ export function NotFoundView() {
               <Link
                 href="/"
                 aria-label="Back to Trazo canvas"
-                className="group flex h-8 items-center gap-2 rounded-[14px] pl-1 pr-2.5 outline-none micro-transition hover:bg-muted active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-ring sm:h-9 sm:pl-1 sm:pr-3"
+                className="group flex h-8 items-center gap-0.5 rounded-[14px] pl-1 pr-2.5 outline-none micro-transition hover:bg-muted active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-ring sm:h-9 sm:pl-1 sm:pr-3"
               >
                 <TrazoMark
                   option={MIX_PALETTE}
