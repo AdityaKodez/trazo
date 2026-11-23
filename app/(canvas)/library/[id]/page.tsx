@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { findStickerMeta, trazoCatalogMeta } from "trazo/meta";
+import { findStickerMeta, STICKER_COUNT, trazoCatalogMeta } from "trazo/meta";
 
+import { StickerJsonLd } from "@/components/seo/json-ld";
 import { siteConfig } from "@/config/site";
 
 export const dynamicParams = false;
@@ -21,11 +23,40 @@ export async function generateMetadata({
     return {};
   }
 
+  const title = `${sticker.name} — Free Crayon SVG Sticker | ${siteConfig.name}`;
+  const description = `Free hand-drawn ${sticker.name.toLowerCase()} crayon SVG sticker (${sticker.category}). Recolor live, download SVG/PNG, or import <${sticker.componentName} /> in React & Vue.`;
+  const url = `${siteConfig.url}/library/${sticker.id}`;
+
   return {
-    title: `${sticker.name} · ${siteConfig.name}`,
-    description: `Customize size, rotation, and color for the ${sticker.name} crayon sticker, then copy React/JS code or download SVG/PNG.`,
+    title,
+    description,
+    keywords: [
+      sticker.name.toLowerCase(),
+      `${sticker.name.toLowerCase()} svg`,
+      `${sticker.name.toLowerCase()} sticker`,
+      `${sticker.category} svg sticker`,
+      ...sticker.tags,
+      "crayon svg sticker",
+      "hand-drawn svg",
+      "react svg sticker",
+      siteConfig.npmPackage,
+    ],
     alternates: {
-      canonical: `${siteConfig.url}/library/${sticker.id}`,
+      canonical: url,
+    },
+    openGraph: {
+      type: "website",
+      url,
+      title,
+      description,
+      siteName: siteConfig.name,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      site: "@AdiKodez",
+      creator: "@AdiKodez",
     },
   };
 }
@@ -41,5 +72,44 @@ export default async function StickerDetailPage({
     notFound();
   }
 
-  return null;
+  const related = trazoCatalogMeta
+    .filter((item) => item.category === sticker.category && item.id !== sticker.id)
+    .slice(0, 8);
+
+  return (
+    <>
+      <StickerJsonLd sticker={sticker} />
+      <article aria-label={`${sticker.name} crayon SVG sticker`} className="sr-only">
+        <h2>{sticker.name} — Hand-Drawn Crayon SVG Sticker</h2>
+        <p>
+          Free MIT-licensed {sticker.name.toLowerCase()} wax-crayon vector
+          sticker in the {sticker.category} collection. Customize size,
+          rotation, and single-color or mix palette live, download SVG or PNG,
+          or import it directly from <code>{siteConfig.npmPackage}</code>.
+        </p>
+        <p>Tags: {sticker.tags.join(", ")}.</p>
+
+        <h3>Install &amp; Usage</h3>
+        <pre>{`npm i ${siteConfig.npmPackage}`}</pre>
+        <pre>{`import { ${sticker.componentName} } from "${siteConfig.npmPackage}";\n\n<${sticker.componentName} size={48} />`}</pre>
+        <pre>{`import { ${sticker.componentName} } from "${siteConfig.npmPackage}/vue";`}</pre>
+
+        <nav aria-label={`More ${sticker.category} stickers`}>
+          <h3>More {sticker.category} crayon stickers</h3>
+          <ul>
+            {related.map((item) => (
+              <li key={item.id}>
+                <Link href={`/library/${item.id}`}>{item.name} SVG sticker</Link>
+              </li>
+            ))}
+          </ul>
+          <p>
+            <Link href="/library">
+              Browse all {STICKER_COUNT} Trazo crayon SVG stickers
+            </Link>
+          </p>
+        </nav>
+      </article>
+    </>
+  );
 }

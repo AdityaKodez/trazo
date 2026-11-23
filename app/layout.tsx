@@ -38,9 +38,40 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   title: siteConfig.title,
   description: siteConfig.description,
-  alternates: {
-    canonical: siteConfig.url,
+  keywords: [
+    "hand-drawn svg stickers",
+    "crayon svg stickers",
+    "free svg stickers",
+    "react svg stickers",
+    "vue svg stickers",
+    "doodle svg icons",
+    "scribble svg",
+    "wax crayon vector",
+    "trazo-stickers",
+    "web stickers",
+  ],
+  authors: [{ name: siteConfig.author.name, url: "https://www.akoder.xyz" }],
+  creator: siteConfig.author.name,
+  publisher: siteConfig.name,
+  category: "Design & Developer Tools",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
+  ...(process.env.GOOGLE_SITE_VERIFICATION
+    ? {
+        verification: {
+          google: process.env.GOOGLE_SITE_VERIFICATION,
+        },
+      }
+    : {}),
   openGraph: {
     type: "website",
     url: siteConfig.url,
@@ -52,6 +83,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: siteConfig.title,
     description: siteConfig.description,
+    site: "@AdiKodez",
     creator: "@AdiKodez",
   },
 };
