@@ -11,34 +11,40 @@ import {
   type ReactNode,
 } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { starfishDef } from "trazo/catalog/ocean";
 import {
-  findSticker,
-  Starfish,
-  Sticker,
   toSvgString,
-  trazoCatalog,
   type StickerDef,
-} from "trazo";
+  type StickerMeta,
+} from "trazo/core";
+import {
+  STICKER_CATEGORY_COUNTS,
+  STICKER_COUNT,
+  trazoCatalogMeta,
+} from "trazo/meta";
+import { Sticker } from "trazo/scribble";
 
 import {
-  ArrowLeft,
   Check,
+  GitHubLogo,
+  JavaScriptLogo,
+  ReactLogo,
+  VueLogo,
+  X,
+} from "@/components/trazo/icons";
+import {
+  ArrowLeft,
   Code,
   Compass,
   Download,
-  GitHubLogo,
   ImageDown,
-  JavaScriptLogo,
   Moon,
   Palette,
-  ReactLogo,
   RotateCw,
   Ruler,
   Search,
   Sun,
-  VueLogo,
-  X,
-} from "@/components/trazo/icons";
+} from "@/components/trazo/overlay-icons";
 import {
   Dialog,
   DialogContent,
@@ -70,6 +76,11 @@ import {
 } from "@/config/palette";
 import { siteConfig } from "@/config/site";
 import { preloadCopySound } from "@/lib/sound";
+import {
+  getLoadedSticker,
+  loadAllCategories,
+  useStickerLoaderVersion,
+} from "@/lib/sticker-loader";
 import { useCopy } from "@/lib/use-copy";
 import { useModKey } from "@/lib/use-mod-key";
 import { usePreviewTheme, writePreviewTheme } from "@/lib/use-preview-theme";
@@ -86,19 +97,24 @@ type CodeTab = "react" | "vue" | "js";
 const CATEGORY_TABS: readonly {
   id: CategoryFilter;
   label: string;
-  icon: StickerDef | undefined;
+  iconId: string;
 }[] = [
-  { id: "all", label: "All", icon: findSticker("solid-star") },
-  { id: "ocean", label: "Ocean", icon: findSticker("dolphin") },
-  { id: "arrows", label: "Arrows", icon: findSticker("loop-arrow-orange") },
-  { id: "nature", label: "Nature", icon: findSticker("flower-red") },
-  { id: "hearts", label: "Hearts", icon: findSticker("heart-burst") },
-  { id: "symbols", label: "Symbols", icon: findSticker("lightning-bolt") },
-  { id: "cats", label: "Cats", icon: findSticker("hugging-cats") },
-  { id: "characters", label: "Characters", icon: findSticker("little-green-alien") },
-  { id: "school", label: "School", icon: findSticker("yellow-pencil") },
-  { id: "food", label: "Food", icon: findSticker("pizza") },
+  { id: "all", label: "All", iconId: "solid-star" },
+  { id: "ocean", label: "Ocean", iconId: "dolphin" },
+  { id: "arrows", label: "Arrows", iconId: "loop-arrow-orange" },
+  { id: "nature", label: "Nature", iconId: "flower-red" },
+  { id: "hearts", label: "Hearts", iconId: "heart-burst" },
+  { id: "symbols", label: "Symbols", iconId: "lightning-bolt" },
+  { id: "cats", label: "Cats", iconId: "hugging-cats" },
+  { id: "characters", label: "Characters", iconId: "little-green-alien" },
+  { id: "school", label: "School", iconId: "yellow-pencil" },
+  { id: "food", label: "Food", iconId: "pizza" },
 ] as const;
+
+const CATEGORY_COUNTS: Readonly<Record<CategoryFilter, number>> = {
+  all: STICKER_COUNT,
+  ...STICKER_CATEGORY_COUNTS,
+};
 
 const MIX_GRADIENT =
   "conic-gradient(from 0deg, #ef4444, #f97316, #eab308, #16a34a, #38bdf8, #2563eb, #ec4899, #ef4444)";
@@ -286,7 +302,8 @@ async function downloadStickerPng(
 }
 
 interface LibraryTileProps {
-  item: StickerDef;
+  item: StickerMeta;
+  def: StickerDef | undefined;
   isActive: boolean;
   color: string | undefined;
   reduceMotion: boolean | null;
@@ -297,6 +314,7 @@ interface LibraryTileProps {
 
 const LibraryTile = memo(function LibraryTile({
   item,
+  def,
   isActive,
   color,
   reduceMotion,
@@ -311,7 +329,7 @@ const LibraryTile = memo(function LibraryTile({
       aria-selected={isActive}
       onPointerMove={() => onHover(item.id)}
       onClick={() => onOpen(item.id)}
-      className="group relative flex cursor-pointer flex-col items-center gap-1.5 rounded-2xl px-2 pb-2.5 pt-3.5"
+      className="library-tile group relative flex cursor-pointer flex-col items-center gap-1.5 rounded-2xl px-2 pb-2.5 pt-3.5"
     >
       {isActive ? (
         <motion.span
@@ -322,15 +340,22 @@ const LibraryTile = memo(function LibraryTile({
         />
       ) : null}
       <span className="relative flex size-14 items-center justify-center">
-        <Sticker
-          def={item}
-          size={48}
-          color={color}
-          className={cn(
-            "transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]",
-            isActive && !reduceMotion && "-rotate-6 scale-110",
-          )}
-        />
+        {def ? (
+          <Sticker
+            def={def}
+            size={48}
+            color={color}
+            className={cn(
+              "transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]",
+              isActive && !reduceMotion && "-rotate-6 scale-110",
+            )}
+          />
+        ) : (
+          <span
+            aria-hidden
+            className="size-10 animate-pulse rounded-xl bg-muted/70"
+          />
+        )}
       </span>
       <span
         className={cn(
@@ -387,6 +412,7 @@ function LibraryPalette({
     setOverlayOpen,
   } = useTrazo();
   const reduceMotion = useReducedMotion();
+  const loaderVersion = useStickerLoaderVersion();
   const tileColor = stickerColor(paletteId);
   const modKey = useModKey();
   const gridRef = useRef<HTMLDivElement | null>(null);
@@ -394,6 +420,10 @@ function LibraryPalette({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [tabFade, setTabFade] = useState({ left: false, right: false });
+
+  useEffect(() => {
+    void loadAllCategories();
+  }, []);
 
   useEffect(() => {
     const node = tabsRef.current;
@@ -425,28 +455,9 @@ function LibraryPalette({
           ? "linear-gradient(to right, black calc(100% - 28px), transparent)"
           : undefined;
 
-  const counts = useMemo(() => {
-    const map: Record<CategoryFilter, number> = {
-      all: trazoCatalog.length,
-      ocean: 0,
-      arrows: 0,
-      nature: 0,
-      hearts: 0,
-      symbols: 0,
-      cats: 0,
-      characters: 0,
-      school: 0,
-      food: 0,
-    };
-    for (const item of trazoCatalog) {
-      map[item.category] += 1;
-    }
-    return map;
-  }, []);
-
   const filteredStickers = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    return trazoCatalog.filter((item) => {
+    return trazoCatalogMeta.filter((item) => {
       if (activeCategory !== "all" && item.category !== activeCategory) {
         return false;
       }
@@ -459,6 +470,9 @@ function LibraryPalette({
       );
     });
   }, [activeCategory, searchQuery]);
+
+  // Reference loaderVersion so newly loaded category chunks immediately paint
+  void loaderVersion;
 
   const activeId =
     hoveredId && filteredStickers.some((item) => item.id === hoveredId)
@@ -517,7 +531,7 @@ function LibraryPalette({
     <div className={cn("flex min-h-0 flex-1 flex-col", isMobile && "h-full")}>
       <Title className="sr-only">Sticker library</Title>
       <Description className="sr-only">
-        Search {trazoCatalog.length} hand-drawn crayon stickers. Use arrow keys to move, Enter to
+        Search {STICKER_COUNT} hand-drawn crayon stickers. Use arrow keys to move, Enter to
         open a sticker, and {modKey} Enter to locate it on the canvas.
       </Description>
 
@@ -593,7 +607,7 @@ function LibraryPalette({
         >
           {CATEGORY_TABS.map((tab) => {
             const isActive = activeCategory === tab.id;
-            const tabIcon = tab.icon;
+            const tabIcon = getLoadedSticker(tab.iconId);
             return (
               <button
                 key={tab.id}
@@ -622,8 +636,8 @@ function LibraryPalette({
                     className="absolute inset-0 rounded-full bg-foreground"
                   />
                 ) : null}
-                {tabIcon ? (
-                  <span className="relative flex size-[18px] shrink-0 items-center justify-center">
+                <span className="relative flex size-[18px] shrink-0 items-center justify-center">
+                  {tabIcon ? (
                     <Sticker
                       def={tabIcon}
                       size={18}
@@ -636,8 +650,8 @@ function LibraryPalette({
                             : "group-hover/tab:-rotate-6 group-hover/tab:scale-110"),
                       )}
                     />
-                  </span>
-                ) : null}
+                  ) : null}
+                </span>
                 <span className="relative">{tab.label}</span>
                 <span
                   className={cn(
@@ -645,7 +659,7 @@ function LibraryPalette({
                     isActive ? "text-background/70" : "text-muted-foreground/70",
                   )}
                 >
-                  {counts[tab.id]}
+                  {CATEGORY_COUNTS[tab.id]}
                 </span>
               </button>
             );
@@ -689,6 +703,7 @@ function LibraryPalette({
               <LibraryTile
                 key={item.id}
                 item={item}
+                def={getLoadedSticker(item.id)}
                 isActive={item.id === activeId}
                 color={tileColor}
                 reduceMotion={reduceMotion}
@@ -722,7 +737,7 @@ function LibraryPalette({
             </span>
           </div>
           <span className="font-mono">
-            {filteredStickers.length} / {trazoCatalog.length}
+            {filteredStickers.length} / {STICKER_COUNT}
           </span>
         </div>
       )}
@@ -822,7 +837,7 @@ function StarTrayButton({
       >
         {reduceMotion ? (
           flipped ? (
-            <Starfish size={18} className="-rotate-6" />
+            <Sticker def={starfishDef} size={18} className="-rotate-6" />
           ) : (
             <GitHubLogo className="size-3.5 text-foreground" />
           )
@@ -839,7 +854,7 @@ function StarTrayButton({
               <GitHubLogo className="size-3.5 text-foreground" />
             </span>
             <span className="absolute inset-0 flex items-center justify-center [backface-visibility:hidden] [transform:rotateY(180deg)]">
-              <Starfish size={18} className="-rotate-6" />
+              <Sticker def={starfishDef} size={18} className="-rotate-6" />
             </span>
           </motion.span>
         )}
@@ -864,6 +879,7 @@ function StickerDetailView({
   stars: number | null;
 }) {
   const {
+    selectedStickerMeta,
     selectedSticker,
     paletteId,
     selectedSize,
@@ -929,19 +945,21 @@ function StickerDetailView({
 
   const svgMarkup = useMemo(
     () =>
-      toSvgString(selectedSticker, {
-        size,
-        color: concreteColor,
-        rotate: rotation,
-        title: selectedSticker.name,
-      }),
+      selectedSticker
+        ? toSvgString(selectedSticker, {
+            size,
+            color: concreteColor,
+            rotate: rotation,
+            title: selectedSticker.name,
+          })
+        : "",
     [concreteColor, rotation, size, selectedSticker],
   );
 
   const codeSnippet = useMemo(() => {
     if (codeTab !== "js") {
       const isVue = codeTab === "vue";
-      const { componentName } = selectedSticker;
+      const { componentName } = selectedStickerMeta;
       const props = [isVue ? `:size="${size}"` : `size={${size}}`];
       if (concreteColor) {
         props.push(`color="${concreteColor}"`);
@@ -984,14 +1002,15 @@ function StickerDetailView({
     return [
       `import { findSticker, toSvgString } from "trazo-stickers/svg";`,
       ``,
-      `const sticker = findSticker("${selectedSticker.id}")!;`,
+      `const sticker = findSticker("${selectedStickerMeta.id}")!;`,
       `const svg = toSvgString(sticker, {`,
       ...optionLines,
       `});`,
     ].join("\n");
-  }, [codeTab, concreteColor, rotation, size, selectedSticker]);
+  }, [codeTab, concreteColor, rotation, size, selectedStickerMeta]);
 
   function handleDownloadSvg() {
+    if (!selectedSticker || !svgMarkup) return;
     const blob = new Blob([svgMarkup], { type: "image/svg+xml;charset=utf-8" });
     const suffix = rotation !== 0 ? `-${size}px-${rotation}deg` : `-${size}px`;
     downloadBlob(blob, `${selectedSticker.id}${suffix}.svg`);
@@ -999,6 +1018,7 @@ function StickerDetailView({
   }
 
   async function handleDownloadPng() {
+    if (!selectedSticker) return;
     try {
       const saved = await downloadStickerPng(selectedSticker, size, concreteColor, rotation);
       if (saved) {
@@ -1028,12 +1048,12 @@ function StickerDetailView({
             <TooltipTrigger asChild>
               <button
                 type="button"
-                onClick={() => void nameCopy.copy(selectedSticker.name)}
-                aria-label={`Copy ${selectedSticker.name}`}
+                onClick={() => void nameCopy.copy(selectedStickerMeta.name)}
+                aria-label={`Copy ${selectedStickerMeta.name}`}
                 className="group -ml-1.5 inline-flex max-w-full items-center gap-1.5 rounded-lg px-1.5 py-0.5 text-left outline-none micro-transition hover:bg-background/85 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <Title className="truncate text-base font-semibold tracking-tight text-foreground">
-                  {selectedSticker.name}
+                  {selectedStickerMeta.name}
                 </Title>
                 {nameCopy.status === "copied" ? (
                   <Check className="size-3.5 shrink-0 text-success" />
@@ -1045,7 +1065,7 @@ function StickerDetailView({
             </TooltipContent>
           </Tooltip>
         </div>
-        <IconAction label="Locate on canvas" onClick={() => locateOnCanvas(selectedSticker.id)}>
+        <IconAction label="Locate on canvas" onClick={() => locateOnCanvas(selectedStickerMeta.id)}>
           <Compass className="size-4" />
         </IconAction>
         <IconAction label="Close" onClick={() => setOverlayOpen(false)}>
@@ -1053,7 +1073,7 @@ function StickerDetailView({
         </IconAction>
       </div>
       <Description className="sr-only">
-        Resize, rotate, and recolor {selectedSticker.name}, then copy code or download SVG and PNG.
+        Resize, rotate, and recolor {selectedStickerMeta.name}, then copy code or download SVG and PNG.
       </Description>
 
       {/* Inset white card for preview, controls & usage */}
@@ -1083,19 +1103,27 @@ function StickerDetailView({
           </Tooltip>
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.span
-              key={selectedSticker.id}
+              key={selectedStickerMeta.id}
               initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.85, rotate: -8 }}
               animate={{ opacity: 1, scale: 1, rotate: 0 }}
               exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.92 }}
               transition={{ type: "spring", duration: 0.35, bounce: 0.3 }}
             >
-              <Sticker
-                def={selectedSticker}
-                size={size}
-                color={displayColor}
-                rotate={rotation}
-                className="drop-shadow-[0_6px_10px_rgba(0,0,0,0.08)] transition-[color] duration-200"
-              />
+              {selectedSticker ? (
+                <Sticker
+                  def={selectedSticker}
+                  size={size}
+                  color={displayColor}
+                  rotate={rotation}
+                  className="drop-shadow-[0_6px_10px_rgba(0,0,0,0.08)] transition-[color] duration-200"
+                />
+              ) : (
+                <span
+                  aria-hidden
+                  style={{ width: size, height: size }}
+                  className="block animate-pulse rounded-2xl bg-muted/70"
+                />
+              )}
             </motion.span>
           </AnimatePresence>
         </div>
@@ -1195,16 +1223,18 @@ function StickerDetailView({
             <div className="flex items-center gap-1">
               <button
                 type="button"
+                disabled={!selectedSticker}
                 onClick={handleDownloadSvg}
-                className="inline-flex h-8 items-center gap-1.5 rounded-full bg-muted px-3 text-xs font-medium text-foreground micro-transition hover:bg-foreground/[0.08] active:scale-[0.96]"
+                className="inline-flex h-8 items-center gap-1.5 rounded-full bg-muted px-3 text-xs font-medium text-foreground micro-transition hover:bg-foreground/[0.08] active:scale-[0.96] disabled:opacity-50"
               >
                 <Download className="size-3.5" />
                 SVG
               </button>
               <button
                 type="button"
+                disabled={!selectedSticker}
                 onClick={() => void handleDownloadPng()}
-                className="inline-flex h-8 items-center gap-1.5 rounded-full bg-muted px-3 text-xs font-medium text-foreground micro-transition hover:bg-foreground/[0.08] active:scale-[0.96]"
+                className="inline-flex h-8 items-center gap-1.5 rounded-full bg-muted px-3 text-xs font-medium text-foreground micro-transition hover:bg-foreground/[0.08] active:scale-[0.96] disabled:opacity-50"
               >
                 <ImageDown className="size-3.5" />
                 PNG
@@ -1345,7 +1375,7 @@ function StickerDetailView({
                   transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
                   className="flex size-5 shrink-0 items-center justify-center"
                 >
-                  <Starfish size={20} />
+                  <Sticker def={starfishDef} size={20} />
                 </motion.span>
                 <span className="truncate text-xs text-muted-foreground">
                   {justStarred ? (
@@ -1416,31 +1446,8 @@ function OverlayBody({
 }
 
 export function TrazoOverlay({ stars }: { stars: number | null }) {
-  const { overlayOpen, setOverlayOpen, openLibraryGrid, overlayView } = useTrazo();
+  const { overlayOpen, setOverlayOpen, overlayView } = useTrazo();
   const isMobile = useIsMobile();
-
-  useEffect(() => {
-    function handleKeyDown(event: globalThis.KeyboardEvent) {
-      const isToggle = event.key.toLowerCase() === "k" && (event.metaKey || event.ctrlKey);
-      const target = event.target as HTMLElement | null;
-      const isTyping =
-        target?.isContentEditable ||
-        target?.tagName === "INPUT" ||
-        target?.tagName === "TEXTAREA";
-      const isSlash = event.key === "/" && !isTyping && !overlayOpen;
-
-      if (!isToggle && !isSlash) return;
-      event.preventDefault();
-      if (overlayOpen) {
-        setOverlayOpen(false);
-      } else {
-        openLibraryGrid();
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [openLibraryGrid, overlayOpen, setOverlayOpen]);
 
   useEffect(() => {
     const timers = new Map<HTMLElement, number>();

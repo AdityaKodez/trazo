@@ -1,4 +1,5 @@
-import type { StickerCategory } from "trazo";
+import type { StickerCategory } from "trazo/core";
+import { findStickerMeta } from "trazo/meta";
 
 export const CANVAS_WORLD = {
   width: 3456,
@@ -765,13 +766,24 @@ const stickerPlacements: readonly CanvasStickerPlacement[] = [
   },
 ] as const;
 
-export const canvasPlacements: readonly CanvasStickerPlacement[] =
+export interface ResolvedCanvasStickerPlacement extends CanvasStickerPlacement {
+  category: StickerCategory;
+}
+
+export const canvasPlacements: readonly ResolvedCanvasStickerPlacement[] =
   stickerPlacements.map((placement) => ({
     ...placement,
     x: Math.round(placement.x * CANVAS_SPREAD),
     y: Math.round(placement.y * CANVAS_SPREAD),
+    category: findStickerMeta(placement.id)?.category ?? "ocean",
   }));
 
-export function findCanvasPlacement(id: string): CanvasStickerPlacement | undefined {
-  return canvasPlacements.find((item) => item.id === id);
+const canvasPlacementById = new Map<string, ResolvedCanvasStickerPlacement>(
+  canvasPlacements.map((item) => [item.id, item]),
+);
+
+export function findCanvasPlacement(
+  id: string,
+): ResolvedCanvasStickerPlacement | undefined {
+  return canvasPlacementById.get(id);
 }

@@ -26,6 +26,8 @@ export interface StickerDef {
   layers?: readonly StickerLayer[];
 }
 
+export type StickerMeta = Omit<StickerDef, "d" | "layers">;
+
 export interface ToSvgStringOptions {
   size?: number;
   /** Optional single-color override. Omit for the default multi-color crayon artwork. */

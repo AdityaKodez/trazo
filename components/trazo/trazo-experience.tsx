@@ -11,10 +11,16 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { findSticker, trazoCatalog, type StickerCategory, type StickerDef } from "trazo";
+import type { StickerCategory, StickerDef, StickerMeta } from "trazo/core";
+import { findStickerMeta, trazoCatalogMeta } from "trazo/meta";
 import { findCanvasPlacement } from "@/config/canvas";
 import { type PaletteId } from "@/config/palette";
 import { playLocateShakeSound } from "@/lib/sound";
+import {
+  loadAllCategories,
+  loadStickerById,
+  useStickerDef,
+} from "@/lib/sticker-loader";
 
 export const LOCATE_SHAKE_DELAY_MS = 180;
 
@@ -48,7 +54,7 @@ function parseOverlayRoute(pathname: string): OverlayState {
       return closed;
     }
 
-    const sticker = findSticker(rawId);
+    const sticker = findStickerMeta(rawId);
     if (sticker) {
       return { open: true, view: "detail", stickerId: sticker.id };
     }
@@ -74,7 +80,8 @@ interface TrazoContextValue {
   overlayOpen: boolean;
   setOverlayOpen: (open: boolean) => void;
   overlayView: OverlayView;
-  selectedSticker: StickerDef;
+  selectedStickerMeta: StickerMeta;
+  selectedSticker: StickerDef | undefined;
   activeCategory: CategoryFilter;
   setActiveCategory: (category: CategoryFilter) => void;
   searchQuery: string;
@@ -115,10 +122,11 @@ export function TrazoProvider({ children }: { children: ReactNode }) {
   const overlayOpen = overlay.open;
   const overlayView = overlay.view;
 
-  const selectedSticker = useMemo(
-    () => findSticker(overlay.stickerId) ?? trazoCatalog[0],
+  const selectedStickerMeta = useMemo(
+    () => findStickerMeta(overlay.stickerId) ?? trazoCatalogMeta[0],
     [overlay.stickerId],
   );
+  const selectedSticker = useStickerDef(selectedStickerMeta.id);
 
   const applyOverlay = useCallback((next: OverlayState, path: string) => {
     overlayRef.current = next;
@@ -127,6 +135,12 @@ export function TrazoProvider({ children }: { children: ReactNode }) {
       window.history.pushState(null, "", path);
     }
   }, []);
+
+  useEffect(() => {
+    if (overlay.open && overlay.view === "grid") {
+      void loadAllCategories();
+    }
+  }, [overlay.open, overlay.view]);
 
   useEffect(() => {
     function handlePopState() {
@@ -146,6 +160,7 @@ export function TrazoProvider({ children }: { children: ReactNode }) {
   }, [applyOverlay]);
 
   const openLibraryGrid = useCallback(() => {
+    void loadAllCategories();
     applyOverlay({ ...overlayRef.current, open: true, view: "grid" }, "/library");
   }, [applyOverlay]);
 
@@ -162,6 +177,7 @@ export function TrazoProvider({ children }: { children: ReactNode }) {
 
   const openStickerDetail = useCallback(
     (id: string) => {
+      void loadStickerById(id);
       applyOverlay(
         { open: true, view: "detail", stickerId: id },
         `/library/${encodeURIComponent(id)}`,
@@ -174,6 +190,7 @@ export function TrazoProvider({ children }: { children: ReactNode }) {
 
   const locateOnCanvas = useCallback(
     (id: string) => {
+      void loadStickerById(id);
       const placement = findCanvasPlacement(id);
       const prefersReducedMotion =
         typeof window !== "undefined" &&
@@ -210,6 +227,7 @@ export function TrazoProvider({ children }: { children: ReactNode }) {
       overlayOpen,
       setOverlayOpen,
       overlayView,
+      selectedStickerMeta,
       selectedSticker,
       activeCategory,
       setActiveCategory,
@@ -232,6 +250,7 @@ export function TrazoProvider({ children }: { children: ReactNode }) {
       overlayOpen,
       setOverlayOpen,
       overlayView,
+      selectedStickerMeta,
       selectedSticker,
       activeCategory,
       searchQuery,

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { NotFoundView } from "@/components/trazo/not-found-view";
+import { NotFoundLazy } from "@/components/trazo/not-found-lazy";
 
 export const metadata: Metadata = {
   title: "404 · Trazo",
@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function NotFound() {
-  return <NotFoundView />;
+  return <NotFoundLazy />;
 }

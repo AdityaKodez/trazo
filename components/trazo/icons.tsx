@@ -1,23 +1,10 @@
 "use client";
 
 import {
-  ArrowLeft as ArrowLeftGlyph,
   ArrowUpRight as ArrowUpRightGlyph,
   Check as CheckGlyph,
-  Code as CodeGlyph,
-  Compass as CompassGlyph,
   Copy as CopyGlyph,
-  Download as DownloadGlyph,
-  ImageDown as ImageDownGlyph,
   LayoutGrid as LayoutGridGlyph,
-  Moon as MoonGlyph,
-  Palette as PaletteGlyph,
-  Plus as PlusGlyph,
-  RotateCcw as RotateCcwGlyph,
-  RotateCw as RotateCwGlyph,
-  Ruler as RulerGlyph,
-  Search as SearchGlyph,
-  Sun as SunGlyph,
   X as XGlyph,
   type IconProps,
 } from "scribbles-icons";
@@ -37,24 +24,11 @@ function createSiteIcon(
   };
 }
 
-export const ArrowLeft = createSiteIcon(ArrowLeftGlyph);
-export const ArrowUpRight = createSiteIcon(ArrowUpRightGlyph);
-export const Check = createSiteIcon(CheckGlyph, "bold");
-export const Code = createSiteIcon(CodeGlyph, "bold");
-export const Compass = createSiteIcon(CompassGlyph);
-export const Copy = createSiteIcon(CopyGlyph);
-export const Download = createSiteIcon(DownloadGlyph);
-export const ImageDown = createSiteIcon(ImageDownGlyph);
-export const LayoutGrid = createSiteIcon(LayoutGridGlyph);
-export const Moon = createSiteIcon(MoonGlyph);
-export const Palette = createSiteIcon(PaletteGlyph);
-export const Plus = createSiteIcon(PlusGlyph, "bold");
-export const RotateCcw = createSiteIcon(RotateCcwGlyph);
-export const RotateCw = createSiteIcon(RotateCwGlyph);
-export const Ruler = createSiteIcon(RulerGlyph);
-export const Search = createSiteIcon(SearchGlyph, "bold");
-export const Sun = createSiteIcon(SunGlyph);
-export const X = createSiteIcon(XGlyph, "bold");
+export const ArrowUpRight = /*#__PURE__*/ createSiteIcon(ArrowUpRightGlyph);
+export const Check = /*#__PURE__*/ createSiteIcon(CheckGlyph, "bold");
+export const Copy = /*#__PURE__*/ createSiteIcon(CopyGlyph);
+export const LayoutGrid = /*#__PURE__*/ createSiteIcon(LayoutGridGlyph);
+export const X = /*#__PURE__*/ createSiteIcon(XGlyph, "bold");
 
 export function GitHubLogo(props: SVGProps<SVGSVGElement>) {
   return (

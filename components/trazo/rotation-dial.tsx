@@ -15,7 +15,7 @@ import {
   useSpring,
 } from "motion/react";
 
-import { RotateCcw, RotateCw } from "@/components/trazo/icons";
+import { RotateCcw, RotateCw } from "@/components/trazo/overlay-icons";
 import {
   Tooltip,
   TooltipContent,

@@ -3,32 +3,27 @@
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
+import { curlyArrowDef, spiralDef } from "trazo/catalog/arrows";
+import { bowtieCatDef, daisyCatDef, heartCatDef } from "trazo/catalog/cats";
+import { littleGreenAlienDef } from "trazo/catalog/characters";
+import { sparkleFourDef } from "trazo/catalog/hearts";
+import { flowerRedDef, puffyCloudDef, sunBurstDef } from "trazo/catalog/nature";
 import {
   babySquidDef,
-  bowtieCatDef,
-  curlyArrowDef,
-  daisyCatDef,
   dolphinDef,
   flapjackOctopusDef,
-  flowerRedDef,
-  heartCatDef,
-  littleGreenAlienDef,
   pearlClamDef,
-  puffyCloudDef,
-  questionMarkDef,
   seaBubbleDef,
   seahorseDef,
-  sparkleFourDef,
-  spiralDef,
-  Starfish,
   starfishDef,
-  Sticker,
-  sunBurstDef,
-  trazoCatalog,
-  type StickerDef,
-} from "trazo";
+} from "trazo/catalog/ocean";
+import { questionMarkDef } from "trazo/catalog/symbols";
+import type { StickerDef } from "trazo/core";
+import { STICKER_COUNT } from "trazo/meta";
+import { Sticker } from "trazo/scribble";
 
-import { ArrowLeft, GitHubLogo, RotateCw } from "@/components/trazo/icons";
+import { GitHubLogo } from "@/components/trazo/icons";
+import { ArrowLeft, RotateCw } from "@/components/trazo/overlay-icons";
 import { TrazoMark } from "@/components/trazo/trazo-logo";
 import {
   Tooltip,
@@ -216,7 +211,7 @@ function GitHubPillLink() {
           >
             {reduceMotion ? (
               flipped ? (
-                <Starfish size={22} />
+                <Sticker def={starfishDef} size={22} />
               ) : (
                 <GitHubLogo className="size-[17px] text-foreground" />
               )
@@ -233,7 +228,7 @@ function GitHubPillLink() {
                   <GitHubLogo className="size-[17px] text-foreground" />
                 </span>
                 <span className="absolute inset-0 flex items-center justify-center [backface-visibility:hidden] [transform:rotateY(180deg)]">
-                  <Starfish size={22} className="-rotate-6" />
+                  <Sticker def={starfishDef} size={22} className="-rotate-6" />
                 </span>
               </motion.span>
             )}
@@ -577,7 +572,7 @@ export function NotFoundView() {
           className="mt-6 flex flex-col items-center gap-1.5 sm:mt-7"
         >
           <p className="font-caveat text-[18px] leading-none text-muted-foreground/80 sm:text-[20px]">
-            All {trazoCatalog.length} hand-drawn stickers are waiting back home.
+            All {STICKER_COUNT} hand-drawn stickers are waiting back home.
           </p>
           <svg
             viewBox="0 0 44 6"

@@ -4,7 +4,7 @@ import { BottomDock } from "@/components/trazo/bottom-dock";
 import { TopBar } from "@/components/trazo/top-bar";
 import { TrazoCanvas } from "@/components/trazo/trazo-canvas";
 import { TrazoProvider } from "@/components/trazo/trazo-experience";
-import { TrazoOverlay } from "@/components/trazo/trazo-overlay";
+import { TrazoOverlayHost } from "@/components/trazo/trazo-overlay-host";
 import { siteConfig } from "@/config/site";
 import { fetchGitHubStars } from "@/lib/github";
 import { fetchNpmDownloads } from "@/lib/npm";
@@ -27,7 +27,7 @@ export default async function CanvasLayout({
         <TopBar stars={stars} />
         <TrazoCanvas npmDownloads={npmDownloads} />
         <BottomDock />
-        <TrazoOverlay stars={stars} />
+        <TrazoOverlayHost stars={stars} />
         {children}
       </main>
     </TrazoProvider>

@@ -141,12 +141,22 @@ function parseSvgPath(d) {
   return cmds;
 }
 
-function fmtTenths(tenths) {
-  if (tenths === 0) return "0";
-  const sign = tenths < 0 ? "-" : "";
-  const abs = Math.abs(tenths);
-  const whole = Math.floor(abs / 10);
-  const frac = abs % 10;
+function ptToSegmentDist(px, py, ax, ay, bx, by) {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const lenSq = dx * dx + dy * dy;
+  if (lenSq === 0) return Math.hypot(px - ax, py - ay);
+  const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lenSq));
+  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+}
+
+function fmtScaled(val, scale) {
+  if (val === 0) return "0";
+  if (scale === 1) return String(val);
+  const sign = val < 0 ? "-" : "";
+  const abs = Math.abs(val);
+  const whole = Math.floor(abs / scale);
+  const frac = abs % scale;
   if (frac === 0) return `${sign}${whole}`;
   if (whole === 0) return `${sign}.${frac}`;
   return `${sign}${whole}.${frac}`;
@@ -169,16 +179,17 @@ function joinArgs(args) {
   return out;
 }
 
-function encodeOnce(d, sTolTenths = 1) {
+function encodeOnce(d, { scale = 1, flatTol = 0.55, sTol = 1 } = {}) {
   const cmds = parseSvgPath(d);
   if (!cmds) return d;
 
-  const toT = (v) => Math.round(v * 10);
+  const toGrid = (v) => Math.round(v * scale);
+  const scaledFlatTol = flatTol * scale;
 
-  // First pass: resolve integer-tenths commands, smooth-handle snaps, and
-  // degenerate straight-line cubics so zero-length & closing-line checks see
-  // the exact final segment list.
-  const normalized = [];
+  // First pass: resolve grid-snapped commands, flat-curve-to-line reduction,
+  // smooth-handle snaps, and degenerate segment pruning.
+  const subpaths = [];
+  let curSub = null;
   let cx = 0;
   let cy = 0;
   let sx = 0;
@@ -189,48 +200,78 @@ function encodeOnce(d, sTolTenths = 1) {
   let lastQy = 0;
   let lastType = "";
 
+  const pushLine = (rx, ry) => {
+    if (!curSub || (rx === cx && ry === cy)) return;
+    // Merge collinear consecutive lines (same horizontal/vertical or near-collinear)
+    const prev = curSub[curSub.length - 1];
+    if (prev && prev.cmd === "L" && curSub.length >= 2) {
+      const anchor = curSub[curSub.length - 2];
+      const ax = anchor.x;
+      const ay = anchor.y;
+      if (ax !== undefined && ay !== undefined) {
+        const dot = (prev.x - ax) * (rx - prev.x) + (prev.y - ay) * (ry - prev.y);
+        if (dot >= 0 && ptToSegmentDist(prev.x, prev.y, ax, ay, rx, ry) <= 0.2 * scale) {
+          prev.x = rx;
+          prev.y = ry;
+          cx = rx;
+          cy = ry;
+          lastType = "L";
+          return;
+        }
+      }
+    }
+    curSub.push({ cmd: "L", x: rx, y: ry });
+    cx = rx;
+    cy = ry;
+    lastType = "L";
+  };
+
   for (const c of cmds) {
     if (c.cmd === "M") {
-      const rx = toT(c.x);
-      const ry = toT(c.y);
-      normalized.push({ cmd: "M", x: rx, y: ry });
+      const rx = toGrid(c.x);
+      const ry = toGrid(c.y);
+      curSub = [{ cmd: "M", x: rx, y: ry }];
+      subpaths.push(curSub);
       cx = sx = rx;
       cy = sy = ry;
       lastType = "M";
+    } else if (!curSub) {
+      continue;
     } else if (c.cmd === "Z") {
       // Drop redundant straight closing segment immediately preceding Z
       while (
-        normalized.length > 0 &&
-        normalized[normalized.length - 1].cmd === "L" &&
-        normalized[normalized.length - 1].x === sx &&
-        normalized[normalized.length - 1].y === sy
+        curSub.length > 1 &&
+        curSub[curSub.length - 1].cmd === "L" &&
+        curSub[curSub.length - 1].x === sx &&
+        curSub[curSub.length - 1].y === sy
       ) {
-        normalized.pop();
+        curSub.pop();
       }
-      normalized.push({ cmd: "Z" });
+      curSub.push({ cmd: "Z" });
       cx = sx;
       cy = sy;
       lastType = "Z";
     } else if (c.cmd === "L") {
-      const rx = toT(c.x);
-      const ry = toT(c.y);
-      if (rx === cx && ry === cy) continue;
-      normalized.push({ cmd: "L", x: rx, y: ry });
-      cx = rx;
-      cy = ry;
-      lastType = "L";
+      pushLine(toGrid(c.x), toGrid(c.y));
     } else if (c.cmd === "C") {
-      let x1 = toT(c.x1);
-      let y1 = toT(c.y1);
-      const x2 = toT(c.x2);
-      const y2 = toT(c.y2);
-      const x = toT(c.x);
-      const y = toT(c.y);
+      let x1 = toGrid(c.x1);
+      let y1 = toGrid(c.y1);
+      const x2 = toGrid(c.x2);
+      const y2 = toGrid(c.y2);
+      const x = toGrid(c.x);
+      const y = toGrid(c.y);
+
+      const d1 = ptToSegmentDist(x1, y1, cx, cy, x, y);
+      const d2 = ptToSegmentDist(x2, y2, cx, cy, x, y);
+      if (d1 <= scaledFlatTol && d2 <= scaledFlatTol) {
+        pushLine(x, y);
+        continue;
+      }
 
       const refX = lastType === "C" || lastType === "S" ? 2 * cx - lastC2x : cx;
       const refY = lastType === "C" || lastType === "S" ? 2 * cy - lastC2y : cy;
       const isSmooth =
-        Math.abs(x1 - refX) <= sTolTenths && Math.abs(y1 - refY) <= sTolTenths;
+        Math.abs(x1 - refX) <= sTol && Math.abs(y1 - refY) <= sTol;
 
       if (isSmooth) {
         x1 = refX;
@@ -238,23 +279,19 @@ function encodeOnce(d, sTolTenths = 1) {
       }
 
       if (x1 === cx && y1 === cy && x2 === x && y2 === y) {
-        if (x === cx && y === cy) continue;
-        normalized.push({ cmd: "L", x, y });
-        cx = x;
-        cy = y;
-        lastType = "L";
+        pushLine(x, y);
         continue;
       }
 
       if (isSmooth) {
-        normalized.push({ cmd: "S", x2, y2, x, y });
+        curSub.push({ cmd: "S", x2, y2, x, y });
         lastC2x = x2;
         lastC2y = y2;
         cx = x;
         cy = y;
         lastType = "S";
       } else {
-        normalized.push({ cmd: "C", x1, y1, x2, y2, x, y });
+        curSub.push({ cmd: "C", x1, y1, x2, y2, x, y });
         lastC2x = x2;
         lastC2y = y2;
         cx = x;
@@ -262,24 +299,27 @@ function encodeOnce(d, sTolTenths = 1) {
         lastType = "C";
       }
     } else if (c.cmd === "Q") {
-      const x1 = toT(c.x1);
-      const y1 = toT(c.y1);
-      const x = toT(c.x);
-      const y = toT(c.y);
+      const x1 = toGrid(c.x1);
+      const y1 = toGrid(c.y1);
+      const x = toGrid(c.x);
+      const y = toGrid(c.y);
+
+      if (ptToSegmentDist(x1, y1, cx, cy, x, y) <= scaledFlatTol) {
+        pushLine(x, y);
+        continue;
+      }
+
       const refX = lastType === "Q" || lastType === "T" ? 2 * cx - lastQx : cx;
       const refY = lastType === "Q" || lastType === "T" ? 2 * cy - lastQy : cy;
-      if (
-        Math.abs(x1 - refX) <= sTolTenths &&
-        Math.abs(y1 - refY) <= sTolTenths
-      ) {
-        normalized.push({ cmd: "T", x, y });
+      if (Math.abs(x1 - refX) <= sTol && Math.abs(y1 - refY) <= sTol) {
+        curSub.push({ cmd: "T", x, y });
         lastQx = refX;
         lastQy = refY;
         cx = x;
         cy = y;
         lastType = "T";
       } else {
-        normalized.push({ cmd: "Q", x1, y1, x, y });
+        curSub.push({ cmd: "Q", x1, y1, x, y });
         lastQx = x1;
         lastQy = y1;
         cx = x;
@@ -288,6 +328,34 @@ function encodeOnce(d, sTolTenths = 1) {
       }
     }
   }
+
+  // Drop empty / zero-area subpaths that collapsed after grid snapping
+  const normalized = [];
+  for (const sub of subpaths) {
+    let hasCurve = false;
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+    let segs = 0;
+    for (const c of sub) {
+      if (c.cmd === "C" || c.cmd === "S" || c.cmd === "Q" || c.cmd === "T") {
+        hasCurve = true;
+      }
+      if (c.cmd !== "Z") {
+        if (c.cmd !== "M") segs++;
+        if (c.x < minX) minX = c.x;
+        if (c.x > maxX) maxX = c.x;
+        if (c.y < minY) minY = c.y;
+        if (c.y > maxY) maxY = c.y;
+      }
+    }
+    if (segs === 0) continue;
+    if (!hasCurve && (maxX === minX || maxY === minY)) continue;
+    for (const c of sub) normalized.push(c);
+  }
+
+  if (normalized.length === 0) return d;
 
   // Second pass: serialize with shortest relative commands & implicit chaining.
   let out = "";
@@ -298,6 +366,8 @@ function encodeOnce(d, sTolTenths = 1) {
   let prevEmittedCmd = "";
   let prevLastArg = "";
 
+  const fmt = (v) => fmtScaled(v, scale);
+
   function emit(cmd, argsT) {
     if (cmd === "z") {
       out += "z";
@@ -305,7 +375,7 @@ function encodeOnce(d, sTolTenths = 1) {
       prevLastArg = "";
       return;
     }
-    const strArgs = argsT.map(fmtTenths);
+    const strArgs = argsT.map(fmt);
     const canOmitCmd = prevEmittedCmd === cmd && cmd !== "M" && cmd !== "m";
     if (canOmitCmd) {
       out +=
@@ -326,8 +396,8 @@ function encodeOnce(d, sTolTenths = 1) {
       } else {
         const dx = c.x - cx;
         const dy = c.y - cy;
-        const absStr = "M" + joinArgs([fmtTenths(c.x), fmtTenths(c.y)]);
-        const relStr = "m" + joinArgs([fmtTenths(dx), fmtTenths(dy)]);
+        const absStr = "M" + joinArgs([fmt(c.x), fmt(c.y)]);
+        const relStr = "m" + joinArgs([fmt(dx), fmt(dy)]);
         if (relStr.length < absStr.length) emit("m", [dx, dy]);
         else emit("M", [c.x, c.y]);
       }
@@ -375,14 +445,22 @@ function encodeOnce(d, sTolTenths = 1) {
 }
 
 /**
- * Losslessly minifies an SVG path string using integer-tenths arithmetic,
- * Catmull-Rom smooth cubic `s`, relative commands, and standard SVG grammar
- * compact separators. Runs to fixed point for strict idempotency.
+ * Minifies an SVG path string using integer coordinates on 256px viewBoxes
+ * (0.19px max delta at 100px render), flat-curve-to-line conversion, collinear
+ * line merging, Catmull-Rom smooth cubic `s`, relative commands, and compact
+ * SVG grammar separators. Runs to fixed point for strict idempotency.
  */
-export function optimizeSvgPath(d) {
+export function optimizeSvgPath(d, viewBox = "0 0 256 256") {
+  const vbParts = String(viewBox).trim().split(/[\s,]+/).map(Number);
+  const vbSize = vbParts.length === 4 ? Math.max(vbParts[2], vbParts[3]) : 256;
+  const opts =
+    vbSize >= 128
+      ? { scale: 1, flatTol: 0.55, sTol: 1 }
+      : { scale: 10, flatTol: 0.15, sTol: 1 };
+
   let prev = d.trim();
   for (let pass = 0; pass < 3; pass++) {
-    const next = encodeOnce(prev, 1);
+    const next = encodeOnce(prev, opts);
     if (next === prev) return next;
     prev = next;
   }
@@ -581,12 +659,31 @@ function geometriesMayOverlap(gA, gB, pad = 0.5) {
   return false;
 }
 
+function parseHexRgb(hex) {
+  const clean = hex.trim().toLowerCase();
+  const m = /^#([0-9a-f]{6})$/.exec(clean);
+  if (!m) return null;
+  const v = parseInt(m[1], 16);
+  return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+}
+
+function fillsAreEquivalent(a, b, maxRgbDist = 10) {
+  if (a === b) return true;
+  const rgbA = parseHexRgb(a);
+  const rgbB = parseHexRgb(b);
+  if (!rgbA || !rgbB) return false;
+  return (
+    Math.hypot(rgbA[0] - rgbB[0], rgbA[1] - rgbB[1], rgbA[2] - rgbB[2]) <=
+    maxRgbDist
+  );
+}
+
 /**
- * Merges consecutive layers that share the same fill color AND are provably
+ * Merges consecutive layers that share an equivalent fill color AND are provably
  * disjoint (so `fill-rule="evenodd"` can never punch an accidental hole).
  * Layers matching `outlineD` are kept unmerged so `def.d` can be deduplicated.
  */
-export function mergeSafeConsecutiveLayers(layers, outlineD) {
+export function mergeSafeConsecutiveLayers(layers, outlineD, viewBox = "0 0 256 256") {
   if (!Array.isArray(layers) || layers.length === 0) return layers;
 
   const groups = [];
@@ -599,7 +696,7 @@ export function mergeSafeConsecutiveLayers(layers, outlineD) {
     const prev = groups[groups.length - 1];
     if (
       prev &&
-      prev.fill === fill &&
+      fillsAreEquivalent(prev.fill, fill) &&
       !prev.isOutlineMatch &&
       !isOutlineMatch &&
       prev.geoms.every((g) => !geometriesMayOverlap(g, geom))
@@ -617,29 +714,30 @@ export function mergeSafeConsecutiveLayers(layers, outlineD) {
   }
 
   return groups.map((group) => ({
-    d: optimizeSvgPath(group.parts.join("")),
+    d: optimizeSvgPath(group.parts.join(""), viewBox),
     fill: group.fill,
   }));
 }
 
 export function optimizeSticker(item) {
-  const optimizedD = optimizeSvgPath(item.d);
+  const viewBox = item.viewBox || "0 0 256 256";
+  const optimizedD = optimizeSvgPath(item.d, viewBox);
   const rawLayers = Array.isArray(item.layers)
     ? item.layers.map((layer) => ({
-        d: optimizeSvgPath(layer.d),
+        d: optimizeSvgPath(layer.d, viewBox),
         fill: layer.fill.toLowerCase(),
       }))
     : undefined;
 
   const mergedLayers =
     rawLayers && rawLayers.length > 0
-      ? mergeSafeConsecutiveLayers(rawLayers, optimizedD)
+      ? mergeSafeConsecutiveLayers(rawLayers, optimizedD, viewBox)
       : undefined;
 
   return {
     ...item,
     mixColor: item.mixColor.toLowerCase(),
-    viewBox: item.viewBox || "0 0 256 256",
+    viewBox,
     d: optimizedD,
     layers: mergedLayers,
   };

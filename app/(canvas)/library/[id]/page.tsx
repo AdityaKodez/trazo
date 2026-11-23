@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { findSticker, trazoCatalog } from "trazo";
+import { findStickerMeta, trazoCatalogMeta } from "trazo/meta";
 
 import { siteConfig } from "@/config/site";
 
 export const dynamicParams = false;
 
 export function generateStaticParams() {
-  return trazoCatalog.map((sticker) => ({ id: sticker.id }));
+  return trazoCatalogMeta.map((sticker) => ({ id: sticker.id }));
 }
 
 export async function generateMetadata({
@@ -16,7 +16,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const sticker = findSticker(id);
+  const sticker = findStickerMeta(id);
   if (!sticker) {
     return {};
   }
@@ -36,7 +36,7 @@ export default async function StickerDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const sticker = findSticker(id);
+  const sticker = findStickerMeta(id);
   if (!sticker) {
     notFound();
   }

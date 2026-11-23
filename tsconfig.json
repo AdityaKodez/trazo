@@ -21,7 +21,11 @@
     "paths": {
       "@/*": ["./*"],
       "trazo": ["./packages/trazo/src/index.ts"],
-      "trazo/svg": ["./packages/trazo/src/svg.ts"]
+      "trazo/svg": ["./packages/trazo/src/svg.ts"],
+      "trazo/meta": ["./packages/trazo/src/catalog-meta.ts"],
+      "trazo/core": ["./packages/trazo/src/core.ts"],
+      "trazo/scribble": ["./packages/trazo/src/scribble.tsx"],
+      "trazo/catalog/*": ["./packages/trazo/src/catalog/*"]
     }
   },
   "include": [

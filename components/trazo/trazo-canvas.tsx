@@ -12,15 +12,19 @@ import {
   useCallback,
   memo,
   useEffect,
+  useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
+  type CSSProperties,
   type FocusEvent,
   type KeyboardEvent,
   type MouseEvent,
   type PointerEvent,
   type WheelEvent,
 } from "react";
-import { findSticker, Sticker } from "trazo";
+import type { StickerCategory, StickerDef } from "trazo/core";
+import { Sticker } from "trazo/scribble";
 
 import { CanvasTestimonialScribble } from "@/components/trazo/canvas-testimonials";
 import { HomeView } from "@/components/trazo/home-view";
@@ -32,17 +36,32 @@ import {
   CANVAS_WORLD,
   canvasPlacements,
   canvasZones,
-  type CanvasStickerPlacement,
+  type ResolvedCanvasStickerPlacement,
 } from "@/config/canvas";
 import { resolveStickerColor } from "@/config/palette";
 import {
   canvasTestimonials,
   type CanvasTestimonial,
 } from "@/config/testimonials";
+import {
+  getLoadedSticker,
+  loadCategories,
+  useStickerLoaderVersion,
+} from "@/lib/sticker-loader";
 import { cn } from "@/lib/utils";
 
 const DRAG_THRESHOLD_PX = 5;
 const KEYBOARD_PAN_STEP_PX = 120;
+
+// Quantize viewport-culling updates to 120px camera steps so smooth 60fps panning
+// never triggers React re-renders on every animation frame.
+const CULL_BUCKET_PX = 120;
+const RENDER_BUFFER_PX = 520;
+const PREFETCH_BUFFER_PX = 960;
+
+const emptySubscribe = () => () => {};
+const getClientSnapshot = () => true;
+const getServerSnapshot = () => false;
 
 // Silky weighted paper follow spring: responsive during drag, plush on settle
 const PAPER_FOLLOW_SPRING = {
@@ -57,44 +76,6 @@ const PAPER_TILT_SPRING = {
   damping: 26,
   mass: 0.5,
 } as const;
-
-const LOCATE_REST_ANIMATE = {
-  rotate: 0,
-  x: 0,
-  y: 0,
-  scale: 1,
-};
-
-const LOCATE_REST_TRANSITION = {
-  duration: 0.16,
-  ease: "easeOut" as const,
-};
-
-// Tactile paper-sticker wiggle & gentle lift when located on canvas
-const LOCATE_SHAKE_ANIMATE = {
-  rotate: [0, -14, 14, -11, 10, -6, 4, -2, 0],
-  x: [0, -6, 6, -5, 4, -2, 1, 0, 0],
-  y: [0, -6, -8, -6, -4, -2, -1, 0, 0],
-  scale: [1, 1.16, 1.15, 1.13, 1.09, 1.05, 1.02, 1, 1],
-};
-
-const LOCATE_SHAKE_TRANSITION = {
-  duration: 0.6,
-  ease: "easeOut" as const,
-  times: [0, 0.12, 0.25, 0.38, 0.52, 0.66, 0.78, 0.9, 1],
-};
-
-const LOCATE_PULSE_ANIMATE = {
-  rotate: 0,
-  x: 0,
-  y: 0,
-  scale: [1, 1.08, 1],
-};
-
-const LOCATE_PULSE_TRANSITION = {
-  duration: 0.3,
-  ease: "easeOut" as const,
-};
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
@@ -115,17 +96,18 @@ function rubberBandClamp(value: number, min: number, max: number, factor = 0.28)
 }
 
 interface CanvasStickerProps {
-  placement: CanvasStickerPlacement;
+  placement: ResolvedCanvasStickerPlacement;
+  def: StickerDef;
   index: number;
+  isInitialRing: boolean;
   color: string | undefined;
   posScaleX: number;
   posScaleY: number;
   stickerScale: number;
-  isMobileViewport: boolean;
   isShaking: boolean;
   reduceMotion: boolean | null;
   onFocusSticker: (
-    placement: CanvasStickerPlacement,
+    placement: ResolvedCanvasStickerPlacement,
     event: FocusEvent<HTMLButtonElement>,
   ) => void;
   onClickSticker: (id: string) => void;
@@ -133,29 +115,35 @@ interface CanvasStickerProps {
 
 const CanvasSticker = memo(function CanvasSticker({
   placement,
+  def,
   index,
+  isInitialRing,
   color: stickerColor,
   posScaleX,
   posScaleY,
   stickerScale,
-  isMobileViewport,
   isShaking,
   reduceMotion,
   onFocusSticker,
   onClickSticker,
 }: CanvasStickerProps) {
-  const def = findSticker(placement.id);
-  if (!def) return null;
-
   const px = Math.round(placement.x * posScaleX);
   const py = Math.round(placement.y * posScaleY);
   const renderedSize = Math.round(placement.size * stickerScale);
   const radialDist = Math.hypot(placement.x, placement.y);
-  const staggerDelay = Math.min(
-    0.42,
-    (radialDist / 1150) * 0.34 + (index % 5) * 0.016,
+  const staggerDelayMs = Math.round(
+    Math.min(420, (radialDist / 1150) * 340 + (index % 5) * 16),
   );
   const hoverTilt = placement.rotate + (placement.rotate >= 0 ? -8 : 8);
+
+  const buttonStyle = {
+    "--sticker-rot": `${placement.rotate}deg`,
+    "--sticker-hover-rot": `${hoverTilt}deg`,
+  } as CSSProperties;
+
+  const enterStyle = isInitialRing
+    ? ({ "--enter-delay": `${staggerDelayMs}ms` } as CSSProperties)
+    : undefined;
 
   return (
     <div
@@ -164,75 +152,35 @@ const CanvasSticker = memo(function CanvasSticker({
       }}
       className="absolute left-0 top-0 w-max"
     >
-      {/* Outer wrapper owns the one-time staggered pop entrance on page load */}
-      <motion.div
-        initial={
+      {/* Outer wrapper owns the one-time CSS pop entrance (initial ring) or subtle pan reveal */}
+      <div
+        style={enterStyle}
+        className={
           reduceMotion
-            ? false
-            : { opacity: 0, scale: 0.72, y: 14, rotate: -10 }
+            ? undefined
+            : isInitialRing
+              ? "canvas-sticker-enter"
+              : "canvas-sticker-reveal"
         }
-        animate={{ opacity: 1, scale: 1, y: 0, rotate: 0 }}
-        transition={{
-          type: "spring",
-          duration: 0.44,
-          bounce: 0.34,
-          delay: staggerDelay,
-        }}
       >
-        {/* Middle wrapper owns transient locate-on-canvas shake without clashing with hover/tap */}
-        <motion.div
-          animate={
+        {/* Middle wrapper owns transient locate-on-canvas wiggle without clashing with hover/tap */}
+        <div
+          className={
             isShaking
               ? reduceMotion
-                ? LOCATE_PULSE_ANIMATE
-                : LOCATE_SHAKE_ANIMATE
-              : LOCATE_REST_ANIMATE
-          }
-          transition={
-            isShaking
-              ? reduceMotion
-                ? LOCATE_PULSE_TRANSITION
-                : LOCATE_SHAKE_TRANSITION
-              : LOCATE_REST_TRANSITION
+                ? "canvas-sticker-pulse"
+                : "canvas-sticker-shake"
+              : undefined
           }
         >
-          {/* Inner button owns zero-latency hover & press physics */}
-          <motion.button
+          {/* Inner button owns zero-latency GPU-composited hover & press physics */}
+          <button
             type="button"
             aria-label={`Inspect ${def.name} sticker`}
             onFocus={(event) => onFocusSticker(placement, event)}
             onClick={() => onClickSticker(def.id)}
-            initial={false}
-            animate={{
-              rotate: placement.rotate,
-              scale: 1,
-              y: 0,
-            }}
-            whileHover={
-              reduceMotion || isMobileViewport
-                ? undefined
-                : {
-                    scale: 1.18,
-                    rotate: hoverTilt,
-                    y: -8,
-                  }
-            }
-            whileTap={
-              reduceMotion
-                ? undefined
-                : {
-                    scale: 0.92,
-                    rotate: placement.rotate,
-                    y: -1,
-                  }
-            }
-            transition={{
-              type: "spring",
-              stiffness: 520,
-              damping: 20,
-              mass: 0.48,
-            }}
-            className="group relative flex items-center justify-center rounded-3xl p-2 outline-none focus-visible:ring-2 focus-visible:ring-ring sm:p-3"
+            style={buttonStyle}
+            className="canvas-sticker-btn group relative flex items-center justify-center rounded-3xl p-2 outline-none focus-visible:ring-2 focus-visible:ring-ring sm:p-3"
           >
             <Sticker
               def={def}
@@ -267,9 +215,9 @@ const CanvasSticker = memo(function CanvasSticker({
                 {placement.marginNote}
               </span>
             ) : null}
-          </motion.button>
-        </motion.div>
-      </motion.div>
+          </button>
+        </div>
+      </div>
     </div>
   );
 });
@@ -282,9 +230,16 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
     locatedSticker,
   } = useTrazo();
   const reduceMotion = useReducedMotion();
+  const loaderVersion = useStickerLoaderVersion();
 
   const viewportRef = useRef<HTMLDivElement | null>(null);
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    getClientSnapshot,
+    getServerSnapshot,
+  );
   const [viewportSize, setViewportSize] = useState({ width: 1440, height: 900 });
+  const [cameraBucket, setCameraBucket] = useState({ cx: 0, cy: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [shakingSticker, setShakingSticker] = useState<{
     id: string;
@@ -340,6 +295,22 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
     return () => window.removeEventListener("resize", updateSize);
   }, []);
 
+  // Track quantized camera position so viewport culling updates smoothly as you pan
+  useEffect(() => {
+    const syncBucket = () => {
+      const cx = Math.round(cameraX.get() / CULL_BUCKET_PX) * CULL_BUCKET_PX;
+      const cy = Math.round(cameraY.get() / CULL_BUCKET_PX) * CULL_BUCKET_PX;
+      setCameraBucket((prev) => (prev.cx === cx && prev.cy === cy ? prev : { cx, cy }));
+    };
+
+    const unsubX = cameraX.on("change", syncBucket);
+    const unsubY = cameraY.on("change", syncBucket);
+    return () => {
+      unsubX();
+      unsubY();
+    };
+  }, [cameraX, cameraY]);
+
   const stickerColor =
     paletteId === "ink" ? "var(--scribble-ink)" : resolveStickerColor(paletteId);
 
@@ -349,6 +320,68 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
   const posScaleY = isMobileViewport ? 0.68 : isTabletViewport ? 0.86 : 1;
   const stickerScale = isMobileViewport ? 0.76 : isTabletViewport ? 0.9 : 1;
   const heroOffsetY = isMobileViewport ? -22 : isTabletViewport ? -10 : 0;
+
+  // Determine which placements are inside the visible viewport + buffer, and which
+  // nearby categories should be prefetched before they enter view.
+  const { visiblePlacements, prefetchCategories } = useMemo(() => {
+    // During SSR and initial hydration, only render the inner ocean showcase ring
+    // so SSR HTML stays lightweight (~100 KB instead of 2+ MB) with zero mismatch.
+    if (!mounted) {
+      return {
+        visiblePlacements: canvasPlacements
+          .map((placement, index) => ({ placement, index }))
+          .filter(({ placement }) => placement.category === "ocean"),
+        prefetchCategories: [] as StickerCategory[],
+      };
+    }
+
+    const viewCenterX = -cameraBucket.cx;
+    const viewCenterY = -cameraBucket.cy;
+    const renderHalfW = viewportSize.width / 2 + RENDER_BUFFER_PX;
+    const renderHalfH = viewportSize.height / 2 + RENDER_BUFFER_PX;
+    const prefetchHalfW = viewportSize.width / 2 + PREFETCH_BUFFER_PX;
+    const prefetchHalfH = viewportSize.height / 2 + PREFETCH_BUFFER_PX;
+
+    const visible: { placement: ResolvedCanvasStickerPlacement; index: number }[] = [];
+    const toPrefetch = new Set<StickerCategory>();
+
+    for (let index = 0; index < canvasPlacements.length; index++) {
+      const placement = canvasPlacements[index];
+      const px = placement.x * posScaleX;
+      const py = placement.y * posScaleY;
+      const dx = Math.abs(px - viewCenterX);
+      const dy = Math.abs(py - viewCenterY);
+
+      const isLocated = locatedSticker?.id === placement.id;
+
+      if (isLocated || (dx <= prefetchHalfW && dy <= prefetchHalfH)) {
+        toPrefetch.add(placement.category);
+      }
+
+      if (isLocated || (dx <= renderHalfW && dy <= renderHalfH)) {
+        visible.push({ placement, index });
+      }
+    }
+
+    return {
+      visiblePlacements: visible,
+      prefetchCategories: [...toPrefetch],
+    };
+  }, [
+    mounted,
+    cameraBucket.cx,
+    cameraBucket.cy,
+    viewportSize.width,
+    viewportSize.height,
+    posScaleX,
+    posScaleY,
+    locatedSticker?.id,
+  ]);
+
+  useEffect(() => {
+    if (!mounted || prefetchCategories.length === 0) return;
+    void loadCategories(prefetchCategories);
+  }, [mounted, prefetchCategories]);
 
   const getPanBounds = useCallback(() => {
     const scaledWorldW = CANVAS_WORLD.width * posScaleX;
@@ -581,7 +614,7 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
   }
 
   const handleStickerFocus = useCallback(
-    (placement: CanvasStickerPlacement, event: FocusEvent<HTMLButtonElement>) => {
+    (placement: ResolvedCanvasStickerPlacement, event: FocusEvent<HTMLButtonElement>) => {
       if (viewportRef.current) {
         viewportRef.current.scrollLeft = 0;
         viewportRef.current.scrollTop = 0;
@@ -658,6 +691,9 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
     },
     [],
   );
+
+  // Reference loaderVersion so newly lazy-loaded categories immediately paint
+  void loaderVersion;
 
   return (
     <div
@@ -749,8 +785,11 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
           />
         ))}
 
-        {/* All crayon stickers with radial staggered pop-in on load + Emil Kowalski hover/tap physics */}
-        {canvasPlacements.map((placement, index) => {
+        {/* Viewport-culled crayon stickers with GPU-composited hover/tap physics */}
+        {visiblePlacements.map(({ placement, index }) => {
+          const def = getLoadedSticker(placement.id);
+          if (!def) return null;
+
           const isShaking =
             shakingSticker !== null &&
             locatedSticker !== null &&
@@ -761,12 +800,13 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
             <CanvasSticker
               key={placement.id}
               placement={placement}
+              def={def}
               index={index}
+              isInitialRing={placement.category === "ocean"}
               color={stickerColor}
               posScaleX={posScaleX}
               posScaleY={posScaleY}
               stickerScale={stickerScale}
-              isMobileViewport={isMobileViewport}
               isShaking={isShaking}
               reduceMotion={reduceMotion}
               onFocusSticker={handleStickerFocus}

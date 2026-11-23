@@ -194,4 +194,119 @@
       scrollbar-color: color-mix(in srgb, var(--foreground) 22%, transparent) transparent;
     }
   }
+
+  .canvas-sticker-enter {
+    animation: trazo-sticker-pop 440ms cubic-bezier(0.22, 1.35, 0.36, 1) var(--enter-delay, 0ms) both;
+  }
+
+  .canvas-sticker-reveal {
+    animation: trazo-sticker-reveal 200ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  }
+
+  .canvas-sticker-shake {
+    animation: trazo-locate-shake 600ms ease-out both;
+  }
+
+  .canvas-sticker-pulse {
+    animation: trazo-locate-pulse 300ms ease-out both;
+  }
+
+  .canvas-sticker-btn {
+    transform: rotate(var(--sticker-rot, 0deg)) scale(1) translateY(0px);
+    transition: transform 240ms cubic-bezier(0.22, 1.4, 0.36, 1);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .canvas-sticker-btn:hover {
+      transform: rotate(var(--sticker-hover-rot, 0deg)) scale(1.18) translateY(-8px);
+    }
+  }
+
+  .canvas-sticker-btn:active {
+    transform: rotate(var(--sticker-rot, 0deg)) scale(0.92) translateY(-1px);
+  }
+
+  .library-tile {
+    content-visibility: auto;
+    contain-intrinsic-size: 96px 104px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .canvas-sticker-enter,
+    .canvas-sticker-reveal,
+    .canvas-sticker-shake {
+      animation: none;
+    }
+
+    .canvas-sticker-btn,
+    .canvas-sticker-btn:hover,
+    .canvas-sticker-btn:active {
+      transform: rotate(var(--sticker-rot, 0deg));
+      transition: none;
+    }
+  }
+}
+
+@keyframes trazo-sticker-pop {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0) scale(0.72) rotate(-10deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes trazo-sticker-reveal {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes trazo-locate-shake {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+  12% {
+    transform: translate3d(-6px, -6px, 0) scale(1.16) rotate(-14deg);
+  }
+  25% {
+    transform: translate3d(6px, -8px, 0) scale(1.15) rotate(14deg);
+  }
+  38% {
+    transform: translate3d(-5px, -6px, 0) scale(1.13) rotate(-11deg);
+  }
+  52% {
+    transform: translate3d(4px, -4px, 0) scale(1.09) rotate(10deg);
+  }
+  66% {
+    transform: translate3d(-2px, -2px, 0) scale(1.05) rotate(-6deg);
+  }
+  78% {
+    transform: translate3d(1px, -1px, 0) scale(1.02) rotate(4deg);
+  }
+  90% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(-2deg);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes trazo-locate-pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
 }

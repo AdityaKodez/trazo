@@ -4,6 +4,7 @@ export {
   type StickerCategory,
   type StickerDef,
   type StickerLayer,
+  type StickerMeta,
   type ToSvgStringOptions,
 } from "./core";
 
@@ -317,6 +318,10 @@ export const trazoCatalog: readonly StickerDef[] = [
   pastryDef,
 ];
 
+const stickerById = new Map<string, StickerDef>(
+  trazoCatalog.map((item) => [item.id, item]),
+);
+
 export function findSticker(id: string): StickerDef | undefined {
-  return trazoCatalog.find((item) => item.id === id);
+  return stickerById.get(id);
 }

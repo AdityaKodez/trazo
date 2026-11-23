@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { Starfish } from "trazo";
+import { starfishDef } from "trazo/catalog/ocean";
+import { Sticker } from "trazo/scribble";
 
 import { AkoderMark, GitHubLogo } from "@/components/trazo/icons";
 import {
@@ -54,7 +55,7 @@ function GitHubStarBadge({ stars }: { stars: number | null }) {
           >
             {reduceMotion ? (
               flipped ? (
-                <Starfish size={22} />
+                <Sticker def={starfishDef} size={22} />
               ) : (
                 <GitHubLogo className="size-[17px] text-foreground" />
               )
@@ -71,7 +72,7 @@ function GitHubStarBadge({ stars }: { stars: number | null }) {
                   <GitHubLogo className="size-[17px] text-foreground" />
                 </span>
                 <span className="absolute inset-0 flex items-center justify-center [backface-visibility:hidden] [transform:rotateY(180deg)]">
-                  <Starfish size={22} className="-rotate-6" />
+                  <Sticker def={starfishDef} size={22} className="-rotate-6" />
                 </span>
               </motion.span>
             )}

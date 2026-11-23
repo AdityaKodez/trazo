@@ -23,6 +23,26 @@
       "types": "./dist/svg.d.ts",
       "import": "./dist/svg.js",
       "default": "./dist/svg.js"
+    },
+    "./meta": {
+      "types": "./dist/catalog-meta.d.ts",
+      "import": "./dist/catalog-meta.js",
+      "default": "./dist/catalog-meta.js"
+    },
+    "./core": {
+      "types": "./dist/core.d.ts",
+      "import": "./dist/core.js",
+      "default": "./dist/core.js"
+    },
+    "./scribble": {
+      "types": "./dist/scribble.d.ts",
+      "import": "./dist/scribble.js",
+      "default": "./dist/scribble.js"
+    },
+    "./catalog/*": {
+      "types": "./dist/catalog/*.d.ts",
+      "import": "./dist/catalog/*.js",
+      "default": "./dist/catalog/*.js"
     }
   },
   "files": [
