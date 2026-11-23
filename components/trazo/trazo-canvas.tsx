@@ -16,11 +16,13 @@ import {
   useState,
   type FocusEvent,
   type KeyboardEvent,
+  type MouseEvent,
   type PointerEvent,
   type WheelEvent,
 } from "react";
 import { findSticker, Sticker } from "trazo";
 
+import { CanvasTestimonialScribble } from "@/components/trazo/canvas-testimonials";
 import { HomeView } from "@/components/trazo/home-view";
 import {
   LOCATE_SHAKE_DELAY_MS,
@@ -33,6 +35,10 @@ import {
   type CanvasStickerPlacement,
 } from "@/config/canvas";
 import { resolveStickerColor } from "@/config/palette";
+import {
+  canvasTestimonials,
+  type CanvasTestimonial,
+} from "@/config/testimonials";
 import { cn } from "@/lib/utils";
 
 const DRAG_THRESHOLD_PX = 5;
@@ -607,6 +613,52 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
     [openStickerDetail],
   );
 
+  const handleTestimonialFocus = useCallback(
+    (item: CanvasTestimonial, event: FocusEvent<HTMLAnchorElement>) => {
+      if (viewportRef.current) {
+        viewportRef.current.scrollLeft = 0;
+        viewportRef.current.scrollTop = 0;
+      }
+      if (!event.currentTarget.matches(":focus-visible")) return;
+
+      const scaledX = item.x * posScaleX;
+      const scaledY =
+        isMobileViewport && item.mobileY !== undefined
+          ? item.mobileY
+          : item.y * posScaleY;
+      const screenOffsetX = scaledX + targetX.get();
+      const screenOffsetY = scaledY + targetY.get();
+      const safeHalfW = viewportSize.width * 0.36;
+      const safeHalfH = viewportSize.height * 0.34;
+
+      if (
+        Math.abs(screenOffsetX) > safeHalfW ||
+        Math.abs(screenOffsetY) > safeHalfH
+      ) {
+        glideCameraTo(-scaledX, -scaledY);
+      }
+    },
+    [
+      glideCameraTo,
+      isMobileViewport,
+      posScaleX,
+      posScaleY,
+      targetX,
+      targetY,
+      viewportSize.height,
+      viewportSize.width,
+    ],
+  );
+
+  const handleTestimonialClick = useCallback(
+    (event: MouseEvent<HTMLAnchorElement>) => {
+      if (suppressNextClickRef.current) {
+        event.preventDefault();
+      }
+    },
+    [],
+  );
+
   return (
     <div
       ref={viewportRef}
@@ -680,6 +732,22 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
             </div>
           );
         })}
+
+        {/* Handwritten Pin + Ink X testimonials aligned around the perimeter */}
+        {canvasTestimonials.map((item, index) => (
+          <CanvasTestimonialScribble
+            key={item.id}
+            item={item}
+            index={index}
+            activeColor={stickerColor}
+            posScaleX={posScaleX}
+            posScaleY={posScaleY}
+            isMobileViewport={isMobileViewport}
+            reduceMotion={reduceMotion}
+            onFocusItem={handleTestimonialFocus}
+            onClickItem={handleTestimonialClick}
+          />
+        ))}
 
         {/* All crayon stickers with radial staggered pop-in on load + Emil Kowalski hover/tap physics */}
         {canvasPlacements.map((placement, index) => {
