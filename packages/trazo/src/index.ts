@@ -107,6 +107,13 @@ import {
   craftScissorsDef,
   pencilSharpenerDef,
 } from "./catalog/school";
+import {
+  pizzaDef,
+  burgerDef,
+  frenchFriesDef,
+  sandwichDef,
+  pastryDef,
+} from "./catalog/food";
 
 export const BabySquid = /*#__PURE__*/ createStickerComponent(babySquidDef);
 export const ConchShell = /*#__PURE__*/ createStickerComponent(conchShellDef);
@@ -191,3 +198,8 @@ export const SchoolEraser = /*#__PURE__*/ createStickerComponent(schoolEraserDef
 export const WoodenRuler = /*#__PURE__*/ createStickerComponent(woodenRulerDef);
 export const CraftScissors = /*#__PURE__*/ createStickerComponent(craftScissorsDef);
 export const PencilSharpener = /*#__PURE__*/ createStickerComponent(pencilSharpenerDef);
+export const Pizza = /*#__PURE__*/ createStickerComponent(pizzaDef);
+export const Burger = /*#__PURE__*/ createStickerComponent(burgerDef);
+export const FrenchFries = /*#__PURE__*/ createStickerComponent(frenchFriesDef);
+export const Sandwich = /*#__PURE__*/ createStickerComponent(sandwichDef);
+export const Pastry = /*#__PURE__*/ createStickerComponent(pastryDef);

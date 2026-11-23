@@ -69,6 +69,12 @@ const zoneAnchors: readonly ZoneAnchor[] = [
     x: 1050,
     y: -685,
   },
+  {
+    id: "food",
+    label: "Food & snacks",
+    x: -1020,
+    y: -740,
+  },
 ] as const;
 
 export const canvasZones: readonly ZoneAnchor[] = zoneAnchors.map((zone) => ({
@@ -714,6 +720,47 @@ const stickerPlacements: readonly CanvasStickerPlacement[] = [
     x: 1315,
     y: -475,
     size: 104,
+    rotate: 6,
+  },
+
+  // ---------------------------------------------------------------------------
+  // NORTH-WEST QUADRANT: Food & snacks (5 stickers)
+  // ---------------------------------------------------------------------------
+  {
+    id: "pizza",
+    x: -1235,
+    y: -835,
+    size: 106,
+    rotate: -6,
+  },
+  {
+    id: "burger",
+    x: -825,
+    y: -845,
+    size: 104,
+    rotate: 5,
+    marginNote: "Fresh food & snacks",
+    noteSide: "top",
+  },
+  {
+    id: "french-fries",
+    x: -1275,
+    y: -645,
+    size: 102,
+    rotate: 4,
+  },
+  {
+    id: "sandwich",
+    x: -1055,
+    y: -635,
+    size: 100,
+    rotate: -4,
+  },
+  {
+    id: "pastry",
+    x: -795,
+    y: -650,
+    size: 100,
     rotate: 6,
   },
 ] as const;

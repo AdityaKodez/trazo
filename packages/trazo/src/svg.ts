@@ -115,6 +115,14 @@ import {
   craftScissorsDef,
   pencilSharpenerDef,
 } from "./catalog/school";
+import {
+  foodStickers,
+  pizzaDef,
+  burgerDef,
+  frenchFriesDef,
+  sandwichDef,
+  pastryDef,
+} from "./catalog/food";
 
 export {
   oceanStickers,
@@ -125,6 +133,7 @@ export {
   catsStickers,
   charactersStickers,
   schoolStickers,
+  foodStickers,
 };
 export {
   babySquidDef,
@@ -210,6 +219,11 @@ export {
   woodenRulerDef,
   craftScissorsDef,
   pencilSharpenerDef,
+  pizzaDef,
+  burgerDef,
+  frenchFriesDef,
+  sandwichDef,
+  pastryDef,
 };
 
 export const trazoCatalog: readonly StickerDef[] = [
@@ -296,6 +310,11 @@ export const trazoCatalog: readonly StickerDef[] = [
   woodenRulerDef,
   craftScissorsDef,
   pencilSharpenerDef,
+  pizzaDef,
+  burgerDef,
+  frenchFriesDef,
+  sandwichDef,
+  pastryDef,
 ];
 
 export function findSticker(id: string): StickerDef | undefined {

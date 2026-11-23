@@ -18,8 +18,8 @@ const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const catalogPath = path.join(rootDir, "packages/trazo/catalog.json");
 const catalogDir = path.join(rootDir, "packages/trazo/src/catalog");
 
-// Ocean and school stickers are already curve-based; these ids are left exactly as-is.
-const SKIP_CATEGORIES = new Set(["ocean", "school"]);
+// Ocean, school, and food stickers are already curve-based; these ids are left exactly as-is.
+const SKIP_CATEGORIES = new Set(["ocean", "school", "food"]);
 const SKIP_IDS = new Set(["spider-man", "stitch", "woody-wink", "little-green-alien"]);
 
 const CORNER_DEG = 62; // turning angle above which a point is pinned as a corner

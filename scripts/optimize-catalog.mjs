@@ -773,6 +773,7 @@ async function main() {
     "cats",
     "characters",
     "school",
+    "food",
   ];
 
   for (const category of categories) {

@@ -97,6 +97,7 @@ const CATEGORY_TABS: readonly {
   { id: "cats", label: "Cats", icon: findSticker("hugging-cats") },
   { id: "characters", label: "Characters", icon: findSticker("little-green-alien") },
   { id: "school", label: "School", icon: findSticker("yellow-pencil") },
+  { id: "food", label: "Food", icon: findSticker("pizza") },
 ] as const;
 
 const MIX_GRADIENT =
@@ -435,6 +436,7 @@ function LibraryPalette({
       cats: 0,
       characters: 0,
       school: 0,
+      food: 0,
     };
     for (const item of trazoCatalog) {
       map[item.category] += 1;

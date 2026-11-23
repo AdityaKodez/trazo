@@ -1,11 +1,11 @@
 ---
 name: trazo-stickers
-description: Guide for the trazo-stickers npm package, which provides 83 hand-drawn crayon sticker SVGs as React components and standalone SVG strings. Use when adding, importing, recoloring, rotating, looking up, or exporting Trazo stickers in code, or when the user mentions trazo-stickers or Trazo stickers.
+description: Guide for the trazo-stickers npm package, which provides 88 hand-drawn crayon sticker SVGs as React components and standalone SVG strings. Use when adding, importing, recoloring, rotating, looking up, or exporting Trazo stickers in code, or when the user mentions trazo-stickers or Trazo stickers.
 ---
 
 # trazo-stickers
 
-`trazo-stickers` ships 83 hand-drawn, wax-textured crayon stickers as vector paths. Each sticker is available as a React component and as an SVG string for non-React code.
+`trazo-stickers` ships 88 hand-drawn, wax-textured crayon stickers as vector paths. Each sticker is available as a React component and as an SVG string for non-React code.
 
 Stickers are decorative. They have no click or form behavior, so wrap one in a link or button when it needs an action. The package only renders its bundled stickers. It has no API for creating new artwork.
 
@@ -54,7 +54,7 @@ const svg = toSvgString(heart, { size: 48, color: "#1f1e1b", title: "Heart cat" 
 
 ## Catalog
 
-- `trazoCatalog` is a readonly array of all 83 `StickerDef` objects. Both entries export it.
+- `trazoCatalog` is a readonly array of all 88 `StickerDef` objects. Both entries export it.
 - A `StickerDef` has `id`, `componentName`, `name`, `category`, `mixColor`, `tags`, `viewBox`, `d`, and optional `layers`.
 - Search by `tags` or `name`, for example `trazoCatalog.filter((sticker) => sticker.tags.includes("cat"))`.
 - Ids by category:
@@ -66,6 +66,7 @@ const svg = toSvgString(heart, { size: 48, color: "#1f1e1b", title: "Heart cat" 
   - `cats` (8): `heart-cat`, `daisy-cat`, `hugging-cats`, `flower-cat`, `bowtie-cat`, `stacked-cats`, `cheering-cat`, `heart-hug`
   - `characters` (5): `pink-dino`, `spider-man`, `stitch`, `little-green-alien`, `woody-wink`
   - `school` (12): `yellow-pencil`, `blue-crayon`, `crayon-box`, `highlighter`, `spiral-notebook`, `book-stack`, `open-book`, `school-backpack`, `school-eraser`, `wooden-ruler`, `craft-scissors`, `pencil-sharpener`
+  - `food` (5): `pizza`, `burger`, `french-fries`, `sandwich`, `pastry`
 
 ## Licensing note
 
