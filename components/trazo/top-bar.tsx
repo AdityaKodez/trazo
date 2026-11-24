@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { starfishDef } from "trazo/catalog/ocean";
 import { Sticker } from "trazo/scribble";
 
+import { AgentSkillDialog } from "@/components/trazo/agent-skill-dialog";
 import { AkoderMark, GitHubLogo } from "@/components/trazo/icons";
 import {
   Tooltip,
@@ -12,9 +13,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { siteConfig } from "@/config/site";
+import { cn } from "@/lib/utils";
 
 const enterSpring = { type: "spring", stiffness: 380, damping: 30 } as const;
 const flipSpring = { type: "spring", stiffness: 420, damping: 24, mass: 0.55 } as const;
+const enterFrom = { opacity: 0, y: -12, scale: 0.96 } as const;
+const enterTo = { opacity: 1, y: 0, scale: 1 } as const;
+const reduceEntrance = "motion-reduce:opacity-100! motion-reduce:transform-none!";
 
 const PILL_CLASS =
   "pointer-events-auto flex items-center rounded-[18px] bg-popover/92 p-1 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_12px_30px_-10px_rgba(0,0,0,0.14)] ring-1 ring-foreground/[0.07] backdrop-blur-md sm:rounded-[20px]";
@@ -53,29 +58,21 @@ function GitHubStarBadge({ stars }: { stars: number | null }) {
             aria-hidden
             className="relative flex size-[22px] shrink-0 items-center justify-center [perspective:260px]"
           >
-            {reduceMotion ? (
-              flipped ? (
-                <Sticker def={starfishDef} size={22} />
-              ) : (
+            <motion.span
+              animate={{
+                rotateY: flipped ? 180 : 0,
+                scale: flipped && !reduceMotion ? 1.12 : 1,
+              }}
+              transition={reduceMotion ? { duration: 0 } : flipSpring}
+              className="relative flex size-full items-center justify-center [transform-style:preserve-3d]"
+            >
+              <span className="absolute inset-0 flex items-center justify-center [backface-visibility:hidden]">
                 <GitHubLogo className="size-[17px] text-foreground" />
-              )
-            ) : (
-              <motion.span
-                animate={{
-                  rotateY: flipped ? 180 : 0,
-                  scale: flipped ? 1.12 : 1,
-                }}
-                transition={flipSpring}
-                className="relative flex size-full items-center justify-center [transform-style:preserve-3d]"
-              >
-                <span className="absolute inset-0 flex items-center justify-center [backface-visibility:hidden]">
-                  <GitHubLogo className="size-[17px] text-foreground" />
-                </span>
-                <span className="absolute inset-0 flex items-center justify-center [backface-visibility:hidden] [transform:rotateY(180deg)]">
-                  <Sticker def={starfishDef} size={22} className="-rotate-6" />
-                </span>
-              </motion.span>
-            )}
+              </span>
+              <span className="absolute inset-0 flex items-center justify-center [backface-visibility:hidden] [transform:rotateY(180deg)]">
+                <Sticker def={starfishDef} size={22} className="-rotate-6" />
+              </span>
+            </motion.span>
           </span>
 
           {stars !== null ? (
@@ -108,10 +105,10 @@ export function TopBar({ stars }: { stars: number | null }) {
       {/* Author attribution */}
       <motion.div
         data-no-pan=""
-        initial={reduceMotion ? false : { opacity: 0, y: -12, scale: 0.96 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ ...enterSpring, delay: 0.16 }}
-        className={PILL_CLASS}
+        initial={enterFrom}
+        animate={enterTo}
+        transition={reduceMotion ? { duration: 0 } : { ...enterSpring, delay: 0.16 }}
+        className={cn(PILL_CLASS, reduceEntrance)}
       >
         <Tooltip>
           <TooltipTrigger asChild>
@@ -138,15 +135,18 @@ export function TopBar({ stars }: { stars: number | null }) {
         </Tooltip>
       </motion.div>
 
-      {/* Live GitHub star pill */}
       <motion.div
-        data-no-pan=""
-        initial={reduceMotion ? false : { opacity: 0, y: -12, scale: 0.96 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ ...enterSpring, delay: 0.22 }}
-        className={PILL_CLASS}
+        initial={enterFrom}
+        animate={enterTo}
+        transition={reduceMotion ? { duration: 0 } : { ...enterSpring, delay: 0.22 }}
+        className={cn("flex items-center gap-2", reduceEntrance)}
       >
-        <GitHubStarBadge stars={stars} />
+        <div data-no-pan="" className={PILL_CLASS}>
+          <AgentSkillDialog />
+        </div>
+        <div data-no-pan="" className={PILL_CLASS}>
+          <GitHubStarBadge stars={stars} />
+        </div>
       </motion.div>
     </header>
   );

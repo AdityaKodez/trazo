@@ -40,3 +40,12 @@ export const siteConfig = {
     x: "https://x.com/AdiKodez",
   },
 } as const;
+
+const illustrationSkillName = "trazo-illustration-style";
+
+export const illustrationSkill = {
+  title: "Trazo illustration style",
+  command: `npx skills add ${siteConfig.repo} --skill ${illustrationSkillName}`,
+  source: `${siteConfig.github}/tree/main/skills/${illustrationSkillName}`,
+  prompt: `Use $${illustrationSkillName} to draw a sleepy fox and check it at 16 px.`,
+} as const;

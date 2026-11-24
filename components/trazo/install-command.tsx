@@ -212,64 +212,86 @@ export function CopyStatusIcon({
   );
 }
 
-export function InstallCommand({
-  commands = installCommands,
-  className,
+function PackageManagerTabs({
+  manager,
+  reducedMotion,
 }: {
-  commands?: Record<PackageManager, string>;
-  className?: string;
+  manager: PackageManager;
+  reducedMotion: boolean | null;
 }) {
-  const manager = usePackageManager();
-  const { status, copy, copySeq, isCoolingDown } = useCopy({ sound: true });
-  const reducedMotion = useReducedMotion();
   const pillId = useId();
   const pillTransition: Transition = reducedMotion
     ? { duration: 0 }
     : { type: "spring", stiffness: 460, damping: 32, mass: 0.6 };
 
-  const command = commands[manager] ?? commands.npm;
+  return (
+    <div className="flex items-center gap-0.5 sm:gap-1">
+      {PACKAGE_MANAGERS.map((pm) => {
+        const Icon = PM_ICONS[pm];
+        const isActive = manager === pm;
+        return (
+          <button
+            key={pm}
+            type="button"
+            onClick={() => writeManager(pm)}
+            aria-pressed={isActive}
+            className={cn(
+              "relative flex items-center gap-1 rounded-lg px-2 py-1.5 font-mono text-[11px] micro-transition active:scale-[0.97] sm:gap-1.5 sm:px-2.5 sm:py-1",
+              isActive
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {isActive ? (
+              <motion.span
+                layoutId={`pm-tab-pill-${pillId}`}
+                initial={false}
+                transition={pillTransition}
+                className="absolute inset-0 rounded-lg bg-background shadow-2xs ring-1 ring-inset ring-foreground/10"
+                aria-hidden="true"
+              />
+            ) : null}
+            <Icon className="relative z-10 size-3 shrink-0" />
+            <span className="relative z-10">{pm}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+type InstallCommandProps = {
+  className?: string;
+} & (
+  | { commands?: Record<PackageManager, string> }
+  | { command: string; label: string }
+);
+
+export function InstallCommand(props: InstallCommandProps) {
+  const manager = usePackageManager();
+  const { status, copy, copySeq, isCoolingDown } = useCopy({ sound: true });
+  const reducedMotion = useReducedMotion();
+  const fixedCommand = "command" in props ? props : null;
+  const commands = "commands" in props ? props.commands ?? installCommands : installCommands;
+  const command = fixedCommand?.command ?? commands[manager] ?? commands.npm;
+  const copyFeedback = status === "copied" ? "Copied" : status === "error" ? "Copy failed" : "";
 
   return (
     <div
       className={cn(
         "relative overflow-hidden rounded-2xl bg-card/95 text-left shadow-xs backdrop-blur-xs ring-1 ring-inset ring-foreground/10",
-        className,
+        props.className,
       )}
     >
       {/* Unified full-width top header bar with package manager tabs and copy action */}
       <div className="flex items-center justify-between gap-1 border-b bg-muted/45 px-2 py-1.5 sm:px-2.5">
-        <div className="flex items-center gap-0.5 sm:gap-1">
-          {PACKAGE_MANAGERS.map((pm) => {
-            const Icon = PM_ICONS[pm];
-            const isActive = manager === pm;
-            return (
-              <button
-                key={pm}
-                type="button"
-                onClick={() => writeManager(pm)}
-                aria-pressed={isActive}
-                className={cn(
-                  "relative flex items-center gap-1 rounded-lg px-2 py-1.5 font-mono text-[11px] micro-transition active:scale-[0.97] sm:gap-1.5 sm:px-2.5 sm:py-1",
-                  isActive
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {isActive ? (
-                  <motion.span
-                    layoutId={`pm-tab-pill-${pillId}`}
-                    initial={false}
-                    transition={pillTransition}
-                    className="absolute inset-0 rounded-lg bg-background shadow-2xs ring-1 ring-inset ring-foreground/10"
-                    aria-hidden="true"
-                  />
-                ) : null}
-                <Icon className="relative z-10 size-3 shrink-0" />
-                <span className="relative z-10">{pm}</span>
-              </button>
-            );
-          })}
-        </div>
+        {fixedCommand ? (
+          <span className="px-2 py-1.5 font-mono text-[11px] font-medium text-foreground sm:px-2.5 sm:py-1">
+            {fixedCommand.label}
+          </span>
+        ) : (
+          <PackageManagerTabs manager={manager} reducedMotion={reducedMotion} />
+        )}
 
         <Tooltip>
           <TooltipTrigger asChild>
@@ -295,30 +317,30 @@ export function InstallCommand({
           </TooltipTrigger>
           <TooltipContent>
             <p>
-              {status === "copied"
-                ? "Copied"
-                : status === "error"
-                  ? "Copy failed"
-                  : "Copy command"}
+              {copyFeedback || "Copy command"}
             </p>
           </TooltipContent>
         </Tooltip>
       </div>
+      <span role="status" className="sr-only">{copyFeedback}</span>
 
       {/* Command line body */}
       <div className="relative flex items-center px-3.5 py-2.5 sm:px-4 sm:py-3">
         <div className="blueprint-bg pointer-events-none absolute inset-0 opacity-35" />
-        <code className="palette-scroll relative min-w-0 flex-1 overflow-x-auto whitespace-pre font-mono text-[12.5px] leading-relaxed text-foreground sm:text-[13px]">
+        <code className={cn(
+          "palette-scroll relative min-w-0 flex-1 overflow-x-auto font-mono text-[12.5px] leading-relaxed text-foreground sm:text-[13px]",
+          fixedCommand ? "select-all wrap-anywhere" : "whitespace-pre",
+        )}>
           <AnimatePresence mode="wait" initial={false}>
             <motion.span
-              key={manager}
+              key={fixedCommand ? command : manager}
               initial={reducedMotion ? false : { opacity: 0, y: 3 }}
               animate={{ opacity: 1, y: 0 }}
               exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -3 }}
               transition={{ duration: 0.14, ease: [0.23, 1, 0.32, 1] }}
               className="block"
             >
-              <span className="select-none pr-2 text-muted-foreground">$</span>
+              <span aria-hidden="true" className="select-none pr-2 text-muted-foreground">$</span>
               {command}
             </motion.span>
           </AnimatePresence>

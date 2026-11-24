@@ -19,6 +19,16 @@ import { Dolphin, HeartCat } from "trazo-stickers";
 
 Use `trazo-stickers/vue` for native Vue 3 and Nuxt components, or `trazo-stickers/svg` for plain SVG strings. Full props and examples are in [`packages/trazo/README.md`](packages/trazo/README.md).
 
+## Draw with an agent
+
+Install the [Trazo illustration skill](skills/trazo-illustration-style/SKILL.md) in your project to draw original SVG stickers and review them at small sizes. The Skills CLI requires Node.js 22.20 or newer.
+
+```bash
+npx skills add AdityaKodez/trazo --skill trazo-illustration-style
+```
+
+Ask your agent to use `$trazo-illustration-style`. For example, ask it to draw a sleepy fox and check how it reads at 16 px.
+
 ## What's in this repo
 
 | Path | What it is |

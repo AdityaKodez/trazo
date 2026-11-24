@@ -1,0 +1,57 @@
+{
+  "id": "black-hole",
+  "name": "Black hole",
+  "category": "symbols",
+  "tags": ["black hole", "space", "galaxy", "void"],
+  "seed": 11,
+  "parts": [
+    {
+      "base": "#f8ad5e",
+      "outline": 5,
+      "shape": { "ring": [128, 128, 82, 82, 0, 50, 50] },
+      "shade": [{ "tone": 1, "shape": { "arc": [128, 128, 66, 66, 0, 10, 95], "width": 12 } }],
+      "light": [
+        { "tone": 1, "shape": { "arc": [128, 128, 66, 66, 0, 185, 275], "width": 14 } },
+        { "tone": 2, "shape": { "arc": [128, 128, 66, 66, 0, 205, 255], "width": 7 } },
+        { "tone": 3, "shape": { "arc": [128, 128, 66, 66, 0, 215, 240], "width": 3 } }
+      ]
+    },
+    {
+      "base": "#1d1a33",
+      "outline": 6,
+      "palette": { "light1": "#2c2750", "light2": "#443b78", "light3": "#7468b0", "outline1": "#0d0b1c", "outline2": "#05040d" },
+      "shape": { "ellipse": [128, 128, 52, 52, 0] },
+      "shade": [{ "tone": 1, "shape": { "ellipse": [148, 150, 30, 24, 0] } }],
+      "light": [
+        { "tone": 1, "shape": { "ellipse": [108, 104, 22, 16, -35] } },
+        { "tone": 2, "shape": { "ellipse": [102, 100, 11, 7, -35] } }
+      ]
+    },
+    {
+      "base": "#fbd16b",
+      "outline": 4,
+      "shape": { "poly": [[14, 130], [70, 120], [128, 116], [186, 120], [242, 130], [186, 142], [128, 146], [70, 142]] },
+      "shade": [{ "tone": 1, "shape": { "ellipse": [128, 138, 70, 4, 0] } }],
+      "light": [
+        { "tone": 1, "shape": { "ellipse": [120, 124, 60, 3, 0] } },
+        { "tone": 3, "shape": { "ellipse": [110, 124, 26, 1.5, 0] } }
+      ]
+    },
+    {
+      "base": "#fae072",
+      "outline": 3,
+      "shape": { "poly": [[40, 26], [44, 42], [60, 47], [44, 52], [40, 68], [36, 52], [20, 47], [36, 42]] },
+      "light": [{ "tone": 2, "shape": { "ellipse": [40, 47, 4, 4, 0] } }]
+    },
+    {
+      "base": "#f694bc",
+      "outline": 3,
+      "shape": { "poly": [[214, 190], [218, 201], [230, 205], [218, 209], [214, 220], [210, 209], [198, 205], [210, 201]] }
+    },
+    {
+      "base": "#cceaf9",
+      "outline": 3,
+      "shape": { "ellipse": [216, 52, 7, 7, 0] }
+    }
+  ]
+}

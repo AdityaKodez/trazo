@@ -1,0 +1,4 @@
+interface:
+  display_name: "Trazo Illustration Style"
+  short_description: "Draw and visually review Trazo sticker SVGs"
+  default_prompt: "Use $trazo-illustration-style to draw and visually review a small set of Trazo sticker SVGs."

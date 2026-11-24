@@ -63,6 +63,12 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { CopyCooldownFill, CopyStatusIcon } from "@/components/trazo/install-command";
+import {
+  overlayCardClass,
+  overlayDialogClass,
+  overlayDrawerClass,
+  useIsMobile,
+} from "@/components/trazo/overlay-layout";
 import { RotationDial } from "@/components/trazo/rotation-dial";
 import { findNearestStepIndex, SizeSlider } from "@/components/trazo/size-slider";
 import {
@@ -130,20 +136,6 @@ function optionId(id: string) {
 
 function stickerColor(paletteId: ReturnType<typeof useTrazo>["paletteId"]) {
   return paletteId === "ink" ? "var(--scribble-ink)" : resolveStickerColor(paletteId);
-}
-
-function useIsMobile(): boolean {
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const media = window.matchMedia("(max-width: 639px)");
-    const update = () => setIsMobile(media.matches);
-    update();
-    media.addEventListener("change", update);
-    return () => media.removeEventListener("change", update);
-  }, []);
-
-  return isMobile;
 }
 
 function Kbd({ children, className }: { children: ReactNode; className?: string }) {
@@ -1077,7 +1069,7 @@ function StickerDetailView({
       </Description>
 
       {/* Inset white card for preview, controls & usage */}
-      <div className="palette-scroll flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto rounded-[16px] bg-background p-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-inset ring-foreground/[0.07] sm:gap-4 sm:p-4">
+      <div className={overlayCardClass}>
         {/* Live preview at the true selected size */}
         <div
           className={cn(
@@ -1488,7 +1480,7 @@ export function TrazoOverlay({ stars }: { stars: number | null }) {
         <DrawerContent
           onOpenAutoFocus={(event) => event.preventDefault()}
           className={cn(
-            "bg-[color-mix(in_oklab,var(--muted)_75%,var(--background))] px-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]",
+            overlayDrawerClass,
             overlayView === "grid" ? "h-[84dvh]" : "max-h-[90dvh]",
           )}
         >
@@ -1505,7 +1497,7 @@ export function TrazoOverlay({ stars }: { stars: number | null }) {
       <DialogContent
         showCloseButton={false}
         className={cn(
-          "top-[12dvh] flex max-h-[calc(88dvh-1.25rem)] translate-y-0 flex-col gap-0 overflow-hidden rounded-[22px] bg-[color-mix(in_oklab,var(--muted)_75%,var(--background))] p-1.5 shadow-[0_1px_2px_rgba(0,0,0,0.06),0_20px_50px_-14px_rgba(0,0,0,0.22)] ring-1 ring-inset ring-foreground/[0.08] transition-[max-width,--scrollbar-alpha] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] sm:p-1.5",
+          overlayDialogClass,
           overlayView === "grid" ? "max-w-[640px]" : "max-w-[480px]",
         )}
       >
