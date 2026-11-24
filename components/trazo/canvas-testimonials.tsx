@@ -155,7 +155,7 @@ export const CanvasTestimonialScribble = memo(
                 {item.quote}
               </span>
               <span className="mt-0.5 inline-flex items-center gap-0.5 text-[11px] font-medium leading-none text-muted-foreground transition-colors duration-150 group-hover:text-foreground">
-                <span>{item.handle}</span>
+                <span className="testimonial-handle">{item.handle}</span>
                 <ArrowUpRight className="size-3 opacity-70 transition-opacity duration-150 group-hover:opacity-100" />
               </span>
               <CrayonUnderline

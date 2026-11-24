@@ -231,6 +231,34 @@
     contain-intrinsic-size: 96px 104px;
   }
 
+  @media (hover: hover) and (pointer: fine) and (forced-colors: none) {
+    .group:hover .testimonial-handle {
+      color: var(--primary);
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      @supports (background-clip: text) {
+        .group:hover .testimonial-handle {
+          background-color: var(--foreground);
+          background-image:
+            radial-gradient(ellipse 16% 140% at 48% 0%, #007496, transparent),
+            linear-gradient(
+              105deg,
+              var(--foreground) 32%,
+              #1d4ed8 40%,
+              #0369a1 51%,
+              #0f766e 63%,
+              var(--foreground) 68%
+            );
+          background-size: 320% 100%;
+          background-clip: text;
+          color: transparent;
+          animation: trazo-testimonial-ink-flow 850ms ease-in-out both;
+        }
+      }
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .canvas-sticker-enter,
     .canvas-sticker-reveal,
@@ -244,6 +272,15 @@
       transform: rotate(var(--sticker-rot, 0deg));
       transition: none;
     }
+  }
+}
+
+@keyframes trazo-testimonial-ink-flow {
+  from {
+    background-position: 100% 50%;
+  }
+  to {
+    background-position: 0% 50%;
   }
 }
 
