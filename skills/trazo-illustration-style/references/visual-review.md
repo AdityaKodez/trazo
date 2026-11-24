@@ -1,6 +1,6 @@
 # Visual review
 
-Use this loop for coordinated sets, UI replacements, and requests for an independent critique.
+Use this loop for every sticker draft—standalone stickers, coordinated sets, and UI replacements alike.
 
 1. **Render the actual SVGs.** Make a labeled contact sheet with the close-up and each intended display size on light and dark backgrounds. Use 96 px for the close-up and, if sizes are unspecified, 36 px and 16 px as thumbnail checks. Pair adjacent states on the sheet or show them together in a placement capture. Include a real UI screenshot when a badge, label, or another element affects how the illustration reads.
 2. **Attach visible images.** Start a fresh subagent with context forking disabled using the [inspector prompt](inspector-prompt.md). Attach the rendered Trazo references first, then the draft sheet and any placement captures. Use image attachments, with plain subject labels, dimensions, intended states, and any adjacent UI label. Distinguish diagnostic sheet captions from labels that actually appear next to the artwork in use. The inspector gets images and captions only. If an attachment fails to render, resend it before relying on the critique. If independent image review is unavailable, do the same visual checks yourself and disclose the fallback.

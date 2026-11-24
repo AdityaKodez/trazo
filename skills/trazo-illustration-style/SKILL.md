@@ -22,7 +22,7 @@ Draw soft crayon-and-gouache stickers with uneven hand-cut contours, a few flat 
 
 ## Review and revise
 
-- Open a render of every SVG. For a single standalone draft, a close-up and thumbnail check is usually enough. For a coordinated set, a UI replacement, or a requested independent critique, follow the [visual review workflow](references/visual-review.md). Use the smallest intended size, both themes where applicable, and a close-up that exposes contour and shading defects.
+- Render every SVG and run the [visual review workflow](references/visual-review.md) with a fresh critique subagent, including for single standalone drafts. Check the smallest intended size, both themes where applicable, and a close-up that exposes contour and shading defects.
 - Fix silhouette, overlaps, visible gaps, and defining features first. Tune tone and texture after the drawing reads. Re-render at the same sizes and preserve artwork that already passes. At tiny labeled sizes, a distinctive, clean shape can carry the artwork while the adjacent text carries the abstract meaning.
 - If a draft is placed in a UI, open its normal route at desktop and mobile widths. Check both themes, asset loading, applicable state transitions, accessible names, and badge overlap. Exercise affected pointer, keyboard, and reduced-motion behavior.
 
