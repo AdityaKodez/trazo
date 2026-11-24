@@ -13,7 +13,9 @@ import {
   RotateCw as RotateCwGlyph,
   Ruler as RulerGlyph,
   Search as SearchGlyph,
+  Sparkles as SparklesGlyph,
   Sun as SunGlyph,
+  Terminal as TerminalGlyph,
   type IconProps,
 } from "scribbles-icons";
 import type { ComponentType, SVGProps } from "react";
@@ -41,4 +43,6 @@ export const RotateCcw = /*#__PURE__*/ createSiteIcon(RotateCcwGlyph);
 export const RotateCw = /*#__PURE__*/ createSiteIcon(RotateCwGlyph);
 export const Ruler = /*#__PURE__*/ createSiteIcon(RulerGlyph);
 export const Search = /*#__PURE__*/ createSiteIcon(SearchGlyph, "bold");
+export const Sparkles = /*#__PURE__*/ createSiteIcon(SparklesGlyph);
 export const Sun = /*#__PURE__*/ createSiteIcon(SunGlyph);
+export const Terminal = /*#__PURE__*/ createSiteIcon(TerminalGlyph, "bold");

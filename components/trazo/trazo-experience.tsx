@@ -24,8 +24,10 @@ import {
 
 export const LOCATE_SHAKE_DELAY_MS = 180;
 
-export type OverlayView = "grid" | "detail";
+export type OverlayView = "grid" | "detail" | "skill";
 export type CategoryFilter = "all" | StickerCategory;
+
+export const AGENT_SKILL_PATH = "/library/skill";
 
 interface OverlayState {
   open: boolean;
@@ -47,6 +49,10 @@ function parseOverlayRoute(pathname: string): OverlayState {
   }
 
   if (segments.length === 2) {
+    if (segments[1] === "skill") {
+      return { open: true, view: "skill", stickerId: DEFAULT_STICKER_ID };
+    }
+
     let rawId = segments[1];
     try {
       rawId = decodeURIComponent(rawId);
@@ -94,6 +100,7 @@ interface TrazoContextValue {
   cameraTarget: CameraGlideTarget;
   openLibraryGrid: () => void;
   openStickerDetail: (id: string) => void;
+  openAgentSkill: () => void;
   backToGrid: () => void;
   locateOnCanvas: (id: string) => void;
   centerCanvas: () => void;
@@ -188,6 +195,10 @@ export function TrazoProvider({ children }: { children: ReactNode }) {
 
   const backToGrid = openLibraryGrid;
 
+  const openAgentSkill = useCallback(() => {
+    applyOverlay({ ...overlayRef.current, open: true, view: "skill" }, AGENT_SKILL_PATH);
+  }, [applyOverlay]);
+
   const locateOnCanvas = useCallback(
     (id: string) => {
       void loadStickerById(id);
@@ -241,6 +252,7 @@ export function TrazoProvider({ children }: { children: ReactNode }) {
       cameraTarget,
       openLibraryGrid,
       openStickerDetail,
+      openAgentSkill,
       backToGrid,
       locateOnCanvas,
       centerCanvas,
@@ -260,6 +272,7 @@ export function TrazoProvider({ children }: { children: ReactNode }) {
       cameraTarget,
       openLibraryGrid,
       openStickerDetail,
+      openAgentSkill,
       backToGrid,
       locateOnCanvas,
       centerCanvas,

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   memo,
   useEffect,
@@ -11,6 +12,7 @@ import {
   type ReactNode,
 } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { Pencil } from "scribbles-icons";
 import { starfishDef } from "trazo/catalog/ocean";
 import {
   toSvgString,
@@ -25,6 +27,7 @@ import {
 import { Sticker } from "trazo/scribble";
 
 import {
+  ArrowUpRight,
   Check,
   GitHubLogo,
   JavaScriptLogo,
@@ -43,7 +46,9 @@ import {
   RotateCw,
   Ruler,
   Search,
+  Sparkles,
   Sun,
+  Terminal,
 } from "@/components/trazo/overlay-icons";
 import {
   Dialog,
@@ -62,7 +67,10 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { CopyCooldownFill, CopyStatusIcon } from "@/components/trazo/install-command";
+import {
+  CopyCooldownFill,
+  CopyStatusIcon,
+} from "@/components/trazo/install-command";
 import {
   overlayCardClass,
   overlayDialogClass,
@@ -80,7 +88,7 @@ import {
   resolveStickerColor,
   type PaletteOption,
 } from "@/config/palette";
-import { siteConfig } from "@/config/site";
+import { illustrationSkill, siteConfig } from "@/config/site";
 import { preloadCopySound } from "@/lib/sound";
 import {
   getLoadedSticker,
@@ -127,6 +135,27 @@ const MIX_GRADIENT =
 const highlightSpring = { type: "spring", stiffness: 700, damping: 45, mass: 0.5 } as const;
 const flipSpring = { type: "spring", stiffness: 420, damping: 24, mass: 0.55 } as const;
 const LISTBOX_ID = "trazo-sticker-listbox";
+
+const SKILL_EXAMPLES = [
+  {
+    id: "watering-can",
+    name: "Watering can",
+    className:
+      "-rotate-12 group-hover/peek:-translate-y-1.5 group-hover/peek:-rotate-[15deg]",
+  },
+  {
+    id: "snail",
+    name: "Snail",
+    className:
+      "z-[1] -translate-y-0.5 rotate-3 group-hover/peek:-translate-y-2.5 group-hover/peek:rotate-0",
+  },
+  {
+    id: "loop-arrow",
+    name: "Loop arrow",
+    className:
+      "rotate-12 group-hover/peek:-translate-y-1.5 group-hover/peek:rotate-[15deg]",
+  },
+] as const;
 
 type SlotComponent = ComponentType<{ className?: string; children: ReactNode }>;
 
@@ -400,6 +429,7 @@ function LibraryPalette({
     searchQuery,
     setSearchQuery,
     openStickerDetail,
+    openAgentSkill,
     locateOnCanvas,
     setOverlayOpen,
   } = useTrazo();
@@ -665,7 +695,7 @@ function LibraryPalette({
               nothing scribbled here yet
             </p>
             <p className="mt-2 text-xs text-muted-foreground">
-              Try another word, or{" "}
+              Try another word,{" "}
               <button
                 type="button"
                 onClick={() => {
@@ -676,6 +706,14 @@ function LibraryPalette({
                 className="font-medium text-foreground underline decoration-foreground/30 underline-offset-2 hover:decoration-foreground"
               >
                 reset filters
+              </button>
+              , or{" "}
+              <button
+                type="button"
+                onClick={openAgentSkill}
+                className="font-medium text-foreground underline decoration-foreground/30 underline-offset-2 hover:decoration-foreground"
+              >
+                draw it with the agent skill
               </button>
               .
             </p>
@@ -708,9 +746,14 @@ function LibraryPalette({
         )}
       </div>
 
-      {/* Keyboard hint footer in outer tray */}
-      {isMobile ? null : (
-        <div className="flex shrink-0 items-center justify-between gap-3 px-3 pb-1 pt-2 text-[11px] text-muted-foreground">
+      {/* Footer in outer tray: keyboard hints, agent skill, count */}
+      <div
+        className={cn(
+          "flex shrink-0 items-center justify-between gap-3 text-muted-foreground",
+          isMobile ? "px-1 pt-1 text-xs" : "px-3 pb-1 pt-2 text-[11px]",
+        )}
+      >
+        {isMobile ? null : (
           <div className="flex items-center gap-3.5">
             <span className="flex items-center gap-1.5">
               <span className="flex gap-0.5">
@@ -728,11 +771,33 @@ function LibraryPalette({
               <Kbd>{modKey} ↵</Kbd> locate
             </span>
           </div>
+        )}
+        <div
+          className={cn(
+            "flex items-center gap-2.5",
+            isMobile && "flex-1 justify-between",
+          )}
+        >
+          <button
+            type="button"
+            onClick={openAgentSkill}
+            className={cn(
+              "group/skill inline-flex items-center gap-1.5 rounded-lg font-medium text-foreground/80 outline-none micro-transition hover:bg-background/85 hover:text-foreground active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-ring",
+              isMobile ? "h-9 px-2" : "-my-1 h-7 px-2",
+            )}
+          >
+            <Pencil
+              aria-hidden="true"
+              weight="fill"
+              className="size-3.5 shrink-0 transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover/skill:-rotate-12"
+            />
+            Agent skill
+          </button>
           <span className="font-mono">
             {filteredStickers.length} / {STICKER_COUNT}
           </span>
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -1402,6 +1467,226 @@ function StickerDetailView({
   );
 }
 
+function SkillCopyButton({
+  value,
+  copyState,
+  idleLabel,
+  copiedLabel,
+}: {
+  value: string;
+  copyState: ReturnType<typeof useCopy>;
+  idleLabel: string;
+  copiedLabel: string;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onPointerEnter={preloadCopySound}
+          onFocus={preloadCopySound}
+          onClick={() => {
+            if (copyState.isCoolingDown) return;
+            void copyState.copy(value);
+          }}
+          aria-disabled={copyState.isCoolingDown || undefined}
+          aria-label={copyState.status === "copied" ? copiedLabel : idleLabel}
+          className={cn(
+            "relative inline-flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-[9px] text-muted-foreground outline-none micro-transition focus-visible:ring-2 focus-visible:ring-ring",
+            copyState.isCoolingDown
+              ? "cursor-default bg-background/80 text-foreground"
+              : "hover:bg-background/80 hover:text-foreground active:scale-[0.94]",
+          )}
+        >
+          <CopyCooldownFill
+            active={copyState.isCoolingDown}
+            triggerKey={copyState.copySeq}
+          />
+          <CopyStatusIcon
+            status={copyState.status}
+            triggerKey={copyState.copySeq}
+            copiedClassName="text-background"
+            className="z-10"
+          />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>
+          {copyState.status === "copied"
+            ? "Copied"
+            : copyState.status === "error"
+              ? "Copy failed"
+              : "Copy"}
+        </p>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function AgentSkillView({
+  Title,
+  Description,
+  isMobile,
+}: {
+  Title: SlotComponent;
+  Description: SlotComponent;
+  isMobile: boolean;
+}) {
+  const { backToGrid, setOverlayOpen } = useTrazo();
+  const installCopy = useCopy({ sound: true });
+  const promptCopy = useCopy({ sound: true });
+
+  const [commandPrefix, skillFlag] = illustrationSkill.command.split(" --skill ");
+  const skillMention = `$${illustrationSkill.name}`;
+  const mentionIndex = illustrationSkill.prompt.indexOf(skillMention);
+  const hasMention = mentionIndex !== -1;
+  const promptPrefix = hasMention ? illustrationSkill.prompt.slice(0, mentionIndex) : "";
+  const promptSuffix = hasMention
+    ? illustrationSkill.prompt.slice(mentionIndex + skillMention.length)
+    : "";
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      {/* Header in outer tray: back, title + peeking stickers, close */}
+      <div className="relative z-0 flex shrink-0 items-center gap-1 px-1.5 pb-1.5 pt-0.5 sm:px-2">
+        <IconAction label="Back to library" onClick={backToGrid}>
+          <ArrowLeft className="size-4" />
+        </IconAction>
+        <div className="flex min-w-0 flex-1 items-center gap-2 px-1">
+          <Title className="min-w-0 truncate text-base font-semibold tracking-tight text-foreground">
+            {illustrationSkill.title}
+          </Title>
+          <div
+            aria-label="Example stickers drawn with the skill"
+            role="group"
+            className="group/peek relative -my-2.5 ml-auto flex shrink-0 translate-y-[12px] items-end -space-x-3.5 pr-0.5 sm:translate-y-[14px] sm:-space-x-3"
+          >
+            {SKILL_EXAMPLES.map(({ id, name, className }) => (
+              <Image
+                key={id}
+                src={`/agent-skills/${id}.svg`}
+                alt={name}
+                width={42}
+                height={42}
+                loading="eager"
+                className={cn(
+                  "size-[34px] shrink-0 select-none drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.08)] transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none sm:size-[42px]",
+                  className,
+                )}
+              />
+            ))}
+          </div>
+        </div>
+        <IconAction label="Close" onClick={() => setOverlayOpen(false)}>
+          <X className="size-3.5" />
+        </IconAction>
+      </div>
+
+      {/* Inset white card sitting in front of the peeking sticker edges */}
+      <div className={cn(overlayCardClass, "relative z-10")} data-vaul-no-drag="">
+        <Description className="text-sm leading-relaxed text-muted-foreground">
+          Can&apos;t find the sticker you need? Have your agent draw an original Trazo-style SVG and
+          check how it reads at small sizes.
+        </Description>
+
+        {/* Install command in the app's code viewer style */}
+        <div className="rounded-2xl bg-muted/65 p-1 ring-1 ring-inset ring-foreground/[0.08]">
+          <div className="flex items-center justify-between gap-2 px-1 pb-1 pt-0.5">
+            <span className="inline-flex h-7 items-center gap-1.5 rounded-[9px] bg-background px-2 text-xs font-medium text-foreground shadow-[0_1px_2px_rgba(0,0,0,0.06)] ring-1 ring-inset ring-foreground/[0.08]">
+              <Terminal className="size-3.5 shrink-0 text-foreground/80" />
+              <span>Skills.sh</span>
+            </span>
+            <SkillCopyButton
+              value={illustrationSkill.command}
+              copyState={installCopy}
+              idleLabel="Copy install command"
+              copiedLabel="Copied install command"
+            />
+          </div>
+          <div className="overflow-hidden rounded-[12px] bg-background shadow-[0_1px_2px_rgba(0,0,0,0.03)] ring-1 ring-inset ring-foreground/[0.07]">
+            <pre
+              data-vaul-no-drag=""
+              className="palette-scroll overflow-x-auto whitespace-pre-wrap px-3.5 py-3 font-mono text-[12px] leading-[1.65] text-foreground/90 sm:px-4 sm:py-3.5 sm:text-[12.5px]"
+            >
+              <code>
+                <span aria-hidden="true" className="select-none pr-2 text-muted-foreground">
+                  $
+                </span>
+                {skillFlag ? (
+                  <>
+                    {commandPrefix}{" "}
+                    <span className="whitespace-nowrap">--skill {skillFlag}</span>
+                  </>
+                ) : (
+                  illustrationSkill.command
+                )}
+              </code>
+            </pre>
+          </div>
+        </div>
+
+        {/* Example prompt with matching tray & copy button */}
+        <div className="rounded-2xl bg-muted/65 p-1 ring-1 ring-inset ring-foreground/[0.08]">
+          <div className="flex items-center justify-between gap-2 px-1 pb-1 pt-0.5">
+            <span className="inline-flex h-7 items-center gap-1.5 px-2 text-xs font-medium text-muted-foreground">
+              <Sparkles className="size-3.5 shrink-0 text-muted-foreground/85" />
+              <span>Example prompt</span>
+            </span>
+            <SkillCopyButton
+              value={illustrationSkill.prompt}
+              copyState={promptCopy}
+              idleLabel="Copy example prompt"
+              copiedLabel="Copied example prompt"
+            />
+          </div>
+          <div className="overflow-hidden rounded-[12px] bg-background shadow-[0_1px_2px_rgba(0,0,0,0.03)] ring-1 ring-inset ring-foreground/[0.07]">
+            <p
+              data-vaul-no-drag=""
+              className="px-3.5 py-3 text-[13px] leading-[1.6] text-foreground/90 sm:px-4 sm:py-3.5"
+            >
+              {hasMention ? (
+                <>
+                  {promptPrefix}
+                  <code className="rounded-md bg-muted/80 px-1.5 py-0.5 font-mono text-[12px] text-foreground">
+                    {skillMention}
+                  </code>
+                  {promptSuffix}
+                </>
+              ) : (
+                illustrationSkill.prompt
+              )}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Outer tray footer with skill path & View on GitHub action */}
+      <div
+        className={cn(
+          "flex shrink-0 items-center justify-between gap-3 text-muted-foreground",
+          isMobile ? "px-1 pt-1 text-xs" : "px-3 pb-1 pt-2 text-[11px]",
+        )}
+      >
+        <span className="truncate font-mono">skills/{illustrationSkill.name}</span>
+        <a
+          href={illustrationSkill.source}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={cn(
+            "group/gh inline-flex shrink-0 items-center gap-1.5 rounded-lg font-medium text-foreground/80 outline-none micro-transition hover:bg-background/85 hover:text-foreground active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-ring",
+            isMobile ? "h-9 px-2" : "-my-1 h-7 px-2",
+          )}
+        >
+          <GitHubLogo className="size-3.5 shrink-0" />
+          <span>View on GitHub</span>
+          <ArrowUpRight className="size-3 shrink-0 transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover/gh:-translate-y-0.5 group-hover/gh:translate-x-0.5 motion-reduce:transition-none" />
+          <span className="sr-only"> (opens in a new tab)</span>
+        </a>
+      </div>
+    </div>
+  );
+}
+
 function OverlayBody({
   Title,
   Description,
@@ -1429,8 +1714,10 @@ function OverlayBody({
       >
         {overlayView === "grid" ? (
           <LibraryPalette Title={Title} Description={Description} isMobile={isMobile} />
-        ) : (
+        ) : overlayView === "detail" ? (
           <StickerDetailView Title={Title} Description={Description} stars={stars} />
+        ) : (
+          <AgentSkillView Title={Title} Description={Description} isMobile={isMobile} />
         )}
       </motion.div>
     </AnimatePresence>

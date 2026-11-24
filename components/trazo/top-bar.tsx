@@ -5,7 +5,6 @@ import { motion, useReducedMotion } from "motion/react";
 import { starfishDef } from "trazo/catalog/ocean";
 import { Sticker } from "trazo/scribble";
 
-import { AgentSkillDialog } from "@/components/trazo/agent-skill-dialog";
 import { AkoderMark, GitHubLogo } from "@/components/trazo/icons";
 import {
   Tooltip,
@@ -136,17 +135,13 @@ export function TopBar({ stars }: { stars: number | null }) {
       </motion.div>
 
       <motion.div
+        data-no-pan=""
         initial={enterFrom}
         animate={enterTo}
         transition={reduceMotion ? { duration: 0 } : { ...enterSpring, delay: 0.22 }}
-        className={cn("flex items-center gap-2", reduceEntrance)}
+        className={cn(PILL_CLASS, reduceEntrance)}
       >
-        <div data-no-pan="" className={PILL_CLASS}>
-          <AgentSkillDialog />
-        </div>
-        <div data-no-pan="" className={PILL_CLASS}>
-          <GitHubStarBadge stars={stars} />
-        </div>
+        <GitHubStarBadge stars={stars} />
       </motion.div>
     </header>
   );

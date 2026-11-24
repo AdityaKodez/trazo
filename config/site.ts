@@ -44,6 +44,7 @@ export const siteConfig = {
 const illustrationSkillName = "trazo-illustration-style";
 
 export const illustrationSkill = {
+  name: illustrationSkillName,
   title: "Trazo illustration style",
   command: `npx skills add ${siteConfig.repo} --skill ${illustrationSkillName}`,
   source: `${siteConfig.github}/tree/main/skills/${illustrationSkillName}`,
