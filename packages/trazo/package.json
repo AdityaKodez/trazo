@@ -1,6 +1,6 @@
 {
   "name": "trazo-stickers",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Hand-drawn crayon sticker SVGs for React, Vue, Svelte, and web interfaces.",
   "homepage": "https://trazo.akoder.xyz",
   "type": "module",
