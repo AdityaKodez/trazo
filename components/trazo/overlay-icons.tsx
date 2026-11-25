@@ -2,6 +2,7 @@
 
 import {
   ArrowLeft as ArrowLeftGlyph,
+  ChevronDown as ChevronDownGlyph,
   Code as CodeGlyph,
   Compass as CompassGlyph,
   Download as DownloadGlyph,
@@ -32,6 +33,7 @@ function createSiteIcon(
 }
 
 export const ArrowLeft = /*#__PURE__*/ createSiteIcon(ArrowLeftGlyph);
+export const ChevronDown = /*#__PURE__*/ createSiteIcon(ChevronDownGlyph, "bold");
 export const Code = /*#__PURE__*/ createSiteIcon(CodeGlyph, "bold");
 export const Compass = /*#__PURE__*/ createSiteIcon(CompassGlyph);
 export const Download = /*#__PURE__*/ createSiteIcon(DownloadGlyph);

@@ -38,6 +38,7 @@ import {
 } from "@/components/trazo/icons";
 import {
   ArrowLeft,
+  ChevronDown,
   Code,
   Compass,
   Download,
@@ -64,6 +65,11 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -85,6 +91,7 @@ import {
   type CategoryFilter,
 } from "@/components/trazo/trazo-experience";
 import {
+  findPaletteOption,
   paletteOptions,
   resolveStickerColor,
   type PaletteOption,
@@ -92,8 +99,15 @@ import {
 import { illustrationSkill, siteConfig } from "@/config/site";
 import { preloadCopySound } from "@/lib/sound";
 import {
+  downloadBlob,
+  downloadStickerPackZip,
+  rasterizeStickerPng,
+  type StickerExportFormat,
+} from "@/lib/sticker-export";
+import {
   getLoadedSticker,
   loadAllCategories,
+  loadCategories,
   useStickerLoaderVersion,
 } from "@/lib/sticker-loader";
 import { useCopy } from "@/lib/use-copy";
@@ -266,17 +280,6 @@ function MiniPaletteBar() {
   );
 }
 
-function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
-
 function formatStarCount(count: number): string {
   if (count >= 1000) {
     const compact = (count / 1000).toFixed(count >= 10000 ? 0 : 1);
@@ -291,48 +294,17 @@ async function downloadStickerPng(
   concreteColor: string | undefined,
   rotate: number,
 ): Promise<boolean> {
-  const scale = 2;
-  const exportSize = size * scale;
-  const svgMarkup = toSvgString(def, {
-    size: exportSize,
+  const pngBlob = await rasterizeStickerPng(def, {
+    exportSize: size * 2,
     color: concreteColor,
     rotate,
-    title: def.name,
   });
-
-  const svgBlob = new Blob([svgMarkup], {
-    type: "image/svg+xml;charset=utf-8",
-  });
-  const url = URL.createObjectURL(svgBlob);
-
-  try {
-    const img = new window.Image();
-    img.crossOrigin = "anonymous";
-    await new Promise<void>((resolve, reject) => {
-      img.onload = () => resolve();
-      img.onerror = () => reject(new Error("Failed to rasterize SVG"));
-      img.src = url;
-    });
-
-    const canvas = document.createElement("canvas");
-    canvas.width = exportSize;
-    canvas.height = exportSize;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return false;
-
-    ctx.drawImage(img, 0, 0, exportSize, exportSize);
-    const pngBlob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob((blob) => resolve(blob), "image/png"),
-    );
-    if (pngBlob) {
-      const suffix = rotate !== 0 ? `-${size}px-${rotate}deg` : `-${size}px`;
-      downloadBlob(pngBlob, `${def.id}${suffix}.png`);
-      return true;
-    }
-    return false;
-  } finally {
-    URL.revokeObjectURL(url);
+  if (pngBlob) {
+    const suffix = rotate !== 0 ? `-${size}px-${rotate}deg` : `-${size}px`;
+    downloadBlob(pngBlob, `${def.id}${suffix}.png`);
+    return true;
   }
+  return false;
 }
 
 interface LibraryTileProps {
@@ -426,14 +398,288 @@ const LibraryTile = memo(function LibraryTile({
   );
 });
 
+const PACK_FORMAT_OPTIONS: readonly {
+  id: StickerExportFormat;
+  label: string;
+  description: string;
+  icon: ComponentType<{ className?: string }>;
+}[] = [
+  {
+    id: "svg",
+    label: "SVG pack (.zip)",
+    description: "Scalable vectors · MIT license",
+    icon: Download,
+  },
+  {
+    id: "png",
+    label: "PNG pack (.zip)",
+    description: "512px transparent · MIT license",
+    icon: ImageDown,
+  },
+] as const;
+
+function PackDownloadButton({
+  stickers,
+  activeCategory,
+  searchQuery,
+  paletteId,
+  isMobile,
+  onDownloaded,
+}: {
+  stickers: readonly StickerMeta[];
+  activeCategory: CategoryFilter;
+  searchQuery: string;
+  paletteId: ReturnType<typeof useTrazo>["paletteId"];
+  isMobile: boolean;
+  onDownloaded: (format: StickerExportFormat) => void;
+}) {
+  const [format, setFormat] = useState<StickerExportFormat>("svg");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [status, setStatus] = useState<"idle" | "zipping" | "saved" | "error">("idle");
+  const [progress, setProgress] = useState({ completed: 0, total: 0 });
+  const resetTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (resetTimerRef.current !== null) {
+        window.clearTimeout(resetTimerRef.current);
+      }
+    };
+  }, []);
+
+  const count = stickers.length;
+  const isZipping = status === "zipping";
+  const isDisabled = count === 0 || isZipping;
+  const hasSearch = searchQuery.trim().length > 0;
+  const activeTabLabel =
+    CATEGORY_TABS.find((tab) => tab.id === activeCategory)?.label ?? "All";
+  const scopeSlug = hasSearch ? "selection" : activeCategory;
+  const scopeLabel = hasSearch
+    ? `${count} ${count === 1 ? "match" : "matches"}`
+    : activeCategory === "all"
+      ? `All ${count} stickers`
+      : `${activeTabLabel} · ${count}`;
+  const activePalette = findPaletteOption(paletteId);
+  const PrimaryIcon = format === "svg" ? Download : ImageDown;
+
+  async function runDownload(selectedFormat: StickerExportFormat) {
+    if (count === 0 || isZipping) return;
+    setMenuOpen(false);
+    setStatus("zipping");
+    setProgress({ completed: 0, total: count });
+
+    if (resetTimerRef.current !== null) {
+      window.clearTimeout(resetTimerRef.current);
+      resetTimerRef.current = null;
+    }
+
+    try {
+      const neededCategories = new Set(stickers.map((item) => item.category));
+      await loadCategories(neededCategories);
+
+      const defs: StickerDef[] = [];
+      for (const item of stickers) {
+        const def = getLoadedSticker(item.id);
+        if (def) defs.push(def);
+      }
+
+      if (defs.length === 0) {
+        throw new Error("Stickers failed to load");
+      }
+
+      await downloadStickerPackZip({
+        stickers: defs,
+        format: selectedFormat,
+        color: resolveStickerColor(paletteId),
+        paletteId,
+        scope: scopeSlug,
+        onProgress: (completed, total) => {
+          setProgress({ completed, total });
+        },
+      });
+
+      setStatus("saved");
+      onDownloaded(selectedFormat);
+      resetTimerRef.current = window.setTimeout(() => {
+        setStatus("idle");
+        resetTimerRef.current = null;
+      }, 1800);
+    } catch {
+      setStatus("error");
+      resetTimerRef.current = window.setTimeout(() => {
+        setStatus("idle");
+        resetTimerRef.current = null;
+      }, 2400);
+    }
+  }
+
+  function handleSelectFormat(nextFormat: StickerExportFormat) {
+    setFormat(nextFormat);
+    void runDownload(nextFormat);
+  }
+
+  const tooltipLabel =
+    count === 0
+      ? "No stickers match current filter"
+      : `Download ${scopeLabel.toLowerCase()} as ${format.toUpperCase()} (.zip)`;
+
+  return (
+    <Popover open={menuOpen} onOpenChange={setMenuOpen}>
+      <div
+        role="group"
+        aria-label="Download sticker pack"
+        data-vaul-no-drag=""
+        className={cn(
+          "inline-flex shrink-0 items-center overflow-hidden rounded-full bg-background text-foreground shadow-[0_1px_2px_rgba(0,0,0,0.06)] ring-1 ring-inset ring-foreground/[0.09]",
+          isMobile ? "h-8 text-xs" : "-my-1 h-7 text-[11px]",
+        )}
+      >
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              disabled={isDisabled}
+              onClick={() => void runDownload(format)}
+              aria-label={tooltipLabel}
+              className="inline-flex h-full items-center gap-1.5 pl-2.5 pr-2 font-medium text-foreground outline-none micro-transition hover:bg-muted/80 active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+            >
+              {status === "zipping" ? (
+                <>
+                  <span
+                    aria-hidden="true"
+                    className="size-3 shrink-0 animate-spin rounded-full border-[1.75px] border-foreground/25 border-t-foreground"
+                  />
+                  <span className="tabular-nums">
+                    {format === "png" && progress.total > 0
+                      ? `${progress.completed}/${progress.total}`
+                      : "Zipping…"}
+                  </span>
+                </>
+              ) : status === "saved" ? (
+                <>
+                  <Check className="size-3.5 shrink-0 text-success" />
+                  <span>Saved</span>
+                </>
+              ) : status === "error" ? (
+                <>
+                  <X className="size-3 shrink-0 text-destructive" />
+                  <span>Failed</span>
+                </>
+              ) : (
+                <>
+                  <PrimaryIcon className="size-3.5 shrink-0" />
+                  <span>{format === "svg" ? "SVG zip" : "PNG zip"}</span>
+                  <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
+                    {count}
+                  </span>
+                </>
+              )}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="top">
+            <p>{tooltipLabel}</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <span aria-hidden="true" className="h-3.5 w-px shrink-0 bg-foreground/12" />
+
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            disabled={isDisabled}
+            aria-label="Choose zip download format"
+            aria-expanded={menuOpen}
+            className="flex h-full items-center justify-center px-1.5 text-muted-foreground outline-none micro-transition hover:bg-muted/80 hover:text-foreground active:scale-[0.94] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+          >
+            <ChevronDown
+              className={cn(
+                "size-3.5 transition-transform duration-150",
+                menuOpen && "rotate-180",
+              )}
+            />
+          </button>
+        </PopoverTrigger>
+      </div>
+
+      <PopoverContent
+        side="top"
+        align="end"
+        sideOffset={8}
+        data-vaul-no-drag=""
+        className="z-[60] w-60 gap-1 rounded-2xl p-1.5"
+      >
+        <div className="flex items-center justify-between gap-2 px-2 pb-1 pt-0.5 text-[11px] text-muted-foreground">
+          <span className="truncate font-medium text-foreground/85">{scopeLabel}</span>
+          <span className="inline-flex shrink-0 items-center gap-1.5">
+            <span
+              aria-hidden="true"
+              style={
+                activePalette.kind === "mix"
+                  ? { background: MIX_GRADIENT }
+                  : activePalette.kind === "swatch"
+                    ? { backgroundColor: activePalette.hex }
+                    : undefined
+              }
+              className={cn(
+                "block size-2.5 rounded-full ring-1 ring-inset ring-black/15",
+                activePalette.kind === "ink" && "bg-[color:var(--scribble-ink)]",
+              )}
+            />
+            <span className="truncate">
+              {activePalette.kind === "mix" ? "Original" : activePalette.label}
+            </span>
+          </span>
+        </div>
+
+        <div role="menu" aria-label="Pack download format" className="flex flex-col gap-0.5">
+          {PACK_FORMAT_OPTIONS.map((option) => {
+            const Icon = option.icon;
+            const isSelected = format === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                role="menuitemradio"
+                aria-checked={isSelected}
+                onClick={() => handleSelectFormat(option.id)}
+                className={cn(
+                  "flex w-full items-center justify-between gap-2 rounded-xl px-2 py-2 text-left outline-none micro-transition hover:bg-muted/85 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ring",
+                  isSelected && "bg-muted/60",
+                )}
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-background text-foreground shadow-[0_1px_2px_rgba(0,0,0,0.05)] ring-1 ring-inset ring-foreground/[0.08]">
+                    <Icon className="size-3.5" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-xs font-medium text-foreground">
+                      {option.label}
+                    </span>
+                    <span className="block truncate text-[11px] text-muted-foreground">
+                      {option.description}
+                    </span>
+                  </span>
+                </span>
+                {isSelected ? <Check className="size-3.5 shrink-0 text-foreground" /> : null}
+              </button>
+            );
+          })}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function LibraryPalette({
   Title,
   Description,
   isMobile,
+  stars,
 }: {
   Title: SlotComponent;
   Description: SlotComponent;
   isMobile: boolean;
+  stars: number | null;
 }) {
   const {
     paletteId,
@@ -455,6 +701,46 @@ function LibraryPalette({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [tabFade, setTabFade] = useState({ left: false, right: false });
+  const starPromptStatus = useStarPromptStatus();
+  const [promptVerb, setPromptVerb] = useState<string | null>(null);
+  const [starPromptSeq, setStarPromptSeq] = useState(0);
+  const [justStarred, setJustStarred] = useState(false);
+  const starThankYouTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (starThankYouTimerRef.current !== null) {
+        window.clearTimeout(starThankYouTimerRef.current);
+      }
+    };
+  }, []);
+
+  function revealStarPrompt(verb: string) {
+    if (starPromptStatus !== "pending") return;
+    setPromptVerb(verb);
+    setStarPromptSeq((seq) => seq + 1);
+  }
+
+  function handleStarClick() {
+    markStarPromptStarred();
+    setJustStarred(true);
+    if (starThankYouTimerRef.current !== null) {
+      window.clearTimeout(starThankYouTimerRef.current);
+    }
+    starThankYouTimerRef.current = window.setTimeout(() => {
+      setJustStarred(false);
+      setPromptVerb(null);
+      starThankYouTimerRef.current = null;
+    }, 1500);
+  }
+
+  function handleDismissStarPrompt() {
+    dismissStarPrompt();
+    setPromptVerb(null);
+  }
+
+  const showStarTray =
+    (starPromptStatus === "pending" && promptVerb !== null) || justStarred;
 
   useEffect(() => {
     void loadAllCategories();
@@ -759,11 +1045,11 @@ function LibraryPalette({
         )}
       </div>
 
-      {/* Footer in outer tray: keyboard hints, agent skill, count */}
+      {/* Footer in outer tray: keyboard hints, agent skill, pack zip download */}
       <div
         className={cn(
           "flex shrink-0 items-center justify-between gap-3 text-muted-foreground",
-          isMobile ? "px-1 pt-1 text-xs" : "px-3 pb-1 pt-2 text-[11px]",
+          isMobile ? "px-1 pt-1.5 text-xs" : "px-3 pb-1 pt-2 text-[11px]",
         )}
       >
         {isMobile ? null : (
@@ -787,7 +1073,7 @@ function LibraryPalette({
         )}
         <div
           className={cn(
-            "flex items-center gap-2.5",
+            "flex items-center gap-2",
             isMobile && "flex-1 justify-between",
           )}
         >
@@ -796,7 +1082,7 @@ function LibraryPalette({
             onClick={openAgentSkill}
             className={cn(
               "group/skill inline-flex items-center gap-1.5 rounded-lg font-medium text-foreground/80 outline-none micro-transition hover:bg-background/85 hover:text-foreground active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-ring",
-              isMobile ? "h-9 px-2" : "-my-1 h-7 px-2",
+              isMobile ? "h-8 px-2" : "-my-1 h-7 px-2",
             )}
           >
             <Pencil
@@ -806,11 +1092,80 @@ function LibraryPalette({
             />
             Agent skill
           </button>
-          <span className="font-mono">
-            {filteredStickers.length} / {STICKER_COUNT}
-          </span>
+          <PackDownloadButton
+            stickers={filteredStickers}
+            activeCategory={activeCategory}
+            searchQuery={searchQuery}
+            paletteId={paletteId}
+            isMobile={isMobile}
+            onDownloaded={(fmt) => revealStarPrompt(`${fmt.toUpperCase()} pack saved!`)}
+          />
         </div>
       </div>
+
+      {/* Expanding outer-tray GitHub star prompt after pack download */}
+      <AnimatePresence initial={false}>
+        {showStarTray ? (
+          <motion.div
+            key="library-star-tray"
+            initial={reduceMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
+            animate={reduceMotion ? { opacity: 1 } : { height: "auto", opacity: 1 }}
+            exit={reduceMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
+            transition={{ duration: 0.24, ease: [0.23, 1, 0.32, 1] }}
+            className="shrink-0 overflow-hidden"
+          >
+            <div
+              role="status"
+              aria-live="polite"
+              className="mt-1 flex items-center justify-between gap-2 border-t border-foreground/[0.07] px-2 pb-0.5 pt-2 sm:px-3"
+            >
+              <div className="flex min-w-0 items-center gap-2">
+                <motion.span
+                  key={starPromptSeq}
+                  aria-hidden
+                  initial={reduceMotion ? false : { rotate: -6, scale: 0.88 }}
+                  animate={
+                    reduceMotion
+                      ? { rotate: -6, scale: 1 }
+                      : {
+                          rotate: [-6, -18, 10, -10, -6],
+                          scale: [0.9, 1.12, 1.08, 1.02, 1],
+                        }
+                  }
+                  transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
+                  className="flex size-5 shrink-0 items-center justify-center"
+                >
+                  <Sticker def={starfishDef} size={20} />
+                </motion.span>
+                <span className="truncate text-xs text-muted-foreground">
+                  {justStarred ? (
+                    <span className="font-medium text-foreground">Thanks for starring Trazo!</span>
+                  ) : (
+                    <>
+                      <span className="font-medium text-foreground">{promptVerb}</span>{" "}
+                      <span>Enjoying Trazo?</span>
+                    </>
+                  )}
+                </span>
+              </div>
+
+              {!justStarred ? (
+                <div className="flex shrink-0 items-center gap-1">
+                  <StarTrayButton stars={stars} onClick={handleStarClick} />
+                  <button
+                    type="button"
+                    onClick={handleDismissStarPrompt}
+                    aria-label="Dismiss star prompt"
+                    className="flex size-7 items-center justify-center rounded-full text-muted-foreground outline-none micro-transition hover:bg-background/85 hover:text-foreground active:scale-[0.92] focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }
@@ -1732,7 +2087,12 @@ function OverlayBody({
         className="flex min-h-0 min-w-0 flex-1 flex-col"
       >
         {overlayView === "grid" ? (
-          <LibraryPalette Title={Title} Description={Description} isMobile={isMobile} />
+          <LibraryPalette
+            Title={Title}
+            Description={Description}
+            isMobile={isMobile}
+            stars={stars}
+          />
         ) : overlayView === "detail" ? (
           <StickerDetailView Title={Title} Description={Description} stars={stars} />
         ) : (
