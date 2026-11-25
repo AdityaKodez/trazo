@@ -40,6 +40,8 @@ import {
   downArrowDef,
   peachCoilDef,
   skyCoilDef,
+  wavyUnderlineDef,
+  paperPlaneDef,
 } from "./catalog/arrows";
 import {
   natureStickers,
@@ -53,6 +55,8 @@ import {
   spikyGrassDef,
   scallopedWaveDef,
   earthDef,
+  mushroomDef,
+  sleepyFoxDef,
 } from "./catalog/nature";
 import {
   heartsStickers,
@@ -68,6 +72,8 @@ import {
   doubleHeartsDef,
   starOutlineDef,
   crosshairBurstDef,
+  partyPopperDef,
+  crownDef,
 } from "./catalog/hearts";
 import {
   symbolsStickers,
@@ -81,6 +87,10 @@ import {
   exclamationMarkDef,
   diagonalHatchDef,
   hashtagDef,
+  trophyDef,
+  rocketDef,
+  speechBubbleDef,
+  checkmarkDef,
 } from "./catalog/symbols";
 import {
   catsStickers,
@@ -123,6 +133,8 @@ import {
   frenchFriesDef,
   sandwichDef,
   pastryDef,
+  icedCoffeeDef,
+  glazedDonutDef,
 } from "./catalog/food";
 
 export {
@@ -225,6 +237,18 @@ export {
   frenchFriesDef,
   sandwichDef,
   pastryDef,
+  partyPopperDef,
+  crownDef,
+  trophyDef,
+  rocketDef,
+  speechBubbleDef,
+  checkmarkDef,
+  wavyUnderlineDef,
+  paperPlaneDef,
+  icedCoffeeDef,
+  glazedDonutDef,
+  mushroomDef,
+  sleepyFoxDef,
 };
 
 export const trazoCatalog: readonly StickerDef[] = [
@@ -316,6 +340,18 @@ export const trazoCatalog: readonly StickerDef[] = [
   frenchFriesDef,
   sandwichDef,
   pastryDef,
+  partyPopperDef,
+  crownDef,
+  trophyDef,
+  rocketDef,
+  speechBubbleDef,
+  checkmarkDef,
+  wavyUnderlineDef,
+  paperPlaneDef,
+  icedCoffeeDef,
+  glazedDonutDef,
+  mushroomDef,
+  sleepyFoxDef,
 ];
 
 const stickerById = new Map<string, StickerDef>(

@@ -224,7 +224,7 @@ const stickerPlacements: readonly CanvasStickerPlacement[] = [
   },
 
   // ---------------------------------------------------------------------------
-  // NORTH QUADRANTS: Nature & weather (10 stickers)
+  // NORTH QUADRANTS: Nature & weather (12 stickers)
   // ---------------------------------------------------------------------------
   {
     id: "puffy-cloud",
@@ -296,9 +296,23 @@ const stickerPlacements: readonly CanvasStickerPlacement[] = [
     size: 110,
     rotate: -5,
   },
+  {
+    id: "mushroom",
+    x: -175,
+    y: -790,
+    size: 88,
+    rotate: -5,
+  },
+  {
+    id: "sleepy-fox",
+    x: -365,
+    y: -835,
+    size: 92,
+    rotate: 4,
+  },
 
   // ---------------------------------------------------------------------------
-  // WEST QUADRANTS: Arrows & flow (10 stickers)
+  // WEST QUADRANTS: Arrows & flow (12 stickers)
   // ---------------------------------------------------------------------------
   {
     id: "curly-arrow",
@@ -370,9 +384,23 @@ const stickerPlacements: readonly CanvasStickerPlacement[] = [
     size: 88,
     rotate: -6,
   },
+  {
+    id: "paper-plane",
+    x: -850,
+    y: -155,
+    size: 86,
+    rotate: -6,
+  },
+  {
+    id: "wavy-underline",
+    x: -1275,
+    y: -115,
+    size: 82,
+    rotate: -3,
+  },
 
   // ---------------------------------------------------------------------------
-  // EAST QUADRANTS: Hearts & sparks (12 stickers)
+  // EAST QUADRANTS: Hearts & sparks (14 stickers)
   // ---------------------------------------------------------------------------
   {
     id: "heart-burst",
@@ -458,9 +486,23 @@ const stickerPlacements: readonly CanvasStickerPlacement[] = [
     size: 86,
     rotate: -6,
   },
+  {
+    id: "party-popper",
+    x: 840,
+    y: -150,
+    size: 88,
+    rotate: -5,
+  },
+  {
+    id: "crown",
+    x: 1245,
+    y: -225,
+    size: 84,
+    rotate: 6,
+  },
 
   // ---------------------------------------------------------------------------
-  // SOUTH QUADRANTS: Symbols & marks (10 stickers)
+  // SOUTH QUADRANTS: Symbols & marks (14 stickers)
   // ---------------------------------------------------------------------------
   {
     id: "lightning-bolt",
@@ -531,6 +573,34 @@ const stickerPlacements: readonly CanvasStickerPlacement[] = [
     y: 675,
     size: 86,
     rotate: -5,
+  },
+  {
+    id: "trophy",
+    x: -175,
+    y: 625,
+    size: 82,
+    rotate: -4,
+  },
+  {
+    id: "rocket",
+    x: -215,
+    y: 850,
+    size: 84,
+    rotate: 4,
+  },
+  {
+    id: "speech-bubble",
+    x: 225,
+    y: 850,
+    size: 82,
+    rotate: -4,
+  },
+  {
+    id: "checkmark",
+    x: 525,
+    y: 835,
+    size: 76,
+    rotate: 5,
   },
 
   // ---------------------------------------------------------------------------
@@ -725,7 +795,7 @@ const stickerPlacements: readonly CanvasStickerPlacement[] = [
   },
 
   // ---------------------------------------------------------------------------
-  // NORTH-WEST QUADRANT: Food & snacks (5 stickers)
+  // NORTH-WEST QUADRANT: Food & snacks (7 stickers)
   // ---------------------------------------------------------------------------
   {
     id: "pizza",
@@ -733,6 +803,13 @@ const stickerPlacements: readonly CanvasStickerPlacement[] = [
     y: -835,
     size: 106,
     rotate: -6,
+  },
+  {
+    id: "iced-coffee",
+    x: -1025,
+    y: -860,
+    size: 98,
+    rotate: -4,
   },
   {
     id: "burger",
@@ -762,6 +839,13 @@ const stickerPlacements: readonly CanvasStickerPlacement[] = [
     x: -795,
     y: -650,
     size: 100,
+    rotate: 6,
+  },
+  {
+    id: "glazed-donut",
+    x: -1185,
+    y: -480,
+    size: 94,
     rotate: 6,
   },
 ] as const;

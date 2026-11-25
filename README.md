@@ -1,6 +1,6 @@
 # Trazo
 
-Hand-drawn crayon stickers for the web. 88 wax-textured SVG stickers (sea creatures, cats, school accessories, food, hearts, arrows, stars, clouds, emphasis marks) baked into clean vector paths. Recolor them live, copy the SVG, or install them from npm.
+Hand-drawn crayon stickers for the web. 100 wax-textured SVG stickers (sea creatures, cats, school accessories, food, hearts, arrows, stars, clouds, celebration & emphasis marks) baked into clean vector paths. Recolor them live, copy the SVG, or install them from npm.
 
 **Site:** [trazo.akoder.xyz](https://trazo.akoder.xyz) · **npm:** [`trazo-stickers`](https://www.npmjs.com/package/trazo-stickers)
 

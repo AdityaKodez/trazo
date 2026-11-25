@@ -37,6 +37,8 @@ import {
   downArrowDef,
   peachCoilDef,
   skyCoilDef,
+  wavyUnderlineDef,
+  paperPlaneDef,
 } from "./catalog/arrows";
 import {
   flowerRedDef,
@@ -49,6 +51,8 @@ import {
   spikyGrassDef,
   scallopedWaveDef,
   earthDef,
+  mushroomDef,
+  sleepyFoxDef,
 } from "./catalog/nature";
 import {
   crownRaysDef,
@@ -63,6 +67,8 @@ import {
   doubleHeartsDef,
   starOutlineDef,
   crosshairBurstDef,
+  partyPopperDef,
+  crownDef,
 } from "./catalog/hearts";
 import {
   diamondDef,
@@ -75,6 +81,10 @@ import {
   exclamationMarkDef,
   diagonalHatchDef,
   hashtagDef,
+  trophyDef,
+  rocketDef,
+  speechBubbleDef,
+  checkmarkDef,
 } from "./catalog/symbols";
 import {
   heartCatDef,
@@ -113,6 +123,8 @@ import {
   frenchFriesDef,
   sandwichDef,
   pastryDef,
+  icedCoffeeDef,
+  glazedDonutDef,
 } from "./catalog/food";
 
 export const BabySquid = /*#__PURE__*/ createStickerComponent(babySquidDef);
@@ -203,3 +215,15 @@ export const Burger = /*#__PURE__*/ createStickerComponent(burgerDef);
 export const FrenchFries = /*#__PURE__*/ createStickerComponent(frenchFriesDef);
 export const Sandwich = /*#__PURE__*/ createStickerComponent(sandwichDef);
 export const Pastry = /*#__PURE__*/ createStickerComponent(pastryDef);
+export const PartyPopper = /*#__PURE__*/ createStickerComponent(partyPopperDef);
+export const Crown = /*#__PURE__*/ createStickerComponent(crownDef);
+export const Trophy = /*#__PURE__*/ createStickerComponent(trophyDef);
+export const Rocket = /*#__PURE__*/ createStickerComponent(rocketDef);
+export const SpeechBubble = /*#__PURE__*/ createStickerComponent(speechBubbleDef);
+export const Checkmark = /*#__PURE__*/ createStickerComponent(checkmarkDef);
+export const WavyUnderline = /*#__PURE__*/ createStickerComponent(wavyUnderlineDef);
+export const PaperPlane = /*#__PURE__*/ createStickerComponent(paperPlaneDef);
+export const IcedCoffee = /*#__PURE__*/ createStickerComponent(icedCoffeeDef);
+export const GlazedDonut = /*#__PURE__*/ createStickerComponent(glazedDonutDef);
+export const Mushroom = /*#__PURE__*/ createStickerComponent(mushroomDef);
+export const SleepyFox = /*#__PURE__*/ createStickerComponent(sleepyFoxDef);

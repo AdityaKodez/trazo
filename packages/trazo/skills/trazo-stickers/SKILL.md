@@ -1,11 +1,11 @@
 ---
 name: trazo-stickers
-description: Guide for the trazo-stickers npm package, which provides 88 hand-drawn crayon sticker SVGs as React, Vue, and Svelte components and standalone SVG strings. Use when adding, importing, recoloring, rotating, looking up, or exporting Trazo stickers in code, or when the user mentions trazo-stickers or Trazo stickers.
+description: Guide for the trazo-stickers npm package, which provides 100 hand-drawn crayon sticker SVGs as React, Vue, and Svelte components and standalone SVG strings. Use when adding, importing, recoloring, rotating, looking up, or exporting Trazo stickers in code, or when the user mentions trazo-stickers or Trazo stickers.
 ---
 
 # trazo-stickers
 
-`trazo-stickers` ships 88 hand-drawn, wax-textured crayon stickers as vector paths. Each sticker is available as a React, Vue, or Svelte component and as an SVG string.
+`trazo-stickers` ships 100 hand-drawn, wax-textured crayon stickers as vector paths. Each sticker is available as a React, Vue, or Svelte component and as an SVG string.
 
 Stickers are decorative. They have no click or form behavior, so wrap one in a link or button when it needs an action. The package only renders its bundled stickers. It has no API for creating new artwork.
 
@@ -69,19 +69,19 @@ const svg = toSvgString(heart, { size: 48, color: "#1f1e1b", title: "Heart cat" 
 
 ## Catalog
 
-- `trazoCatalog` is a readonly array of all 88 `StickerDef` objects. The root and `svg` entries export it; use the `svg` entry for catalog lookups outside React.
+- `trazoCatalog` is a readonly array of all 100 `StickerDef` objects. The root and `svg` entries export it; use the `svg` entry for catalog lookups outside React.
 - A `StickerDef` has `id`, `componentName`, `name`, `category`, `mixColor`, `tags`, `viewBox`, `d`, and optional `layers`.
 - Search by `tags` or `name`, for example `trazoCatalog.filter((sticker) => sticker.tags.includes("cat"))`.
 - Ids by category:
   - `ocean` (16): `baby-squid`, `conch-shell`, `flapjack-octopus`, `seahorse`, `shrimp`, `starfish`, `sea-turtle`, `red-octopus`, `blue-minnow`, `red-crab`, `pearl-clam`, `pink-jellyfish`, `dolphin`, `scallop-shell`, `striped-fish`, `sea-bubble`
-  - `arrows` (10): `curly-arrow`, `spiral`, `square-spiral`, `loop-ribbon`, `zigzag-scribble`, `loop-arrow-orange`, `vertical-zigzag`, `down-arrow`, `peach-coil`, `sky-coil`
-  - `symbols` (10): `diamond`, `anger-mark`, `triangle`, `circle-ring`, `asterisk`, `lightning-bolt`, `question-mark`, `exclamation-mark`, `diagonal-hatch`, `hashtag`
-  - `hearts` (12): `crown-rays`, `heart-burst`, `six-star`, `heart-chevron`, `solid-star`, `sparkle-four`, `sparkle-cross`, `bowtie-loop`, `triple-heart-swirl`, `double-hearts`, `star-outline`, `crosshair-burst`
-  - `nature` (10): `flower-red`, `puffy-cloud`, `flower-yellow`, `ocean-waves`, `sun-burst`, `splash-drops`, `triple-zigzag`, `spiky-grass`, `scalloped-wave`, `earth`
+  - `arrows` (12): `curly-arrow`, `spiral`, `square-spiral`, `loop-ribbon`, `zigzag-scribble`, `loop-arrow-orange`, `vertical-zigzag`, `down-arrow`, `peach-coil`, `sky-coil`, `wavy-underline`, `paper-plane`
+  - `symbols` (14): `diamond`, `anger-mark`, `triangle`, `circle-ring`, `asterisk`, `lightning-bolt`, `question-mark`, `exclamation-mark`, `diagonal-hatch`, `hashtag`, `trophy`, `rocket`, `speech-bubble`, `checkmark`
+  - `hearts` (14): `crown-rays`, `heart-burst`, `six-star`, `heart-chevron`, `solid-star`, `sparkle-four`, `sparkle-cross`, `bowtie-loop`, `triple-heart-swirl`, `double-hearts`, `star-outline`, `crosshair-burst`, `party-popper`, `crown`
+  - `nature` (12): `flower-red`, `puffy-cloud`, `flower-yellow`, `ocean-waves`, `sun-burst`, `splash-drops`, `triple-zigzag`, `spiky-grass`, `scalloped-wave`, `earth`, `mushroom`, `sleepy-fox`
   - `cats` (8): `heart-cat`, `daisy-cat`, `hugging-cats`, `flower-cat`, `bowtie-cat`, `stacked-cats`, `cheering-cat`, `heart-hug`
   - `characters` (5): `pink-dino`, `spider-man`, `stitch`, `little-green-alien`, `woody-wink`
   - `school` (12): `yellow-pencil`, `blue-crayon`, `crayon-box`, `highlighter`, `spiral-notebook`, `book-stack`, `open-book`, `school-backpack`, `school-eraser`, `wooden-ruler`, `craft-scissors`, `pencil-sharpener`
-  - `food` (5): `pizza`, `burger`, `french-fries`, `sandwich`, `pastry`
+  - `food` (7): `pizza`, `burger`, `french-fries`, `sandwich`, `pastry`, `iced-coffee`, `glazed-donut`
 
 ## Licensing note
 
