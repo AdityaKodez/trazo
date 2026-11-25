@@ -150,10 +150,22 @@ const SKILL_EXAMPLES = [
       "z-[1] -translate-y-0.5 rotate-3 group-hover/peek:-translate-y-2.5 group-hover/peek:rotate-0",
   },
   {
+    id: "mushroom",
+    name: "Mushroom",
+    className:
+      "-translate-y-1 -rotate-6 group-hover/peek:-translate-y-2 group-hover/peek:-rotate-12",
+  },
+  {
     id: "loop-arrow",
     name: "Loop arrow",
     className:
       "rotate-12 group-hover/peek:-translate-y-1.5 group-hover/peek:rotate-[15deg]",
+  },
+  {
+    id: "butterfly",
+    name: "Butterfly",
+    className:
+      "-translate-y-1.5 rotate-6 group-hover/peek:-translate-y-3 group-hover/peek:rotate-12",
   },
 ] as const;
 
@@ -1548,18 +1560,18 @@ function AgentSkillView({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {/* Header in outer tray: back, title + peeking stickers, close */}
-      <div className="relative z-0 flex shrink-0 items-center gap-1 px-1.5 pb-1.5 pt-0.5 sm:px-2">
+      <div className="relative z-0 flex shrink-0 items-center gap-1 px-1.5 pb-1.5 pt-0.5 max-[400px]:items-start sm:px-2">
         <IconAction label="Back to library" onClick={backToGrid}>
           <ArrowLeft className="size-4" />
         </IconAction>
-        <div className="flex min-w-0 flex-1 items-center gap-2 px-1">
-          <Title className="min-w-0 truncate text-base font-semibold tracking-tight text-foreground">
+        <div className="flex min-w-0 flex-1 items-center gap-2 px-1 max-[400px]:flex-wrap max-[400px]:gap-y-0">
+          <Title className="min-w-0 truncate text-base font-semibold tracking-tight text-foreground max-[400px]:w-full">
             {illustrationSkill.title}
           </Title>
           <div
             aria-label="Example stickers drawn with the skill"
             role="group"
-            className="group/peek relative -my-2.5 ml-auto flex shrink-0 translate-y-[12px] items-end -space-x-3.5 pr-0.5 sm:translate-y-[14px] sm:-space-x-3"
+            className="group/peek relative -my-2.5 ml-auto flex shrink-0 translate-y-[12px] items-end -space-x-3.5 pr-0.5 max-[400px]:my-0 max-[400px]:translate-y-2 sm:translate-y-[14px] sm:-space-x-3"
           >
             {SKILL_EXAMPLES.map(({ id, name, className }) => (
               <Image
