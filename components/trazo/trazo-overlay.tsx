@@ -32,6 +32,7 @@ import {
   GitHubLogo,
   JavaScriptLogo,
   ReactLogo,
+  SvelteLogo,
   VueLogo,
   X,
 } from "@/components/trazo/icons";
@@ -106,7 +107,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const SIZE_STEPS = [16, 24, 32, 48, 64, 80, 96, 112, 128] as const;
-type CodeTab = "react" | "vue" | "js";
+type CodeTab = "react" | "vue" | "svelte" | "js";
 
 const CATEGORY_TABS: readonly {
   id: CategoryFilter;
@@ -1046,7 +1047,11 @@ function StickerDetailView({
               `/>`,
             ].join("\n");
 
-      const importLine = `import { ${componentName} } from "trazo-stickers${isVue ? "/vue" : ""}";`;
+      const entry = codeTab === "react" ? "" : `/${codeTab}`;
+      const importLine = `import { ${componentName} } from "trazo-stickers${entry}";`;
+      if (codeTab === "svelte") {
+        return ["<script>", `  ${importLine}`, "</script>", "", component].join("\n");
+      }
       return isVue
         ? [
             "<script setup>",
@@ -1318,6 +1323,7 @@ function StickerDetailView({
                   [
                     { id: "react", icon: ReactLogo, label: "React" },
                     { id: "vue", icon: VueLogo, label: "Vue" },
+                    { id: "svelte", icon: SvelteLogo, label: "Svelte" },
                     { id: "js", icon: JavaScriptLogo, label: "JavaScript" },
                   ] as const
                 ).map((tab) => {
@@ -1328,6 +1334,7 @@ function StickerDetailView({
                       key={tab.id}
                       type="button"
                       role="tab"
+                      aria-label={tab.label}
                       aria-selected={isActive}
                       onClick={() => setCodeTab(tab.id)}
                       className={cn(
@@ -1350,7 +1357,7 @@ function StickerDetailView({
                           isActive ? "text-foreground/80" : "text-muted-foreground/75",
                         )}
                       />
-                      <span className="relative">{tab.label}</span>
+                      {isActive ? <span className="relative">{tab.label}</span> : null}
                     </button>
                   );
                 })}

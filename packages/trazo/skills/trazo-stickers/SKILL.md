@@ -1,11 +1,11 @@
 ---
 name: trazo-stickers
-description: Guide for the trazo-stickers npm package, which provides 88 hand-drawn crayon sticker SVGs as React components and standalone SVG strings. Use when adding, importing, recoloring, rotating, looking up, or exporting Trazo stickers in code, or when the user mentions trazo-stickers or Trazo stickers.
+description: Guide for the trazo-stickers npm package, which provides 88 hand-drawn crayon sticker SVGs as React, Vue, and Svelte components and standalone SVG strings. Use when adding, importing, recoloring, rotating, looking up, or exporting Trazo stickers in code, or when the user mentions trazo-stickers or Trazo stickers.
 ---
 
 # trazo-stickers
 
-`trazo-stickers` ships 88 hand-drawn, wax-textured crayon stickers as vector paths. Each sticker is available as a React component and as an SVG string for non-React code.
+`trazo-stickers` ships 88 hand-drawn, wax-textured crayon stickers as vector paths. Each sticker is available as a React, Vue, or Svelte component and as an SVG string.
 
 Stickers are decorative. They have no click or form behavior, so wrap one in a link or button when it needs an action. The package only renders its bundled stickers. It has no API for creating new artwork.
 
@@ -14,6 +14,8 @@ Stickers are decorative. They have no click or form behavior, so wrap one in a l
 - Install with `npm install trazo-stickers`. pnpm, yarn, and bun also work.
 - The package ships ES modules only (`"type": "module"`). Use `import`, not `require`.
 - The root entry `trazo-stickers` exports the React components and everything from the `svg` entry. It imports React at runtime, so `react` 18 or newer must be installed.
+- Use `trazo-stickers/vue` for Vue 3 and Nuxt components. Only Vue is required by this entry.
+- Use `trazo-stickers/svelte` for Svelte 5 and SvelteKit components. Only Svelte is required by this entry; Svelte 4 apps should use SVG strings.
 - The `trazo-stickers/svg` entry has no React dependency. Use it in Node, Astro, Svelte, Vue, or plain HTML.
 
 ## React components
@@ -36,6 +38,19 @@ Each component name is the sticker id in PascalCase, so `heart-cat` becomes `Hea
 
 For a custom `StickerDef`, use `<Sticker def={def} />` or `createStickerComponent(def)`.
 
+## Svelte components
+
+```svelte
+<script lang="ts">
+  import { Dolphin, HeartCat } from "trazo-stickers/svelte";
+</script>
+
+<Dolphin size={64} />
+<HeartCat size={56} color="#ef4444" rotate={-8} title="Heart cat" />
+```
+
+Svelte components use the same `size`, `color`, `rotate`, and `title` props as React. Standard SVG attributes and event handlers pass through; use `class` rather than `className`. Props update reactively, and the entry supports SSR and hydration. `SvelteStickerProps` is exported as a type.
+
 ## Standalone SVG strings
 
 ```ts
@@ -54,7 +69,7 @@ const svg = toSvgString(heart, { size: 48, color: "#1f1e1b", title: "Heart cat" 
 
 ## Catalog
 
-- `trazoCatalog` is a readonly array of all 88 `StickerDef` objects. Both entries export it.
+- `trazoCatalog` is a readonly array of all 88 `StickerDef` objects. The root and `svg` entries export it; use the `svg` entry for catalog lookups outside React.
 - A `StickerDef` has `id`, `componentName`, `name`, `category`, `mixColor`, `tags`, `viewBox`, `d`, and optional `layers`.
 - Search by `tags` or `name`, for example `trazoCatalog.filter((sticker) => sticker.tags.includes("cat"))`.
 - Ids by category:

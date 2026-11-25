@@ -116,7 +116,7 @@ if (prevMetaSource !== nextMetaSource) {
   compileAndRewrite();
 }
 
-const vueStickers = svg.trazoCatalog.map((def) => {
+const stickers = svg.trazoCatalog.map((def) => {
   const { componentName } = def;
   const definitionName = `${componentName.charAt(0).toLowerCase()}${componentName.slice(1)}Def`;
   if (svg[definitionName] !== def) {
@@ -127,8 +127,8 @@ const vueStickers = svg.trazoCatalog.map((def) => {
 
 fs.writeFileSync(path.join(distDir, "vue.js"), [
   `import { createVueSticker } from "./vue-sticker.js";`,
-  `import { ${vueStickers.map(({ definitionName }) => definitionName).join(", ")} } from "./svg.js";`,
-  ...vueStickers.map(({ componentName, definitionName }) =>
+  `import { ${stickers.map(({ definitionName }) => definitionName).join(", ")} } from "./svg.js";`,
+  ...stickers.map(({ componentName, definitionName }) =>
     `export const ${componentName} = /*#__PURE__*/ createVueSticker(${definitionName});`,
   ),
   "",
@@ -137,6 +137,45 @@ fs.writeFileSync(path.join(distDir, "vue.js"), [
 fs.writeFileSync(path.join(distDir, "vue.d.ts"), [
   `import type { createVueSticker } from "./vue-sticker.js";`,
   `type VueSticker = ReturnType<typeof createVueSticker>;`,
-  ...vueStickers.map(({ componentName }) => `export declare const ${componentName}: VueSticker;`),
+  ...stickers.map(({ componentName }) => `export declare const ${componentName}: VueSticker;`),
+  "",
+].join("\n"));
+
+// Publish Svelte source so the consumer's compiler can target SSR or the browser.
+// Each wrapper references the existing definition; no artwork is duplicated.
+const svelteDir = path.join(distDir, "svelte");
+fs.mkdirSync(svelteDir, { recursive: true });
+fs.copyFileSync(
+  path.join(pkgDir, "src/svelte/Sticker.svelte"),
+  path.join(svelteDir, "Sticker.svelte"),
+);
+for (const { componentName, definitionName } of stickers) {
+  fs.writeFileSync(path.join(svelteDir, `${componentName}.svelte`), [
+    `<script lang="ts">`,
+    `  import Sticker from "./Sticker.svelte";`,
+    `  import { ${definitionName} } from "../svg.js";`,
+    `  import type { SvelteStickerProps } from "../svelte-sticker.js";`,
+    `  let props: SvelteStickerProps = $props();`,
+    `</script>`,
+    ``,
+    `<Sticker def={${definitionName}} {...props} />`,
+    "",
+  ].join("\n"));
+}
+
+fs.writeFileSync(path.join(distDir, "svelte.js"), [
+  ...stickers.map(({ componentName }) =>
+    `export { default as ${componentName} } from "./svelte/${componentName}.svelte";`,
+  ),
+  "",
+].join("\n"));
+
+fs.writeFileSync(path.join(distDir, "svelte.d.ts"), [
+  `import type { Component } from "svelte";`,
+  `import type { SvelteStickerProps } from "./svelte-sticker.js";`,
+  `export type { SvelteStickerProps } from "./svelte-sticker.js";`,
+  ...stickers.map(({ componentName }) =>
+    `export declare const ${componentName}: Component<SvelteStickerProps>;`,
+  ),
   "",
 ].join("\n"));

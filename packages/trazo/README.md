@@ -1,6 +1,6 @@
 # trazo-stickers
 
-Hand-drawn, wax-textured crayon sticker SVGs baked into clean vector paths. Tree-shakeable React and Vue components plus standalone SVG strings.
+Hand-drawn, wax-textured crayon sticker SVGs baked into clean vector paths. Tree-shakeable React, Vue, and Svelte components plus standalone SVG strings.
 
 Browse, recolor, and copy every sticker live at **[trazo.akoder.xyz](https://trazo.akoder.xyz)**.
 
@@ -64,6 +64,23 @@ import { HeartCat } from "trazo-stickers/vue";
 ```
 
 Vue stickers share the React `size`, `color`, `rotate`, and `title` props. Vue attributes such as `class` and `style` pass through to the SVG.
+
+## Svelte 5 and SvelteKit (`trazo-stickers/svelte`)
+
+Import each sticker you use in your Svelte 5 or SvelteKit app:
+
+```svelte
+<script lang="ts">
+  import { Dolphin, HeartCat } from "trazo-stickers/svelte";
+</script>
+
+<Dolphin size={64} />
+<HeartCat size={56} color="#ef4444" rotate={-8} title="Heart cat" />
+```
+
+Svelte stickers share the React `size`, `color`, `rotate`, and `title` props. Standard SVG attributes and event handlers, such as `class`, `style`, and `onclick`, pass through to the SVG. Props update reactively. Import the `SvelteStickerProps` type from the same entry point when needed.
+
+This entry supports server rendering and hydration, shares the existing artwork, and does not import React or Vue. Only Svelte 5 is required; Svelte 4 apps can use the standalone SVG entry instead.
 
 ## Standalone SVG (`trazo-stickers/svg`)
 

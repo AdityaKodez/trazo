@@ -17,7 +17,7 @@ import { Dolphin, HeartCat } from "trazo-stickers";
 <HeartCat size={56} color="#ef4444" rotate={-8} />
 ```
 
-Use `trazo-stickers/vue` for native Vue 3 and Nuxt components, or `trazo-stickers/svg` for plain SVG strings. Full props and examples are in [`packages/trazo/README.md`](packages/trazo/README.md).
+Use `trazo-stickers/vue` for native Vue 3 and Nuxt components, `trazo-stickers/svelte` for Svelte 5 and SvelteKit components, or `trazo-stickers/svg` for plain SVG strings. Full props and examples are in [`packages/trazo/README.md`](packages/trazo/README.md).
 
 ## Draw with an agent
 
@@ -34,7 +34,7 @@ Ask your agent to use `$trazo-illustration-style`. For example, ask it to draw a
 | Path | What it is |
 | --- | --- |
 | `app/`, `components/`, `config/`, `lib/` | The Trazo site: a Next.js app with a pannable sticker canvas and a library with a detail dialog for each sticker |
-| `packages/trazo/` | The `trazo-stickers` npm package: sticker catalog, React and Vue components, SVG helpers, build script |
+| `packages/trazo/` | The `trazo-stickers` npm package: sticker catalog, React, Vue, and Svelte components, SVG helpers, build script |
 
 ## Run the site locally
 
@@ -56,6 +56,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm start` | Serve the production build |
 | `npm run lint` | Run ESLint |
 | `npm run pkg:build` | Build only `packages/trazo` into `packages/trazo/dist` |
+| `npm run pkg:check:svelte` | Build and verify every Svelte export for client compilation, SSR, artwork parity, and SVG props |
 
 ## Working on the package
 

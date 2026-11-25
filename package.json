@@ -10,7 +10,8 @@
     "build": "npm run pkg:build && next build",
     "start": "next start",
     "lint": "eslint",
-    "pkg:build": "node packages/trazo/scripts/build.mjs"
+    "pkg:build": "node packages/trazo/scripts/build.mjs",
+    "pkg:check:svelte": "npm run pkg:build && node packages/trazo/scripts/check-svelte.mjs"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
@@ -32,6 +33,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
+    "svelte": "^5.59.1",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vue": "^3.5.46"
