@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import {
   STICKER_CATEGORY_COUNTS,
   STICKER_COUNT,
@@ -10,7 +9,7 @@ import { LibraryJsonLd } from "@/components/seo/json-ld";
 import { siteConfig } from "@/config/site";
 
 const title = `${STICKER_COUNT} Free Hand-Drawn Crayon SVG Stickers | ${siteConfig.name}`;
-const description = `Browse, search, and recolor all ${STICKER_COUNT} free hand-drawn crayon SVG stickers across 9 categories. Copy React, Vue, or standalone SVG code.`;
+const description = `Browse, search, and recolor all ${STICKER_COUNT} free hand-drawn crayon SVG stickers across 9 categories. Copy React, Vue, Svelte, or standalone SVG code.`;
 const url = `${siteConfig.url}/library`;
 
 export const metadata: Metadata = {
@@ -63,10 +62,10 @@ export default function LibraryPage() {
         <ul>
           {trazoCatalogMeta.map((sticker) => (
             <li key={sticker.id}>
-              <Link href={`/library/${sticker.id}`}>
+              <a href={`/library/${sticker.id}`}>
                 {sticker.name} crayon SVG sticker ({sticker.category}) — React{" "}
                 {`<${sticker.componentName} />`} — {sticker.tags.join(", ")}
-              </Link>
+              </a>
             </li>
           ))}
         </ul>

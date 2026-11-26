@@ -80,24 +80,13 @@ export interface LocateTarget {
   seq: number;
 }
 
-interface TrazoContextValue {
-  paletteId: PaletteId;
+export interface TrazoActionsValue {
   setPaletteId: (id: PaletteId) => void;
-  overlayOpen: boolean;
   setOverlayOpen: (open: boolean) => void;
-  overlayView: OverlayView;
-  selectedStickerMeta: StickerMeta;
-  selectedSticker: StickerDef | undefined;
-  activeCategory: CategoryFilter;
   setActiveCategory: (category: CategoryFilter) => void;
-  searchQuery: string;
   setSearchQuery: (query: string) => void;
-  selectedSize: number;
   setSelectedSize: (size: number) => void;
-  selectedRotation: number;
   setSelectedRotation: (rotation: number) => void;
-  locatedSticker: LocateTarget | null;
-  cameraTarget: CameraGlideTarget;
   openLibraryGrid: () => void;
   openStickerDetail: (id: string) => void;
   openAgentSkill: () => void;
@@ -106,7 +95,30 @@ interface TrazoContextValue {
   centerCanvas: () => void;
 }
 
-const TrazoContext = createContext<TrazoContextValue | null>(null);
+export interface TrazoCanvasStateValue {
+  paletteId: PaletteId;
+  cameraTarget: CameraGlideTarget;
+  locatedSticker: LocateTarget | null;
+}
+
+export interface TrazoOverlayStateValue {
+  overlayOpen: boolean;
+  overlayView: OverlayView;
+  selectedStickerMeta: StickerMeta;
+  selectedSticker: StickerDef | undefined;
+  activeCategory: CategoryFilter;
+  searchQuery: string;
+  selectedSize: number;
+  selectedRotation: number;
+}
+
+export type TrazoContextValue = TrazoActionsValue &
+  TrazoCanvasStateValue &
+  TrazoOverlayStateValue;
+
+const TrazoActionsContext = createContext<TrazoActionsValue | null>(null);
+const TrazoCanvasStateContext = createContext<TrazoCanvasStateValue | null>(null);
+const TrazoOverlayStateContext = createContext<TrazoOverlayStateValue | null>(null);
 
 export function TrazoProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -140,6 +152,7 @@ export function TrazoProvider({ children }: { children: ReactNode }) {
     setOverlay(next);
     if (window.location.pathname !== path) {
       window.history.pushState(null, "", path);
+      window.dispatchEvent(new Event("trazo:routechange"));
     }
   }, []);
 
@@ -231,25 +244,14 @@ export function TrazoProvider({ children }: { children: ReactNode }) {
     });
   }, [closeOverlay]);
 
-  const value = useMemo<TrazoContextValue>(
+  const actionsValue = useMemo<TrazoActionsValue>(
     () => ({
-      paletteId,
       setPaletteId,
-      overlayOpen,
       setOverlayOpen,
-      overlayView,
-      selectedStickerMeta,
-      selectedSticker,
-      activeCategory,
       setActiveCategory,
-      searchQuery,
       setSearchQuery,
-      selectedSize,
       setSelectedSize,
-      selectedRotation,
       setSelectedRotation,
-      locatedSticker,
-      cameraTarget,
       openLibraryGrid,
       openStickerDetail,
       openAgentSkill,
@@ -258,18 +260,7 @@ export function TrazoProvider({ children }: { children: ReactNode }) {
       centerCanvas,
     }),
     [
-      paletteId,
-      overlayOpen,
       setOverlayOpen,
-      overlayView,
-      selectedStickerMeta,
-      selectedSticker,
-      activeCategory,
-      searchQuery,
-      selectedSize,
-      selectedRotation,
-      locatedSticker,
-      cameraTarget,
       openLibraryGrid,
       openStickerDetail,
       openAgentSkill,
@@ -279,13 +270,83 @@ export function TrazoProvider({ children }: { children: ReactNode }) {
     ],
   );
 
-  return <TrazoContext.Provider value={value}>{children}</TrazoContext.Provider>;
+  const canvasStateValue = useMemo<TrazoCanvasStateValue>(
+    () => ({
+      paletteId,
+      cameraTarget,
+      locatedSticker,
+    }),
+    [paletteId, cameraTarget, locatedSticker],
+  );
+
+  const overlayStateValue = useMemo<TrazoOverlayStateValue>(
+    () => ({
+      overlayOpen,
+      overlayView,
+      selectedStickerMeta,
+      selectedSticker,
+      activeCategory,
+      searchQuery,
+      selectedSize,
+      selectedRotation,
+    }),
+    [
+      overlayOpen,
+      overlayView,
+      selectedStickerMeta,
+      selectedSticker,
+      activeCategory,
+      searchQuery,
+      selectedSize,
+      selectedRotation,
+    ],
+  );
+
+  return (
+    <TrazoActionsContext.Provider value={actionsValue}>
+      <TrazoCanvasStateContext.Provider value={canvasStateValue}>
+        <TrazoOverlayStateContext.Provider value={overlayStateValue}>
+          {children}
+        </TrazoOverlayStateContext.Provider>
+      </TrazoCanvasStateContext.Provider>
+    </TrazoActionsContext.Provider>
+  );
 }
 
-export function useTrazo() {
-  const ctx = useContext(TrazoContext);
+export function useTrazoActions(): TrazoActionsValue {
+  const ctx = useContext(TrazoActionsContext);
   if (!ctx) {
-    throw new Error("useTrazo must be used inside TrazoProvider");
+    throw new Error("useTrazoActions must be used inside TrazoProvider");
   }
   return ctx;
+}
+
+export function useTrazoCanvasState(): TrazoCanvasStateValue {
+  const ctx = useContext(TrazoCanvasStateContext);
+  if (!ctx) {
+    throw new Error("useTrazoCanvasState must be used inside TrazoProvider");
+  }
+  return ctx;
+}
+
+export function useTrazoOverlayState(): TrazoOverlayStateValue {
+  const ctx = useContext(TrazoOverlayStateContext);
+  if (!ctx) {
+    throw new Error("useTrazoOverlayState must be used inside TrazoProvider");
+  }
+  return ctx;
+}
+
+export function useTrazo(): TrazoContextValue {
+  const actions = useTrazoActions();
+  const canvasState = useTrazoCanvasState();
+  const overlayState = useTrazoOverlayState();
+  return useMemo(
+    () => ({
+      ...actions,
+      ...canvasState,
+      ...overlayState,
+    }),
+    [actions, canvasState, overlayState],
+  );
 }

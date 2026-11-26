@@ -1,15 +1,19 @@
 "use client";
 
 import Image from "next/image";
-import { motion } from "motion/react";
+import { m } from "motion/react";
 import { memo, type FocusEvent, type MouseEvent } from "react";
 
 import { ArrowUpRight, XLogo } from "@/components/trazo/icons";
+import { getMessages } from "@/config/i18n/messages";
 import {
   type CanvasTestimonial,
   type UnderlineVariant,
 } from "@/config/testimonials";
+import { useLocale } from "@/lib/use-locale";
 import { cn } from "@/lib/utils";
+
+const CJK_CHAR_RE = /[\u3000-\u9fff]/;
 
 const UNDERLINE_PATHS: Record<UnderlineVariant, string> = {
   arc: "M3 5.2C26 1.8 66 1.5 97 4.4",
@@ -75,6 +79,12 @@ export const CanvasTestimonialScribble = memo(
     onFocusItem,
     onClickItem,
   }: CanvasTestimonialScribbleProps) {
+    const locale = useLocale();
+    const ariaLabel = getMessages(locale).testimonials.ariaLabel(
+      item.author,
+      item.fullQuote,
+    );
+    const isCjkQuote = CJK_CHAR_RE.test(item.quote);
     const px = Math.round(item.x * posScaleX);
     const py =
       isMobileViewport && item.mobileY !== undefined
@@ -91,7 +101,7 @@ export const CanvasTestimonialScribble = memo(
         }}
         className="absolute left-0 top-0 z-10 w-max"
       >
-        <motion.div
+        <m.div
           initial={reduceMotion ? false : { opacity: 0, scale: 0.84, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{
@@ -106,7 +116,7 @@ export const CanvasTestimonialScribble = memo(
             target="_blank"
             rel="noopener noreferrer"
             draggable={false}
-            aria-label={`${item.author} (${item.handle}) on X: ${item.fullQuote} (opens in a new tab)`}
+            aria-label={ariaLabel}
             onFocus={(event) => onFocusItem(item, event)}
             onClick={onClickItem}
             style={{ transform: `rotate(${item.rotate}deg)` }}
@@ -124,6 +134,7 @@ export const CanvasTestimonialScribble = memo(
                   alt=""
                   width={40}
                   height={40}
+                  sizes="40px"
                   draggable={false}
                   className="size-8 rounded-full object-cover sm:size-9"
                 />
@@ -146,7 +157,10 @@ export const CanvasTestimonialScribble = memo(
             >
               <span
                 className={cn(
-                  "font-caveat text-[20px] font-bold leading-[1.06] text-foreground/85 transition-colors duration-150 group-hover:text-foreground sm:text-[23px]",
+                  "font-bold text-foreground/85 transition-colors duration-150 group-hover:text-foreground",
+                  isCjkQuote
+                    ? "text-[15px] leading-[1.3] sm:text-[17px]"
+                    : "font-caveat text-[20px] leading-[1.06] sm:text-[23px]",
                   isCenter
                     ? "whitespace-nowrap"
                     : "max-w-[162px] text-balance sm:max-w-[186px]",
@@ -165,7 +179,7 @@ export const CanvasTestimonialScribble = memo(
               />
             </span>
           </a>
-        </motion.div>
+        </m.div>
       </div>
     );
   },

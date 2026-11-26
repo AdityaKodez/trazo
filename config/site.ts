@@ -25,13 +25,13 @@ export const siteConfig = {
   github: "https://github.com/AdityaKodez/trazo",
   npmPackage,
   npm: `https://www.npmjs.com/package/${npmPackage}`,
-  title: "Trazo · Hand-drawn crayon sticker SVGs for React and web",
+  title: "Trazo · Hand-drawn crayon SVG stickers for React, Vue, Svelte & web",
   description:
-    "Bold, wax-textured crayon sticker SVGs baked into clean vector paths. Tree-shakeable React components and standalone SVG strings.",
+    "100 hand-drawn, wax-textured crayon SVG stickers baked into clean vector paths. Tree-shakeable React, Vue, and Svelte components, standalone SVGs, bulk SVG/PNG ZIP packs, and an agent illustration skill.",
   hero: {
     headline: "Hand-drawn crayon stickers for the web.",
     description:
-      "Chunky wax-crayon sea creatures, cute cats, arrows, stars, clouds, and emphasis marks. Recolor live, copy clean SVG, or install from npm.",
+      "100 chunky wax-crayon sea creatures, cute cats, arrows, stars, clouds, and emphasis marks. Recolor live, download SVG/PNG packs, or install from npm.",
   },
   author: {
     name: "Aditya Ojha",

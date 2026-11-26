@@ -27,20 +27,29 @@ const categoryLoaders: Record<StickerCategory, () => Promise<readonly StickerDef
   food: () => import("trazo/catalog/food").then((m) => m.foodStickers),
 };
 
-const loadedById = new Map<string, StickerDef>(
+const oceanById = new Map<string, StickerDef>(
   oceanStickers.map((item) => [item.id, item]),
 );
+const loadedById = new Map<string, StickerDef>(oceanById);
 const loadedCategories = new Set<StickerCategory>(["ocean"]);
 const inflightCategories = new Map<StickerCategory, Promise<readonly StickerDef[]>>();
 const listeners = new Set<() => void>();
 
 let storeVersion = 0;
+let notifyScheduled = false;
 
-function emitChange() {
+function flushChange() {
+  notifyScheduled = false;
   storeVersion += 1;
   for (const listener of listeners) {
     listener();
   }
+}
+
+function emitChange() {
+  if (notifyScheduled) return;
+  notifyScheduled = true;
+  queueMicrotask(flushChange);
 }
 
 function subscribe(listener: () => void) {
@@ -128,8 +137,11 @@ export function useStickerLoaderVersion(): number {
 }
 
 export function useStickerDef(id: string | null | undefined): StickerDef | undefined {
-  useStickerLoaderVersion();
-  const def = id ? loadedById.get(id) : undefined;
+  const def = useSyncExternalStore(
+    subscribe,
+    () => (id ? loadedById.get(id) : undefined),
+    () => (id ? oceanById.get(id) : undefined),
+  );
 
   useEffect(() => {
     if (!id || loadedById.has(id)) return;

@@ -3,7 +3,10 @@
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 
-import { useTrazo } from "@/components/trazo/trazo-experience";
+import {
+  useTrazoActions,
+  useTrazoOverlayState,
+} from "@/components/trazo/trazo-experience";
 
 const LazyTrazoOverlay = dynamic(
   () => import("@/components/trazo/trazo-overlay").then((mod) => mod.TrazoOverlay),
@@ -15,7 +18,8 @@ const LazyTrazoOverlay = dynamic(
  * the heavy library & detail dialog chunk until the overlay is actually opened.
  */
 export function TrazoOverlayHost({ stars }: { stars: number | null }) {
-  const { overlayOpen, setOverlayOpen, openLibraryGrid } = useTrazo();
+  const { overlayOpen } = useTrazoOverlayState();
+  const { setOverlayOpen, openLibraryGrid } = useTrazoActions();
   const [hasOpened, setHasOpened] = useState(overlayOpen);
 
   if (overlayOpen && !hasOpened) {

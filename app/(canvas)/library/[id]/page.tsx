@@ -1,5 +1,5 @@
+/* eslint-disable @next/next/no-html-link-for-pages */
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { findStickerMeta, STICKER_COUNT, trazoCatalogMeta } from "trazo/meta";
 
@@ -24,7 +24,7 @@ export async function generateMetadata({
   }
 
   const title = `${sticker.name} — Free Crayon SVG Sticker | ${siteConfig.name}`;
-  const description = `Free hand-drawn ${sticker.name.toLowerCase()} crayon SVG sticker (${sticker.category}). Recolor live, download SVG/PNG, or import <${sticker.componentName} /> in React & Vue.`;
+  const description = `Free hand-drawn ${sticker.name.toLowerCase()} crayon SVG sticker (${sticker.category}). Recolor live, download SVG/PNG, or import <${sticker.componentName} /> in React, Vue & Svelte.`;
   const url = `${siteConfig.url}/library/${sticker.id}`;
 
   return {
@@ -93,20 +93,21 @@ export default async function StickerDetailPage({
         <pre>{`npm i ${siteConfig.npmPackage}`}</pre>
         <pre>{`import { ${sticker.componentName} } from "${siteConfig.npmPackage}";\n\n<${sticker.componentName} size={48} />`}</pre>
         <pre>{`import { ${sticker.componentName} } from "${siteConfig.npmPackage}/vue";`}</pre>
+        <pre>{`import { ${sticker.componentName} } from "${siteConfig.npmPackage}/svelte";`}</pre>
 
         <nav aria-label={`More ${sticker.category} stickers`}>
           <h3>More {sticker.category} crayon stickers</h3>
           <ul>
             {related.map((item) => (
               <li key={item.id}>
-                <Link href={`/library/${item.id}`}>{item.name} SVG sticker</Link>
+                <a href={`/library/${item.id}`}>{item.name} SVG sticker</a>
               </li>
             ))}
           </ul>
           <p>
-            <Link href="/library">
+            <a href="/library">
               Browse all {STICKER_COUNT} Trazo crayon SVG stickers
-            </Link>
+            </a>
           </p>
         </nav>
       </article>

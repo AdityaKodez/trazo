@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  memo,
   useEffect,
   useRef,
   useState,
@@ -9,7 +10,7 @@ import {
   type WheelEvent,
 } from "react";
 import {
-  motion,
+  m,
   useMotionValue,
   useReducedMotion,
   useSpring,
@@ -40,6 +41,11 @@ export interface RotationDialProps {
   value: number;
   onChange: (angle: number) => void;
   ariaLabel?: string;
+  rotateCcwAriaLabel?: string;
+  rotateCcwTooltip?: string;
+  rotateCwAriaLabel?: string;
+  rotateCwTooltip?: string;
+  formatValueText?: (degrees: number) => string;
   className?: string;
 }
 
@@ -63,10 +69,15 @@ function wrapQuarterTurn(value: number, delta: number): number {
   return normalizeZero(Math.round(wrapped));
 }
 
-export function RotationDial({
+export const RotationDial = memo(function RotationDial({
   value,
   onChange,
   ariaLabel = "Sticker rotation",
+  rotateCcwAriaLabel = "Rotate 90 degrees counter-clockwise",
+  rotateCcwTooltip = "Rotate -90°",
+  rotateCwAriaLabel = "Rotate 90 degrees clockwise",
+  rotateCwTooltip = "Rotate +90°",
+  formatValueText = (deg) => `${deg} degrees`,
   className,
 }: RotationDialProps) {
   const reduceMotion = useReducedMotion();
@@ -227,14 +238,14 @@ export function RotationDial({
           <button
             type="button"
             onClick={() => onChange(wrapQuarterTurn(clampedValue, -90))}
-            aria-label="Rotate 90 degrees counter-clockwise"
+            aria-label={rotateCcwAriaLabel}
             className="flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground outline-none micro-transition hover:bg-background/85 hover:text-foreground hover:shadow-[0_1px_2px_rgba(0,0,0,0.06)] active:scale-[0.9] focus-visible:ring-2 focus-visible:ring-ring"
           >
             <RotateCcw className="size-3.5" />
           </button>
         </TooltipTrigger>
         <TooltipContent>
-          <p>Rotate -90°</p>
+          <p>{rotateCcwTooltip}</p>
         </TooltipContent>
       </Tooltip>
 
@@ -246,7 +257,7 @@ export function RotationDial({
         aria-valuemin={MIN_ANGLE}
         aria-valuemax={MAX_ANGLE}
         aria-valuenow={clampedValue}
-        aria-valuetext={`${clampedValue} degrees`}
+        aria-valuetext={formatValueText(clampedValue)}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={endDrag}
@@ -264,7 +275,7 @@ export function RotationDial({
           aria-hidden
           className="pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_right,transparent,black_18%,black_82%,transparent)]"
         >
-          <motion.div
+          <m.div
             style={{ x: rulerX }}
             className="absolute inset-y-0 left-1/2 will-change-transform"
           >
@@ -302,7 +313,7 @@ export function RotationDial({
                 </span>
               );
             })}
-          </motion.div>
+          </m.div>
         </div>
 
         {/* Fixed center indicator needle */}
@@ -324,16 +335,16 @@ export function RotationDial({
           <button
             type="button"
             onClick={() => onChange(wrapQuarterTurn(clampedValue, 90))}
-            aria-label="Rotate 90 degrees clockwise"
+            aria-label={rotateCwAriaLabel}
             className="flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground outline-none micro-transition hover:bg-background/85 hover:text-foreground hover:shadow-[0_1px_2px_rgba(0,0,0,0.06)] active:scale-[0.9] focus-visible:ring-2 focus-visible:ring-ring"
           >
             <RotateCw className="size-3.5" />
           </button>
         </TooltipTrigger>
         <TooltipContent>
-          <p>Rotate +90°</p>
+          <p>{rotateCwTooltip}</p>
         </TooltipContent>
       </Tooltip>
     </div>
   );
-}
+});

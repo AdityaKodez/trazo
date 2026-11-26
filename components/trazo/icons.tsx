@@ -1,34 +1,15 @@
 "use client";
 
-import {
-  ArrowUpRight as ArrowUpRightGlyph,
-  Check as CheckGlyph,
-  Copy as CopyGlyph,
-  LayoutGrid as LayoutGridGlyph,
-  X as XGlyph,
-  type IconProps,
-} from "scribbles-icons";
-import type { ComponentType, SVGProps } from "react";
-
+import { createSiteIcon } from "@/components/trazo/site-icon";
+import type { SVGProps } from "react";
 import { akoderMarkLayers } from "@/config/akoder-mark";
 
-type SiteIconProps = SVGProps<SVGSVGElement> & { size?: number | string };
-
-// Scribbles icons for site controls only. Brand marks and stickers keep their own art.
-function createSiteIcon(
-  Icon: ComponentType<IconProps>,
-  weight: IconProps["weight"] = "fill",
-) {
-  return function SiteIcon(props: SiteIconProps) {
-    return <Icon size={24} aria-hidden="true" {...props} weight={weight} />;
-  };
-}
-
-export const ArrowUpRight = /*#__PURE__*/ createSiteIcon(ArrowUpRightGlyph);
-export const Check = /*#__PURE__*/ createSiteIcon(CheckGlyph, "bold");
-export const Copy = /*#__PURE__*/ createSiteIcon(CopyGlyph);
-export const LayoutGrid = /*#__PURE__*/ createSiteIcon(LayoutGridGlyph);
-export const X = /*#__PURE__*/ createSiteIcon(XGlyph, "bold");
+export const ArrowUpRight = /*#__PURE__*/ createSiteIcon("ArrowUpRight");
+export const Check = /*#__PURE__*/ createSiteIcon("Check");
+export const Copy = /*#__PURE__*/ createSiteIcon("Copy");
+export const Languages = /*#__PURE__*/ createSiteIcon("Languages");
+export const LayoutGrid = /*#__PURE__*/ createSiteIcon("LayoutGrid");
+export const X = /*#__PURE__*/ createSiteIcon("X");
 
 export function GitHubLogo(props: SVGProps<SVGSVGElement>) {
   return (

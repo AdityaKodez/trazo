@@ -2,11 +2,11 @@
 
 import {
   AnimatePresence,
-  motion,
+  m,
   useReducedMotion,
   type Transition,
 } from "motion/react";
-import { type ComponentType, useId, useSyncExternalStore } from "react";
+import { memo, type ComponentType, useId, useSyncExternalStore } from "react";
 
 import { Check, Copy, X } from "@/components/trazo/icons";
 import {
@@ -19,8 +19,10 @@ import {
   PACKAGE_MANAGERS,
   type PackageManager,
 } from "@/config/site";
+import { getMessages } from "@/config/i18n/messages";
 import { preloadCopySound } from "@/lib/sound";
 import { useCopy, type CopyStatus } from "@/lib/use-copy";
+import { useLocale } from "@/lib/use-locale";
 import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "trazo:package-manager";
@@ -126,7 +128,7 @@ export function CopyCooldownFill({
   return (
     <AnimatePresence initial={false}>
       {active ? (
-        <motion.span
+        <m.span
           key={`copy-fill-${triggerKey ?? 0}`}
           aria-hidden="true"
           initial={reducedMotion ? { opacity: 0 } : { scaleX: 0, opacity: 1 }}
@@ -177,7 +179,7 @@ export function CopyStatusIcon({
       )}
     >
       <AnimatePresence mode="popLayout" initial={false}>
-        <motion.span
+        <m.span
           key={iconKey}
           initial={
             reducedMotion
@@ -206,7 +208,7 @@ export function CopyStatusIcon({
               status === "error" && "text-destructive",
             )}
           />
-        </motion.span>
+        </m.span>
       </AnimatePresence>
     </span>
   );
@@ -243,7 +245,7 @@ function PackageManagerTabs({
             )}
           >
             {isActive ? (
-              <motion.span
+              <m.span
                 layoutId={`pm-tab-pill-${pillId}`}
                 initial={false}
                 transition={pillTransition}
@@ -267,19 +269,21 @@ type InstallCommandProps = {
   | { command: string; label: string }
 );
 
-export function InstallCommand(props: InstallCommandProps) {
+export const InstallCommand = memo(function InstallCommand(props: InstallCommandProps) {
   const manager = usePackageManager();
+  const locale = useLocale();
+  const t = getMessages(locale).install;
   const { status, copy, copySeq, isCoolingDown } = useCopy({ sound: true });
   const reducedMotion = useReducedMotion();
   const fixedCommand = "command" in props ? props : null;
   const commands = "commands" in props ? props.commands ?? installCommands : installCommands;
   const command = fixedCommand?.command ?? commands[manager] ?? commands.npm;
-  const copyFeedback = status === "copied" ? "Copied" : status === "error" ? "Copy failed" : "";
+  const copyFeedback = status === "copied" ? t.copied : status === "error" ? t.copyFailed : "";
 
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl bg-card/95 text-left shadow-xs backdrop-blur-xs ring-1 ring-inset ring-foreground/10",
+        "relative overflow-hidden rounded-2xl bg-card/95 text-left shadow-xs ring-1 ring-inset ring-foreground/10",
         props.className,
       )}
     >
@@ -304,7 +308,7 @@ export function InstallCommand(props: InstallCommandProps) {
                 void copy(command);
               }}
               aria-disabled={isCoolingDown || undefined}
-              aria-label={isCoolingDown ? "Copied install command" : "Copy install command"}
+              aria-label={isCoolingDown ? t.copiedInstallAriaLabel : t.copyInstallAriaLabel}
               className={cn(
                 "flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground micro-transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:size-7",
                 isCoolingDown
@@ -316,9 +320,14 @@ export function InstallCommand(props: InstallCommandProps) {
             </button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>
-              {copyFeedback || "Copy command"}
-            </p>
+            <m.p
+              key={`${locale}-${copyFeedback ? status : "idle"}`}
+              initial={reducedMotion ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={reducedMotion ? { duration: 0 } : { duration: 0.14 }}
+            >
+              {copyFeedback || t.copyCommand}
+            </m.p>
           </TooltipContent>
         </Tooltip>
       </div>
@@ -332,7 +341,7 @@ export function InstallCommand(props: InstallCommandProps) {
           fixedCommand ? "select-all wrap-anywhere" : "whitespace-pre",
         )}>
           <AnimatePresence mode="wait" initial={false}>
-            <motion.span
+            <m.span
               key={fixedCommand ? command : manager}
               initial={reducedMotion ? false : { opacity: 0, y: 3 }}
               animate={{ opacity: 1, y: 0 }}
@@ -342,10 +351,10 @@ export function InstallCommand(props: InstallCommandProps) {
             >
               <span aria-hidden="true" className="select-none pr-2 text-muted-foreground">$</span>
               {command}
-            </motion.span>
+            </m.span>
           </AnimatePresence>
         </code>
       </div>
     </div>
   );
-}
+});

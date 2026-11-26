@@ -1,8 +1,10 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import {
   memo,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -11,8 +13,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { Pencil } from "scribbles-icons";
+import { AnimatePresence, m, useReducedMotion } from "motion/react";
 import { starfishDef } from "trazo/catalog/ocean";
 import {
   toSvgString,
@@ -45,6 +46,7 @@ import {
   ImageDown,
   Moon,
   Palette,
+  Pencil,
   RotateCw,
   Ruler,
   Search,
@@ -58,12 +60,6 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerTitle,
-} from "@/components/ui/drawer";
 import {
   Popover,
   PopoverContent,
@@ -81,29 +77,29 @@ import {
 import {
   overlayCardClass,
   overlayDialogClass,
-  overlayDrawerClass,
   useIsMobile,
 } from "@/components/trazo/overlay-layout";
 import { RotationDial } from "@/components/trazo/rotation-dial";
 import { findNearestStepIndex, SizeSlider } from "@/components/trazo/size-slider";
 import {
-  useTrazo,
+  useTrazoActions,
+  useTrazoCanvasState,
+  useTrazoOverlayState,
   type CategoryFilter,
 } from "@/components/trazo/trazo-experience";
+import { getMessages } from "@/config/i18n/messages";
+import { matchesStickerSearch } from "@/config/i18n/sticker-search";
+import { getLocalizedStickerName } from "@/config/i18n/stickers";
 import {
   findPaletteOption,
   paletteOptions,
   resolveStickerColor,
+  type PaletteId,
   type PaletteOption,
 } from "@/config/palette";
 import { illustrationSkill, siteConfig } from "@/config/site";
 import { preloadCopySound } from "@/lib/sound";
-import {
-  downloadBlob,
-  downloadStickerPackZip,
-  rasterizeStickerPng,
-  type StickerExportFormat,
-} from "@/lib/sticker-export";
+import type { StickerExportFormat } from "@/lib/sticker-export";
 import {
   getLoadedSticker,
   loadAllCategories,
@@ -111,6 +107,7 @@ import {
   useStickerLoaderVersion,
 } from "@/lib/sticker-loader";
 import { useCopy } from "@/lib/use-copy";
+import { useLocale, type Locale } from "@/lib/use-locale";
 import { useModKey } from "@/lib/use-mod-key";
 import { usePreviewTheme, writePreviewTheme } from "@/lib/use-preview-theme";
 import {
@@ -120,24 +117,52 @@ import {
 } from "@/lib/use-star-prompt";
 import { cn } from "@/lib/utils";
 
+const LazyOverlayMobileDrawer = dynamic(
+  () =>
+    import("@/components/trazo/overlay-mobile-drawer").then(
+      (mod) => mod.OverlayMobileDrawer,
+    ),
+  { ssr: false },
+);
+
 const SIZE_STEPS = [16, 24, 32, 48, 64, 80, 96, 112, 128] as const;
 type CodeTab = "react" | "vue" | "svelte" | "js";
+type StarPromptVerbKey = "svg" | "png" | "copied" | "pack-svg" | "pack-png";
+
+function resolveStarPromptVerb(
+  key: StarPromptVerbKey | null,
+  messages: ReturnType<typeof getMessages>,
+): string | null {
+  switch (key) {
+    case "svg":
+      return messages.detail.svgSavedVerb;
+    case "png":
+      return messages.detail.pngSavedVerb;
+    case "copied":
+      return messages.detail.copiedVerb;
+    case "pack-svg":
+      return messages.library.pack.packSavedVerb("svg");
+    case "pack-png":
+      return messages.library.pack.packSavedVerb("png");
+    default:
+      return null;
+  }
+}
 
 const CATEGORY_TABS: readonly {
   id: CategoryFilter;
-  label: string;
   iconId: string;
 }[] = [
-  { id: "all", label: "All", iconId: "solid-star" },
-  { id: "ocean", label: "Ocean", iconId: "dolphin" },
-  { id: "arrows", label: "Arrows", iconId: "loop-arrow-orange" },
-  { id: "nature", label: "Nature", iconId: "flower-red" },
-  { id: "hearts", label: "Hearts", iconId: "heart-burst" },
-  { id: "symbols", label: "Symbols", iconId: "lightning-bolt" },
-  { id: "cats", label: "Cats", iconId: "hugging-cats" },
-  { id: "characters", label: "Characters", iconId: "little-green-alien" },
-  { id: "school", label: "School", iconId: "yellow-pencil" },
-  { id: "food", label: "Food", iconId: "pizza" },
+  { id: "all", iconId: "solid-star" },
+  { id: "ocean", iconId: "dolphin" },
+  { id: "arrows", iconId: "loop-arrow-orange" },
+  { id: "nature", iconId: "flower-red" },
+  { id: "hearts", iconId: "heart-burst" },
+  { id: "symbols", iconId: "lightning-bolt" },
+  { id: "cats", iconId: "hugging-cats" },
+  { id: "characters", iconId: "little-green-alien" },
+  { id: "school", iconId: "yellow-pencil" },
+  { id: "food", iconId: "pizza" },
 ] as const;
 
 const CATEGORY_COUNTS: Readonly<Record<CategoryFilter, number>> = {
@@ -190,7 +215,7 @@ function optionId(id: string) {
   return `trazo-sticker-${id}`;
 }
 
-function stickerColor(paletteId: ReturnType<typeof useTrazo>["paletteId"]) {
+function stickerColor(paletteId: PaletteId) {
   return paletteId === "ink" ? "var(--scribble-ink)" : resolveStickerColor(paletteId);
 }
 
@@ -208,7 +233,10 @@ function Kbd({ children, className }: { children: ReactNode; className?: string 
 }
 
 function MiniPaletteBar() {
-  const { paletteId, setPaletteId } = useTrazo();
+  const { paletteId } = useTrazoCanvasState();
+  const { setPaletteId } = useTrazoActions();
+  const locale = useLocale();
+  const messages = getMessages(locale);
   const reduceMotion = useReducedMotion();
   const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
@@ -229,13 +257,14 @@ function MiniPaletteBar() {
   return (
     <div
       role="radiogroup"
-      aria-label="Preview palette"
+      aria-label={messages.detail.previewPaletteAriaLabel}
       onKeyDown={handleKeyDown}
       data-vaul-no-drag=""
       className="inline-flex w-full items-center justify-between gap-0.5 rounded-full bg-muted/50 p-1 ring-1 ring-inset ring-foreground/[0.08] sm:w-fit sm:justify-start"
     >
       {paletteOptions.map((option: PaletteOption, index) => {
         const isSelected = paletteId === option.id;
+        const label = messages.palettes[option.id];
         return (
           <button
             key={option.id}
@@ -246,13 +275,13 @@ function MiniPaletteBar() {
             role="radio"
             aria-checked={isSelected}
             tabIndex={isSelected ? 0 : -1}
-            aria-label={option.label}
-            title={option.label}
+            aria-label={label}
+            title={label}
             onClick={() => setPaletteId(option.id)}
             className="relative flex size-7 shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring sm:size-6"
           >
             {isSelected ? (
-              <motion.span
+              <m.span
                 aria-hidden
                 layoutId="detail-swatch-selection"
                 transition={reduceMotion ? { duration: 0 } : highlightSpring}
@@ -280,12 +309,13 @@ function MiniPaletteBar() {
   );
 }
 
-function formatStarCount(count: number): string {
+function formatStarCount(count: number, locale: Locale): string {
   if (count >= 1000) {
     const compact = (count / 1000).toFixed(count >= 10000 ? 0 : 1);
     return `${compact.replace(/\.0$/, "")}k`;
   }
-  return count.toLocaleString("en-US");
+  const numberLocale = locale === "ja" ? "ja-JP" : locale === "zh-CN" ? "zh-CN" : "en-US";
+  return count.toLocaleString(numberLocale);
 }
 
 async function downloadStickerPng(
@@ -294,6 +324,7 @@ async function downloadStickerPng(
   concreteColor: string | undefined,
   rotate: number,
 ): Promise<boolean> {
+  const { downloadBlob, rasterizeStickerPng } = await import("@/lib/sticker-export");
   const pngBlob = await rasterizeStickerPng(def, {
     exportSize: size * 2,
     color: concreteColor,
@@ -305,6 +336,65 @@ async function downloadStickerPng(
     return true;
   }
   return false;
+}
+
+function LibraryTileLabel({
+  id,
+  fallbackName,
+  isActive,
+}: {
+  id: string;
+  fallbackName: string;
+  isActive: boolean;
+}) {
+  const locale = useLocale();
+  const displayName = getLocalizedStickerName({ id, name: fallbackName }, locale);
+  return (
+    <span
+      className={cn(
+        "relative w-full truncate text-center text-[11px] font-medium transition-colors duration-150",
+        isActive ? "text-foreground" : "text-muted-foreground",
+      )}
+    >
+      {displayName}
+    </span>
+  );
+}
+
+function LibraryTileLocateButton({
+  id,
+  fallbackName,
+  onLocate,
+}: {
+  id: string;
+  fallbackName: string;
+  onLocate: (id: string) => void;
+}) {
+  const locale = useLocale();
+  const t = getMessages(locale).library;
+  const displayName = getLocalizedStickerName({ id, name: fallbackName }, locale);
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          tabIndex={-1}
+          onClick={(event) => {
+            event.stopPropagation();
+            onLocate(id);
+          }}
+          aria-label={t.locateStickerAriaLabel(displayName)}
+          className="absolute right-1.5 top-1.5 flex size-7 items-center justify-center rounded-full text-foreground/60 micro-transition hover:bg-background hover:text-foreground hover:shadow-[0_1px_2px_rgba(0,0,0,0.08)]"
+        >
+          <Compass className="size-4" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>{t.locateOnCanvasTooltip}</p>
+      </TooltipContent>
+    </Tooltip>
+  );
 }
 
 interface LibraryTileProps {
@@ -335,10 +425,10 @@ const LibraryTile = memo(function LibraryTile({
       aria-selected={isActive}
       onPointerMove={() => onHover(item.id)}
       onClick={() => onOpen(item.id)}
-      className="library-tile group relative flex cursor-pointer flex-col items-center gap-1.5 rounded-2xl px-2 pb-2.5 pt-3.5"
+      className="library-tile group relative flex cursor-pointer flex-col items-center gap-1.5 rounded-2xl px-2 pb-2.5 pt-3.5 [content-visibility:auto] [contain-intrinsic-size:auto_108px]"
     >
       {isActive ? (
-        <motion.span
+        <m.span
           aria-hidden
           layoutId="library-active-tile"
           transition={reduceMotion ? { duration: 0 } : highlightSpring}
@@ -359,64 +449,25 @@ const LibraryTile = memo(function LibraryTile({
         ) : (
           <span
             aria-hidden
-            className="size-10 animate-pulse rounded-xl bg-muted/70"
+            className="size-10 rounded-xl bg-muted/70"
           />
         )}
       </span>
-      <span
-        className={cn(
-          "relative w-full truncate text-center text-[11px] font-medium transition-colors duration-150",
-          isActive ? "text-foreground" : "text-muted-foreground",
-        )}
-      >
-        {item.name}
-      </span>
-
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            type="button"
-            tabIndex={-1}
-            onClick={(event) => {
-              event.stopPropagation();
-              onLocate(item.id);
-            }}
-            aria-label={`Locate ${item.name} on canvas`}
-            className={cn(
-              "absolute right-1.5 top-1.5 flex size-7 items-center justify-center rounded-full text-foreground/60 micro-transition hover:bg-background hover:text-foreground hover:shadow-[0_1px_2px_rgba(0,0,0,0.08)]",
-              isActive ? "scale-100 opacity-100" : "pointer-events-none scale-75 opacity-0",
-            )}
-          >
-            <Compass className="size-4" />
-          </button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>Locate on canvas</p>
-        </TooltipContent>
-      </Tooltip>
+      <LibraryTileLabel
+        id={item.id}
+        fallbackName={item.name}
+        isActive={isActive}
+      />
+      {isActive ? (
+        <LibraryTileLocateButton
+          id={item.id}
+          fallbackName={item.name}
+          onLocate={onLocate}
+        />
+      ) : null}
     </div>
   );
 });
-
-const PACK_FORMAT_OPTIONS: readonly {
-  id: StickerExportFormat;
-  label: string;
-  description: string;
-  icon: ComponentType<{ className?: string }>;
-}[] = [
-  {
-    id: "svg",
-    label: "SVG pack (.zip)",
-    description: "Scalable vectors · MIT license",
-    icon: Download,
-  },
-  {
-    id: "png",
-    label: "PNG pack (.zip)",
-    description: "512px transparent · MIT license",
-    icon: ImageDown,
-  },
-] as const;
 
 function PackDownloadButton({
   stickers,
@@ -429,10 +480,13 @@ function PackDownloadButton({
   stickers: readonly StickerMeta[];
   activeCategory: CategoryFilter;
   searchQuery: string;
-  paletteId: ReturnType<typeof useTrazo>["paletteId"];
+  paletteId: PaletteId;
   isMobile: boolean;
   onDownloaded: (format: StickerExportFormat) => void;
 }) {
+  const locale = useLocale();
+  const messages = getMessages(locale);
+  const t = messages.library.pack;
   const [format, setFormat] = useState<StickerExportFormat>("svg");
   const [menuOpen, setMenuOpen] = useState(false);
   const [status, setStatus] = useState<"idle" | "zipping" | "saved" | "error">("idle");
@@ -451,16 +505,35 @@ function PackDownloadButton({
   const isZipping = status === "zipping";
   const isDisabled = count === 0 || isZipping;
   const hasSearch = searchQuery.trim().length > 0;
-  const activeTabLabel =
-    CATEGORY_TABS.find((tab) => tab.id === activeCategory)?.label ?? "All";
+  const activeTabLabel = messages.categories[activeCategory];
   const scopeSlug = hasSearch ? "selection" : activeCategory;
   const scopeLabel = hasSearch
-    ? `${count} ${count === 1 ? "match" : "matches"}`
+    ? t.matchesScope(count)
     : activeCategory === "all"
-      ? `All ${count} stickers`
-      : `${activeTabLabel} · ${count}`;
+      ? t.allStickersScope(count)
+      : t.categoryScope(activeTabLabel, count);
   const activePalette = findPaletteOption(paletteId);
   const PrimaryIcon = format === "svg" ? Download : ImageDown;
+
+  const formatOptions: readonly {
+    id: StickerExportFormat;
+    label: string;
+    description: string;
+    icon: ComponentType<{ className?: string }>;
+  }[] = [
+    {
+      id: "svg",
+      label: t.svgPackLabel,
+      description: t.svgPackDescription,
+      icon: Download,
+    },
+    {
+      id: "png",
+      label: t.pngPackLabel,
+      description: t.pngPackDescription,
+      icon: ImageDown,
+    },
+  ];
 
   async function runDownload(selectedFormat: StickerExportFormat) {
     if (count === 0 || isZipping) return;
@@ -475,7 +548,10 @@ function PackDownloadButton({
 
     try {
       const neededCategories = new Set(stickers.map((item) => item.category));
-      await loadCategories(neededCategories);
+      const [, { downloadStickerPackZip }] = await Promise.all([
+        loadCategories(neededCategories),
+        import("@/lib/sticker-export"),
+      ]);
 
       const defs: StickerDef[] = [];
       for (const item of stickers) {
@@ -519,15 +595,13 @@ function PackDownloadButton({
   }
 
   const tooltipLabel =
-    count === 0
-      ? "No stickers match current filter"
-      : `Download ${scopeLabel.toLowerCase()} as ${format.toUpperCase()} (.zip)`;
+    count === 0 ? t.noMatchesTooltip : t.downloadTooltip(scopeLabel, format);
 
   return (
     <Popover open={menuOpen} onOpenChange={setMenuOpen}>
       <div
         role="group"
-        aria-label="Download sticker pack"
+        aria-label={t.groupAriaLabel}
         data-vaul-no-drag=""
         className={cn(
           "inline-flex shrink-0 items-center overflow-hidden rounded-full bg-background text-foreground shadow-[0_1px_2px_rgba(0,0,0,0.06)] ring-1 ring-inset ring-foreground/[0.09]",
@@ -552,23 +626,23 @@ function PackDownloadButton({
                   <span className="tabular-nums">
                     {format === "png" && progress.total > 0
                       ? `${progress.completed}/${progress.total}`
-                      : "Zipping…"}
+                      : t.zipping}
                   </span>
                 </>
               ) : status === "saved" ? (
                 <>
                   <Check className="size-3.5 shrink-0 text-success" />
-                  <span>Saved</span>
+                  <span>{t.saved}</span>
                 </>
               ) : status === "error" ? (
                 <>
                   <X className="size-3 shrink-0 text-destructive" />
-                  <span>Failed</span>
+                  <span>{t.failed}</span>
                 </>
               ) : (
                 <>
                   <PrimaryIcon className="size-3.5 shrink-0" />
-                  <span>{format === "svg" ? "SVG zip" : "PNG zip"}</span>
+                  <span>{format === "svg" ? t.svgZipButton : t.pngZipButton}</span>
                   <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
                     {count}
                   </span>
@@ -587,7 +661,7 @@ function PackDownloadButton({
           <button
             type="button"
             disabled={isDisabled}
-            aria-label="Choose zip download format"
+            aria-label={t.chooseFormatAriaLabel}
             aria-expanded={menuOpen}
             className="flex h-full items-center justify-center px-1.5 text-muted-foreground outline-none micro-transition hover:bg-muted/80 hover:text-foreground active:scale-[0.94] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
           >
@@ -626,13 +700,15 @@ function PackDownloadButton({
               )}
             />
             <span className="truncate">
-              {activePalette.kind === "mix" ? "Original" : activePalette.label}
+              {activePalette.kind === "mix"
+                ? t.originalColorLabel
+                : messages.palettes[activePalette.id]}
             </span>
           </span>
         </div>
 
-        <div role="menu" aria-label="Pack download format" className="flex flex-col gap-0.5">
-          {PACK_FORMAT_OPTIONS.map((option) => {
+        <div role="menu" aria-label={t.menuAriaLabel} className="flex flex-col gap-0.5">
+          {formatOptions.map((option) => {
             const Icon = option.icon;
             const isSelected = format === option.id;
             return (
@@ -681,28 +757,31 @@ function LibraryPalette({
   isMobile: boolean;
   stars: number | null;
 }) {
+  const { paletteId } = useTrazoCanvasState();
+  const { activeCategory, searchQuery } = useTrazoOverlayState();
   const {
-    paletteId,
-    activeCategory,
     setActiveCategory,
-    searchQuery,
     setSearchQuery,
     openStickerDetail,
     openAgentSkill,
     locateOnCanvas,
     setOverlayOpen,
-  } = useTrazo();
+  } = useTrazoActions();
+  const locale = useLocale();
+  const messages = getMessages(locale);
+  const t = messages.library;
   const reduceMotion = useReducedMotion();
   const loaderVersion = useStickerLoaderVersion();
   const tileColor = stickerColor(paletteId);
   const modKey = useModKey();
   const gridRef = useRef<HTMLDivElement | null>(null);
   const tabsRef = useRef<HTMLDivElement | null>(null);
+  const tabsInnerRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [tabFade, setTabFade] = useState({ left: false, right: false });
   const starPromptStatus = useStarPromptStatus();
-  const [promptVerb, setPromptVerb] = useState<string | null>(null);
+  const [promptVerbKey, setPromptVerbKey] = useState<StarPromptVerbKey | null>(null);
   const [starPromptSeq, setStarPromptSeq] = useState(0);
   const [justStarred, setJustStarred] = useState(false);
   const starThankYouTimerRef = useRef<number | null>(null);
@@ -715,9 +794,9 @@ function LibraryPalette({
     };
   }, []);
 
-  function revealStarPrompt(verb: string) {
+  function revealStarPrompt(key: StarPromptVerbKey) {
     if (starPromptStatus !== "pending") return;
-    setPromptVerb(verb);
+    setPromptVerbKey(key);
     setStarPromptSeq((seq) => seq + 1);
   }
 
@@ -729,18 +808,19 @@ function LibraryPalette({
     }
     starThankYouTimerRef.current = window.setTimeout(() => {
       setJustStarred(false);
-      setPromptVerb(null);
+      setPromptVerbKey(null);
       starThankYouTimerRef.current = null;
     }, 1500);
   }
 
   function handleDismissStarPrompt() {
     dismissStarPrompt();
-    setPromptVerb(null);
+    setPromptVerbKey(null);
   }
 
+  const promptVerb = resolveStarPromptVerb(promptVerbKey, messages);
   const showStarTray =
-    (starPromptStatus === "pending" && promptVerb !== null) || justStarred;
+    (starPromptStatus === "pending" && promptVerbKey !== null) || justStarred;
 
   useEffect(() => {
     void loadAllCategories();
@@ -749,6 +829,7 @@ function LibraryPalette({
   useEffect(() => {
     const node = tabsRef.current;
     if (!node) return;
+    const inner = tabsInnerRef.current;
 
     const update = () => {
       const left = node.scrollLeft > 2;
@@ -757,15 +838,20 @@ function LibraryPalette({
     };
 
     update();
+    const rafId = window.requestAnimationFrame(update);
     node.addEventListener("scroll", update, { passive: true });
     const observer = new ResizeObserver(update);
     observer.observe(node);
+    if (inner) {
+      observer.observe(inner);
+    }
 
     return () => {
+      window.cancelAnimationFrame(rafId);
       node.removeEventListener("scroll", update);
       observer.disconnect();
     };
-  }, []);
+  }, [locale]);
 
   const tabMaskImage =
     tabFade.left && tabFade.right
@@ -783,14 +869,29 @@ function LibraryPalette({
         return false;
       }
       if (!q) return true;
-      return (
-        item.name.toLowerCase().includes(q) ||
-        item.id.toLowerCase().includes(q) ||
-        item.category.toLowerCase().includes(q) ||
-        item.tags.some((tag) => tag.toLowerCase().includes(q))
-      );
+      return matchesStickerSearch(item, q);
     });
   }, [activeCategory, searchQuery]);
+
+  // Keep every option in the listbox for search and keyboard navigation.
+  // Only mount heavy preview art within two rows of the scrollport.
+  const [nearbyTiles, setNearbyTiles] = useState<ReadonlySet<string>>(() => new Set());
+  useEffect(() => {
+    const grid = gridRef.current;
+    if (!grid || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver((entries) => {
+      setNearbyTiles(previous => {
+        const next = new Set(previous);
+        for (const entry of entries) {
+          if (entry.isIntersecting) next.add(entry.target.id);
+          else next.delete(entry.target.id);
+        }
+        return next;
+      });
+    }, { root: grid, rootMargin: "200px 0px" });
+    for (const tile of grid.children) observer.observe(tile);
+    return () => observer.disconnect();
+  }, [filteredStickers]);
 
   // Reference loaderVersion so newly loaded category chunks immediately paint
   void loaderVersion;
@@ -850,10 +951,9 @@ function LibraryPalette({
 
   return (
     <div className={cn("flex min-h-0 flex-1 flex-col", isMobile && "h-full")}>
-      <Title className="sr-only">Sticker library</Title>
+      <Title className="sr-only">{t.srTitle}</Title>
       <Description className="sr-only">
-        Search {STICKER_COUNT} hand-drawn crayon stickers. Use arrow keys to move, Enter to
-        open a sticker, and {modKey} Enter to locate it on the canvas.
+        {t.srDescription(STICKER_COUNT, modKey)}
       </Description>
 
       {/* Search row in outer tray */}
@@ -867,7 +967,7 @@ function LibraryPalette({
           aria-controls={LISTBOX_ID}
           aria-activedescendant={activeId ? optionId(activeId) : undefined}
           aria-autocomplete="list"
-          aria-label="Search stickers"
+          aria-label={t.searchAriaLabel}
           autoComplete="off"
           spellCheck={false}
           value={searchQuery}
@@ -876,12 +976,12 @@ function LibraryPalette({
             setHoveredId(null);
           }}
           onKeyDown={handleInputKeyDown}
-          placeholder="Search stickers, tags, moods..."
+          placeholder={t.searchPlaceholder}
           className="h-10 min-w-0 flex-1 bg-transparent text-base text-foreground outline-none placeholder:text-muted-foreground/80 sm:h-11 sm:text-[15px]"
         />
         <AnimatePresence initial={false}>
           {searchQuery ? (
-            <motion.button
+            <m.button
               type="button"
               initial={{ opacity: 0, scale: 0.6 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -891,17 +991,17 @@ function LibraryPalette({
                 setSearchQuery("");
                 inputRef.current?.focus();
               }}
-              aria-label="Clear search"
+              aria-label={t.clearSearchAriaLabel}
               className="flex size-8 items-center justify-center rounded-full text-muted-foreground micro-transition hover:bg-background/85 hover:text-foreground sm:size-7"
             >
               <X className="size-3.5" />
-            </motion.button>
+            </m.button>
           ) : null}
         </AnimatePresence>
         <button
           type="button"
           onClick={() => setOverlayOpen(false)}
-          aria-label="Close library"
+          aria-label={t.closeLibraryAriaLabel}
           className="group hidden rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring sm:block"
         >
           <Kbd className="micro-transition group-hover:text-foreground">esc</Kbd>
@@ -913,7 +1013,7 @@ function LibraryPalette({
         {/* Category chips */}
         <div
           ref={tabsRef}
-          aria-label="Sticker categories"
+          aria-label={t.categoriesAriaLabel}
           role="group"
           data-vaul-no-drag=""
           onWheel={(event) => {
@@ -924,77 +1024,89 @@ function LibraryPalette({
             }
           }}
           style={tabMaskImage ? { maskImage: tabMaskImage, WebkitMaskImage: tabMaskImage } : undefined}
-          className="flex shrink-0 items-center gap-1 overflow-x-auto px-2.5 py-2.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-3.5"
+          className="shrink-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
-          {CATEGORY_TABS.map((tab) => {
-            const isActive = activeCategory === tab.id;
-            const tabIcon = getLoadedSticker(tab.iconId);
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                aria-pressed={isActive}
-                onClick={(event) => {
-                  setActiveCategory(tab.id);
-                  setHoveredId(null);
-                  gridRef.current?.scrollTo({ top: 0 });
-                  event.currentTarget.scrollIntoView({
-                    inline: "nearest",
-                    block: "nearest",
-                    behavior: reduceMotion ? "auto" : "smooth",
-                  });
-                }}
-                className={cn(
-                  "group/tab relative inline-flex shrink-0 items-center gap-1.5 rounded-full py-1.5 pl-2 pr-2.5 text-xs font-medium outline-none micro-transition active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-ring",
-                  isActive ? "text-background" : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {isActive ? (
-                  <motion.span
-                    aria-hidden
-                    layoutId="library-category-pill"
-                    transition={reduceMotion ? { duration: 0 } : highlightSpring}
-                    className="absolute inset-0 rounded-full bg-foreground"
-                  />
-                ) : null}
-                <span className="relative flex size-[18px] shrink-0 items-center justify-center">
-                  {tabIcon ? (
-                    <Sticker
-                      def={tabIcon}
-                      size={18}
-                      color="mix"
-                      className={cn(
-                        "transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]",
-                        !reduceMotion &&
-                          (isActive
-                            ? "-rotate-6 scale-110"
-                            : "group-hover/tab:-rotate-6 group-hover/tab:scale-110"),
-                      )}
-                    />
-                  ) : null}
-                </span>
-                <span className="relative">{tab.label}</span>
-                <span
+          <div
+            ref={tabsInnerRef}
+            className="flex w-max items-center gap-1 px-2.5 py-2.5 sm:px-3.5"
+          >
+            {CATEGORY_TABS.map((tab) => {
+              const isActive = activeCategory === tab.id;
+              const tabIcon = getLoadedSticker(tab.iconId);
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  aria-pressed={isActive}
+                  onClick={(event) => {
+                    setActiveCategory(tab.id);
+                    setHoveredId(null);
+                    gridRef.current?.scrollTo({ top: 0 });
+                    event.currentTarget.scrollIntoView({
+                      inline: "nearest",
+                      block: "nearest",
+                      behavior: reduceMotion ? "auto" : "smooth",
+                    });
+                  }}
                   className={cn(
-                    "relative font-mono text-[10px] leading-none",
-                    isActive ? "text-background/70" : "text-muted-foreground/70",
+                    "group/tab relative inline-flex shrink-0 items-center gap-1.5 rounded-full py-1.5 pl-2 pr-2.5 text-xs font-medium outline-none micro-transition active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-ring",
+                    isActive ? "text-background" : "text-muted-foreground hover:text-foreground",
                   )}
                 >
-                  {CATEGORY_COUNTS[tab.id]}
-                </span>
-              </button>
-            );
-          })}
+                  {isActive ? (
+                    <m.span
+                      aria-hidden
+                      layoutId="library-category-pill"
+                      transition={reduceMotion ? { duration: 0 } : highlightSpring}
+                      className="absolute inset-0 rounded-full bg-foreground"
+                    />
+                  ) : null}
+                  <span className="relative flex size-[18px] shrink-0 items-center justify-center">
+                    {tabIcon ? (
+                      <Sticker
+                        def={tabIcon}
+                        size={18}
+                        color="mix"
+                        className={cn(
+                          "transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]",
+                          !reduceMotion &&
+                            (isActive
+                              ? "-rotate-6 scale-110"
+                              : "group-hover/tab:-rotate-6 group-hover/tab:scale-110"),
+                        )}
+                      />
+                    ) : null}
+                  </span>
+                  <span className="relative">{messages.categories[tab.id]}</span>
+                  <span
+                    className={cn(
+                      "relative font-mono text-[10px] leading-none",
+                      isActive ? "text-background/70" : "text-muted-foreground/70",
+                    )}
+                  >
+                    {CATEGORY_COUNTS[tab.id]}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Sticker grid */}
         {filteredStickers.length === 0 ? (
           <div className="flex flex-col items-center justify-center px-6 pb-12 pt-8 text-center">
-            <p className="font-caveat text-[26px] leading-none text-foreground">
-              nothing scribbled here yet
+            <p
+              className={cn(
+                "text-foreground",
+                locale === "en"
+                  ? "font-caveat text-[26px] leading-none"
+                  : "text-base font-semibold",
+              )}
+            >
+              {t.emptyTitle}
             </p>
             <p className="mt-2 text-xs text-muted-foreground">
-              Try another word,{" "}
+              {t.emptyPrefix}
               <button
                 type="button"
                 onClick={() => {
@@ -1004,17 +1116,17 @@ function LibraryPalette({
                 }}
                 className="font-medium text-foreground underline decoration-foreground/30 underline-offset-2 hover:decoration-foreground"
               >
-                reset filters
+                {t.resetFilters}
               </button>
-              , or{" "}
+              {t.emptyOr}
               <button
                 type="button"
                 onClick={openAgentSkill}
                 className="font-medium text-foreground underline decoration-foreground/30 underline-offset-2 hover:decoration-foreground"
               >
-                draw it with the agent skill
+                {t.drawWithSkill}
               </button>
-              .
+              {t.emptySuffix}
             </p>
           </div>
         ) : (
@@ -1022,25 +1134,29 @@ function LibraryPalette({
             ref={gridRef}
             id={LISTBOX_ID}
             role="listbox"
-            aria-label="Stickers"
+            aria-label={t.stickersListboxAriaLabel}
             className={cn(
               "palette-scroll grid grid-cols-3 content-start gap-1.5 overflow-y-auto overscroll-contain px-2.5 pb-4 min-[420px]:grid-cols-4 sm:grid-cols-5 sm:gap-1 sm:px-3.5 sm:pb-3",
               isMobile ? "min-h-0 flex-1" : "min-h-0 max-h-[min(50dvh,400px)] flex-1",
             )}
           >
-            {filteredStickers.map((item) => (
-              <LibraryTile
-                key={item.id}
-                item={item}
-                def={getLoadedSticker(item.id)}
-                isActive={item.id === activeId}
-                color={tileColor}
-                reduceMotion={reduceMotion}
-                onHover={setHoveredId}
-                onOpen={openStickerDetail}
-                onLocate={locateOnCanvas}
-              />
-            ))}
+            {filteredStickers.map((item, index) => {
+              const renderPreview = index < 15 || item.id === activeId ||
+                nearbyTiles.has(optionId(item.id)) || typeof IntersectionObserver === "undefined";
+              return (
+                <LibraryTile
+                  key={item.id}
+                  item={item}
+                  def={renderPreview ? getLoadedSticker(item.id) : undefined}
+                  isActive={item.id === activeId}
+                  color={tileColor}
+                  reduceMotion={reduceMotion}
+                  onHover={setHoveredId}
+                  onOpen={openStickerDetail}
+                  onLocate={locateOnCanvas}
+                />
+              );
+            })}
           </div>
         )}
       </div>
@@ -1061,13 +1177,13 @@ function LibraryPalette({
                 <Kbd>↓</Kbd>
                 <Kbd>→</Kbd>
               </span>
-              move
+              {t.hintMove}
             </span>
             <span className="flex items-center gap-1.5">
-              <Kbd>↵</Kbd> open
+              <Kbd>↵</Kbd> {t.hintOpen}
             </span>
             <span className="flex items-center gap-1.5">
-              <Kbd>{modKey} ↵</Kbd> locate
+              <Kbd>{modKey} ↵</Kbd> {t.hintLocate}
             </span>
           </div>
         )}
@@ -1087,10 +1203,9 @@ function LibraryPalette({
           >
             <Pencil
               aria-hidden="true"
-              weight="fill"
               className="size-3.5 shrink-0 transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover/skill:-rotate-12"
             />
-            Agent skill
+            {t.agentSkillButton}
           </button>
           <PackDownloadButton
             stickers={filteredStickers}
@@ -1098,7 +1213,7 @@ function LibraryPalette({
             searchQuery={searchQuery}
             paletteId={paletteId}
             isMobile={isMobile}
-            onDownloaded={(fmt) => revealStarPrompt(`${fmt.toUpperCase()} pack saved!`)}
+            onDownloaded={(fmt) => revealStarPrompt(fmt === "svg" ? "pack-svg" : "pack-png")}
           />
         </div>
       </div>
@@ -1106,7 +1221,7 @@ function LibraryPalette({
       {/* Expanding outer-tray GitHub star prompt after pack download */}
       <AnimatePresence initial={false}>
         {showStarTray ? (
-          <motion.div
+          <m.div
             key="library-star-tray"
             initial={reduceMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
             animate={reduceMotion ? { opacity: 1 } : { height: "auto", opacity: 1 }}
@@ -1120,7 +1235,7 @@ function LibraryPalette({
               className="mt-1 flex items-center justify-between gap-2 border-t border-foreground/[0.07] px-2 pb-0.5 pt-2 sm:px-3"
             >
               <div className="flex min-w-0 items-center gap-2">
-                <motion.span
+                <m.span
                   key={starPromptSeq}
                   aria-hidden
                   initial={reduceMotion ? false : { rotate: -6, scale: 0.88 }}
@@ -1136,14 +1251,14 @@ function LibraryPalette({
                   className="flex size-5 shrink-0 items-center justify-center"
                 >
                   <Sticker def={starfishDef} size={20} />
-                </motion.span>
+                </m.span>
                 <span className="truncate text-xs text-muted-foreground">
                   {justStarred ? (
-                    <span className="font-medium text-foreground">Thanks for starring Trazo!</span>
+                    <span className="font-medium text-foreground">{t.starPrompt.thanks}</span>
                   ) : (
                     <>
                       <span className="font-medium text-foreground">{promptVerb}</span>{" "}
-                      <span>Enjoying Trazo?</span>
+                      <span>{t.starPrompt.enjoying}</span>
                     </>
                   )}
                 </span>
@@ -1155,7 +1270,7 @@ function LibraryPalette({
                   <button
                     type="button"
                     onClick={handleDismissStarPrompt}
-                    aria-label="Dismiss star prompt"
+                    aria-label={t.starPrompt.dismissAriaLabel}
                     className="flex size-7 items-center justify-center rounded-full text-muted-foreground outline-none micro-transition hover:bg-background/85 hover:text-foreground active:scale-[0.92] focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <X className="size-3" />
@@ -1163,7 +1278,7 @@ function LibraryPalette({
                 </div>
               ) : null}
             </div>
-          </motion.div>
+          </m.div>
         ) : null}
       </AnimatePresence>
     </div>
@@ -1233,6 +1348,8 @@ function StarTrayButton({
   stars: number | null;
   onClick: () => void;
 }) {
+  const locale = useLocale();
+  const messages = getMessages(locale);
   const reduceMotion = useReducedMotion();
   const [flipped, setFlipped] = useState(false);
 
@@ -1246,11 +1363,7 @@ function StarTrayButton({
       onPointerLeave={() => setFlipped(false)}
       onFocus={() => setFlipped(true)}
       onBlur={() => setFlipped(false)}
-      aria-label={
-        stars !== null
-          ? `Star Trazo on GitHub (${stars.toLocaleString("en-US")} stars, opens in a new tab)`
-          : "Star Trazo on GitHub (opens in a new tab)"
-      }
+      aria-label={messages.topBar.starAriaLabel(stars)}
       className={cn(
         "group inline-flex h-7 items-center gap-1.5 rounded-full bg-background pl-2 text-xs font-medium text-foreground shadow-[0_1px_2px_rgba(0,0,0,0.06)] ring-1 ring-inset ring-foreground/[0.09] outline-none micro-transition hover:ring-foreground/20 active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-ring",
         stars !== null ? "pr-1" : "pr-2.5",
@@ -1267,7 +1380,7 @@ function StarTrayButton({
             <GitHubLogo className="size-3.5 text-foreground" />
           )
         ) : (
-          <motion.span
+          <m.span
             animate={{
               rotateY: flipped ? 180 : 0,
               scale: flipped ? 1.1 : 1,
@@ -1281,13 +1394,13 @@ function StarTrayButton({
             <span className="absolute inset-0 flex items-center justify-center [backface-visibility:hidden] [transform:rotateY(180deg)]">
               <Sticker def={starfishDef} size={18} className="-rotate-6" />
             </span>
-          </motion.span>
+          </m.span>
         )}
       </span>
-      <span>Star</span>
+      <span>{messages.library.starPrompt.starButton}</span>
       {stars !== null ? (
         <span className="inline-flex h-5 items-center rounded-full bg-muted px-1.5 font-mono text-[11px] tabular-nums text-muted-foreground transition-colors duration-150 group-hover:text-foreground">
-          {formatStarCount(stars)}
+          {formatStarCount(stars, locale)}
         </span>
       ) : null}
     </a>
@@ -1303,18 +1416,25 @@ function StickerDetailView({
   Description: SlotComponent;
   stars: number | null;
 }) {
+  const { paletteId } = useTrazoCanvasState();
   const {
     selectedStickerMeta,
     selectedSticker,
-    paletteId,
     selectedSize,
-    setSelectedSize,
     selectedRotation,
+  } = useTrazoOverlayState();
+  const {
+    setSelectedSize,
     setSelectedRotation,
     backToGrid,
     locateOnCanvas,
     setOverlayOpen,
-  } = useTrazo();
+  } = useTrazoActions();
+  const locale = useLocale();
+  const messages = getMessages(locale);
+  const t = messages.detail;
+  const starPromptCopy = messages.library.starPrompt;
+  const displayName = getLocalizedStickerName(selectedStickerMeta, locale);
   const reduceMotion = useReducedMotion();
   const [codeTab, setCodeTab] = useState<CodeTab>("react");
   const previewTheme = usePreviewTheme();
@@ -1323,7 +1443,7 @@ function StickerDetailView({
   const hexCopy = useCopy();
   const nameCopy = useCopy();
   const starPromptStatus = useStarPromptStatus();
-  const [promptVerb, setPromptVerb] = useState<string | null>(null);
+  const [promptVerbKey, setPromptVerbKey] = useState<StarPromptVerbKey | null>(null);
   const [starPromptSeq, setStarPromptSeq] = useState(0);
   const [justStarred, setJustStarred] = useState(false);
   const starThankYouTimerRef = useRef<number | null>(null);
@@ -1336,9 +1456,9 @@ function StickerDetailView({
     };
   }, []);
 
-  function revealStarPrompt(verb: string) {
+  function revealStarPrompt(key: StarPromptVerbKey) {
     if (starPromptStatus !== "pending") return;
-    setPromptVerb(verb);
+    setPromptVerbKey(key);
     setStarPromptSeq((seq) => seq + 1);
   }
 
@@ -1350,18 +1470,19 @@ function StickerDetailView({
     }
     starThankYouTimerRef.current = window.setTimeout(() => {
       setJustStarred(false);
-      setPromptVerb(null);
+      setPromptVerbKey(null);
       starThankYouTimerRef.current = null;
     }, 1500);
   }
 
   function handleDismissStarPrompt() {
     dismissStarPrompt();
-    setPromptVerb(null);
+    setPromptVerbKey(null);
   }
 
+  const promptVerb = resolveStarPromptVerb(promptVerbKey, messages);
   const showStarTray =
-    (starPromptStatus === "pending" && promptVerb !== null) || justStarred;
+    (starPromptStatus === "pending" && promptVerbKey !== null) || justStarred;
 
   const concreteColor = resolveStickerColor(paletteId);
   const displayColor = stickerColor(paletteId);
@@ -1438,12 +1559,13 @@ function StickerDetailView({
     ].join("\n");
   }, [codeTab, concreteColor, rotation, size, selectedStickerMeta]);
 
-  function handleDownloadSvg() {
+  async function handleDownloadSvg() {
     if (!selectedSticker || !svgMarkup) return;
+    const { downloadBlob } = await import("@/lib/sticker-export");
     const blob = new Blob([svgMarkup], { type: "image/svg+xml;charset=utf-8" });
     const suffix = rotation !== 0 ? `-${size}px-${rotation}deg` : `-${size}px`;
     downloadBlob(blob, `${selectedSticker.id}${suffix}.svg`);
-    revealStarPrompt("SVG saved!");
+    revealStarPrompt("svg");
   }
 
   async function handleDownloadPng() {
@@ -1451,7 +1573,7 @@ function StickerDetailView({
     try {
       const saved = await downloadStickerPng(selectedSticker, size, concreteColor, rotation);
       if (saved) {
-        revealStarPrompt("PNG saved!");
+        revealStarPrompt("png");
       }
     } catch {
       // Ignore rasterization errors so we do not falsely announce a saved PNG.
@@ -1461,7 +1583,7 @@ function StickerDetailView({
   async function handleCopyCode() {
     const copied = await codeCopy.copy(codeSnippet);
     if (copied) {
-      revealStarPrompt("Copied!");
+      revealStarPrompt("copied");
     }
   }
 
@@ -1469,7 +1591,7 @@ function StickerDetailView({
     <div className="flex min-h-0 flex-1 flex-col">
       {/* Header in outer tray: back, name, locate, close */}
       <div className="flex shrink-0 items-center gap-1 px-1.5 pb-1.5 pt-0.5 sm:px-2">
-        <IconAction label="Back to library" onClick={backToGrid}>
+        <IconAction label={t.backToLibrary} onClick={backToGrid}>
           <ArrowLeft className="size-4" />
         </IconAction>
         <div className="min-w-0 flex-1 px-1">
@@ -1477,12 +1599,12 @@ function StickerDetailView({
             <TooltipTrigger asChild>
               <button
                 type="button"
-                onClick={() => void nameCopy.copy(selectedStickerMeta.name)}
-                aria-label={`Copy ${selectedStickerMeta.name}`}
+                onClick={() => void nameCopy.copy(displayName)}
+                aria-label={t.copyNameAriaLabel(displayName)}
                 className="group -ml-1.5 inline-flex max-w-full items-center gap-1.5 rounded-lg px-1.5 py-0.5 text-left outline-none micro-transition hover:bg-background/85 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <Title className="truncate text-base font-semibold tracking-tight text-foreground">
-                  {selectedStickerMeta.name}
+                  {displayName}
                 </Title>
                 {nameCopy.status === "copied" ? (
                   <Check className="size-3.5 shrink-0 text-success" />
@@ -1490,19 +1612,19 @@ function StickerDetailView({
               </button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{nameCopy.status === "copied" ? "Copied" : "Copy"}</p>
+              <p>{nameCopy.status === "copied" ? t.copiedTooltip : t.copyTooltip}</p>
             </TooltipContent>
           </Tooltip>
         </div>
-        <IconAction label="Locate on canvas" onClick={() => locateOnCanvas(selectedStickerMeta.id)}>
+        <IconAction label={t.locateOnCanvas} onClick={() => locateOnCanvas(selectedStickerMeta.id)}>
           <Compass className="size-4" />
         </IconAction>
-        <IconAction label="Close" onClick={() => setOverlayOpen(false)}>
+        <IconAction label={t.close} onClick={() => setOverlayOpen(false)}>
           <X className="size-3.5" />
         </IconAction>
       </div>
       <Description className="sr-only">
-        Resize, rotate, and recolor {selectedStickerMeta.name}, then copy code or download SVG and PNG.
+        {t.srDescription(displayName)}
       </Description>
 
       {/* Inset white card for preview, controls & usage */}
@@ -1520,18 +1642,18 @@ function StickerDetailView({
                 type="button"
                 onClick={() => writePreviewTheme(darkPreview ? "light" : "dark")}
                 aria-pressed={darkPreview}
-                aria-label={darkPreview ? "Preview on light background" : "Preview on dark background"}
+                aria-label={darkPreview ? t.previewLightAriaLabel : t.previewDarkAriaLabel}
                 className="absolute right-2 top-2 flex size-8 items-center justify-center rounded-full bg-[color:var(--scribble-paper)] text-[color:var(--scribble-ink)] opacity-70 outline-none ring-1 ring-inset ring-foreground/10 micro-transition hover:opacity-100 active:scale-[0.92] focus-visible:ring-2 focus-visible:ring-ring"
               >
                 {darkPreview ? <Sun className="size-4" /> : <Moon className="size-4" />}
               </button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{darkPreview ? "Light background" : "Dark background"}</p>
+              <p>{darkPreview ? t.lightBackgroundTooltip : t.darkBackgroundTooltip}</p>
             </TooltipContent>
           </Tooltip>
           <AnimatePresence mode="popLayout" initial={false}>
-            <motion.span
+            <m.span
               key={selectedStickerMeta.id}
               initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.85, rotate: -8 }}
               animate={{ opacity: 1, scale: 1, rotate: 0 }}
@@ -1553,7 +1675,7 @@ function StickerDetailView({
                   className="block animate-pulse rounded-2xl bg-muted/70"
                 />
               )}
-            </motion.span>
+            </m.span>
           </AnimatePresence>
         </div>
 
@@ -1561,7 +1683,7 @@ function StickerDetailView({
         <div className="flex flex-col gap-2 px-0.5 sm:gap-1">
           <DetailRow
             icon={Ruler}
-            label="Size"
+            label={t.sizeLabel}
             meta={
               <span className="w-11 shrink-0 text-right font-mono text-[11px] tabular-nums text-muted-foreground">
                 {size}px
@@ -1572,12 +1694,13 @@ function StickerDetailView({
               steps={SIZE_STEPS}
               value={size}
               onChange={setSelectedSize}
-              ariaLabel="Sticker size"
+              ariaLabel={t.sizeAriaLabel}
+              formatValueText={t.pixelsValueText}
             />
           </DetailRow>
           <DetailRow
             icon={RotateCw}
-            label="Rotate"
+            label={t.rotateLabel}
             meta={
               rotation !== 0 ? (
                 <Tooltip>
@@ -1585,14 +1708,14 @@ function StickerDetailView({
                     <button
                       type="button"
                       onClick={() => setSelectedRotation(0)}
-                      aria-label="Reset rotation to 0 degrees"
+                      aria-label={t.resetRotationAriaLabel}
                       className="w-11 shrink-0 rounded-md px-1.5 py-0.5 text-right font-mono text-[11px] tabular-nums text-foreground outline-none micro-transition hover:bg-muted/80 active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       {rotation}°
                     </button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Reset to 0°</p>
+                    <p>{t.resetRotationTooltip}</p>
                   </TooltipContent>
                 </Tooltip>
               ) : (
@@ -1605,12 +1728,17 @@ function StickerDetailView({
             <RotationDial
               value={rotation}
               onChange={setSelectedRotation}
-              ariaLabel="Sticker rotation"
+              ariaLabel={t.rotateAriaLabel}
+              rotateCcwAriaLabel={t.rotateCcwAriaLabel}
+              rotateCcwTooltip={t.rotateCcwTooltip}
+              rotateCwAriaLabel={t.rotateCwAriaLabel}
+              rotateCwTooltip={t.rotateCwTooltip}
+              formatValueText={t.degreesValueText}
             />
           </DetailRow>
           <DetailRow
             icon={Palette}
-            label="Color"
+            label={t.colorLabel}
             meta={
               concreteColor ? (
                 <Tooltip>
@@ -1618,7 +1746,7 @@ function StickerDetailView({
                     <button
                       type="button"
                       onClick={() => void hexCopy.copy(concreteColor)}
-                      aria-label={`Copy color hex ${concreteColor}`}
+                      aria-label={t.copyHexAriaLabel(concreteColor)}
                       className="inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 font-mono text-[11px] tabular-nums text-muted-foreground outline-none micro-transition hover:bg-muted/80 hover:text-foreground active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       {hexCopy.status === "copied" ? <Check className="size-3 text-success" /> : null}
@@ -1626,12 +1754,12 @@ function StickerDetailView({
                     </button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>{hexCopy.status === "copied" ? "Copied" : "Copy hex"}</p>
+                    <p>{hexCopy.status === "copied" ? t.copiedTooltip : t.copyHexTooltip}</p>
                   </TooltipContent>
                 </Tooltip>
               ) : (
                 <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
-                  Original
+                  {t.originalLabel}
                 </span>
               )
             }
@@ -1647,13 +1775,14 @@ function StickerDetailView({
           <div className="flex items-center justify-between px-0.5">
             <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
               <Code className="size-4" />
-              Usage
+              {t.usageLabel}
             </span>
             <div className="flex items-center gap-1">
               <button
                 type="button"
                 disabled={!selectedSticker}
-                onClick={handleDownloadSvg}
+                onClick={() => void handleDownloadSvg()}
+                aria-label={t.downloadSvgAriaLabel}
                 className="inline-flex h-8 items-center gap-1.5 rounded-full bg-muted px-3 text-xs font-medium text-foreground micro-transition hover:bg-foreground/[0.08] active:scale-[0.96] disabled:opacity-50"
               >
                 <Download className="size-3.5" />
@@ -1663,6 +1792,7 @@ function StickerDetailView({
                 type="button"
                 disabled={!selectedSticker}
                 onClick={() => void handleDownloadPng()}
+                aria-label={t.downloadPngAriaLabel}
                 className="inline-flex h-8 items-center gap-1.5 rounded-full bg-muted px-3 text-xs font-medium text-foreground micro-transition hover:bg-foreground/[0.08] active:scale-[0.96] disabled:opacity-50"
               >
                 <ImageDown className="size-3.5" />
@@ -1673,7 +1803,7 @@ function StickerDetailView({
 
           <div className="rounded-2xl bg-muted/65 p-1 ring-1 ring-inset ring-foreground/[0.08]">
             <div className="flex items-center justify-between gap-2 px-1 pb-1 pt-0.5">
-              <div role="tablist" aria-label="Code format" className="flex items-center gap-0.5">
+              <div role="tablist" aria-label={t.codeFormatAriaLabel} className="flex items-center gap-0.5">
                 {(
                   [
                     { id: "react", icon: ReactLogo, label: "React" },
@@ -1698,7 +1828,7 @@ function StickerDetailView({
                       )}
                     >
                       {isActive ? (
-                        <motion.span
+                        <m.span
                           aria-hidden
                           layoutId="detail-code-tab"
                           transition={reduceMotion ? { duration: 0 } : highlightSpring}
@@ -1728,7 +1858,7 @@ function StickerDetailView({
                       void handleCopyCode();
                     }}
                     aria-disabled={codeCopy.isCoolingDown || undefined}
-                    aria-label={codeCopy.status === "copied" ? "Copied code snippet" : "Copy code snippet"}
+                    aria-label={codeCopy.status === "copied" ? t.copiedCodeAriaLabel : t.copyCodeAriaLabel}
                     className={cn(
                       "relative inline-flex size-7 items-center justify-center overflow-hidden rounded-[9px] text-muted-foreground outline-none micro-transition focus-visible:ring-2 focus-visible:ring-ring",
                       codeCopy.isCoolingDown
@@ -1751,10 +1881,10 @@ function StickerDetailView({
                 <TooltipContent>
                   <p>
                     {codeCopy.status === "copied"
-                      ? "Copied"
+                      ? t.copiedTooltip
                       : codeCopy.status === "error"
-                        ? "Copy failed"
-                        : "Copy"}
+                        ? t.copyFailedTooltip
+                        : t.copyTooltip}
                   </p>
                 </TooltipContent>
               </Tooltip>
@@ -1777,7 +1907,7 @@ function StickerDetailView({
       {/* Expanding outer-tray GitHub star prompt after export/copy */}
       <AnimatePresence initial={false}>
         {showStarTray ? (
-          <motion.div
+          <m.div
             key="detail-star-tray"
             initial={reduceMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
             animate={reduceMotion ? { opacity: 1 } : { height: "auto", opacity: 1 }}
@@ -1791,7 +1921,7 @@ function StickerDetailView({
               className="flex items-center justify-between gap-2 px-2 pb-0.5 pt-2 sm:px-2.5"
             >
               <div className="flex min-w-0 items-center gap-2">
-                <motion.span
+                <m.span
                   key={starPromptSeq}
                   aria-hidden
                   initial={reduceMotion ? false : { rotate: -6, scale: 0.88 }}
@@ -1807,14 +1937,14 @@ function StickerDetailView({
                   className="flex size-5 shrink-0 items-center justify-center"
                 >
                   <Sticker def={starfishDef} size={20} />
-                </motion.span>
+                </m.span>
                 <span className="truncate text-xs text-muted-foreground">
                   {justStarred ? (
-                    <span className="font-medium text-foreground">Thanks for starring Trazo!</span>
+                    <span className="font-medium text-foreground">{starPromptCopy.thanks}</span>
                   ) : (
                     <>
                       <span className="font-medium text-foreground">{promptVerb}</span>{" "}
-                      <span>Enjoying Trazo?</span>
+                      <span>{starPromptCopy.enjoying}</span>
                     </>
                   )}
                 </span>
@@ -1826,7 +1956,7 @@ function StickerDetailView({
                   <button
                     type="button"
                     onClick={handleDismissStarPrompt}
-                    aria-label="Dismiss star prompt"
+                    aria-label={starPromptCopy.dismissAriaLabel}
                     className="flex size-7 items-center justify-center rounded-full text-muted-foreground outline-none micro-transition hover:bg-background/85 hover:text-foreground active:scale-[0.92] focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <X className="size-3" />
@@ -1834,7 +1964,7 @@ function StickerDetailView({
                 </div>
               ) : null}
             </div>
-          </motion.div>
+          </m.div>
         ) : null}
       </AnimatePresence>
     </div>
@@ -1846,11 +1976,17 @@ function SkillCopyButton({
   copyState,
   idleLabel,
   copiedLabel,
+  copyTooltip,
+  copiedTooltip,
+  copyFailedTooltip,
 }: {
   value: string;
   copyState: ReturnType<typeof useCopy>;
   idleLabel: string;
   copiedLabel: string;
+  copyTooltip: string;
+  copiedTooltip: string;
+  copyFailedTooltip: string;
 }) {
   return (
     <Tooltip>
@@ -1887,10 +2023,10 @@ function SkillCopyButton({
       <TooltipContent>
         <p>
           {copyState.status === "copied"
-            ? "Copied"
+            ? copiedTooltip
             : copyState.status === "error"
-              ? "Copy failed"
-              : "Copy"}
+              ? copyFailedTooltip
+              : copyTooltip}
         </p>
       </TooltipContent>
     </Tooltip>
@@ -1906,32 +2042,37 @@ function AgentSkillView({
   Description: SlotComponent;
   isMobile: boolean;
 }) {
-  const { backToGrid, setOverlayOpen } = useTrazo();
+  const { backToGrid, setOverlayOpen } = useTrazoActions();
+  const locale = useLocale();
+  const messages = getMessages(locale);
+  const t = messages.skill;
+  const detailCopy = messages.detail;
   const installCopy = useCopy({ sound: true });
   const promptCopy = useCopy({ sound: true });
 
   const [commandPrefix, skillFlag] = illustrationSkill.command.split(" --skill ");
+  const examplePromptText = t.examplePromptText || illustrationSkill.prompt;
   const skillMention = `$${illustrationSkill.name}`;
-  const mentionIndex = illustrationSkill.prompt.indexOf(skillMention);
+  const mentionIndex = examplePromptText.indexOf(skillMention);
   const hasMention = mentionIndex !== -1;
-  const promptPrefix = hasMention ? illustrationSkill.prompt.slice(0, mentionIndex) : "";
+  const promptPrefix = hasMention ? examplePromptText.slice(0, mentionIndex) : "";
   const promptSuffix = hasMention
-    ? illustrationSkill.prompt.slice(mentionIndex + skillMention.length)
+    ? examplePromptText.slice(mentionIndex + skillMention.length)
     : "";
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {/* Header in outer tray: back, title + peeking stickers, close */}
       <div className="relative z-0 flex shrink-0 items-center gap-1 px-1.5 pb-1.5 pt-0.5 max-[400px]:items-start sm:px-2">
-        <IconAction label="Back to library" onClick={backToGrid}>
+        <IconAction label={detailCopy.backToLibrary} onClick={backToGrid}>
           <ArrowLeft className="size-4" />
         </IconAction>
         <div className="flex min-w-0 flex-1 items-center gap-2 px-1 max-[400px]:flex-wrap max-[400px]:gap-y-0">
           <Title className="min-w-0 truncate text-base font-semibold tracking-tight text-foreground max-[400px]:w-full">
-            {illustrationSkill.title}
+            {t.title}
           </Title>
           <div
-            aria-label="Example stickers drawn with the skill"
+            aria-label={t.exampleStickersAriaLabel}
             role="group"
             className="group/peek relative -my-2.5 ml-auto flex shrink-0 translate-y-[12px] items-end -space-x-3.5 pr-0.5 max-[400px]:my-0 max-[400px]:translate-y-2 sm:translate-y-[14px] sm:-space-x-3"
           >
@@ -1939,7 +2080,7 @@ function AgentSkillView({
               <Image
                 key={id}
                 src={`/agent-skills/${id}.svg`}
-                alt={name}
+                alt={t.exampleNames[id] ?? name}
                 width={42}
                 height={42}
                 loading="eager"
@@ -1951,7 +2092,7 @@ function AgentSkillView({
             ))}
           </div>
         </div>
-        <IconAction label="Close" onClick={() => setOverlayOpen(false)}>
+        <IconAction label={detailCopy.close} onClick={() => setOverlayOpen(false)}>
           <X className="size-3.5" />
         </IconAction>
       </div>
@@ -1959,8 +2100,7 @@ function AgentSkillView({
       {/* Inset white card sitting in front of the peeking sticker edges */}
       <div className={cn(overlayCardClass, "relative z-10")} data-vaul-no-drag="">
         <Description className="text-sm leading-relaxed text-muted-foreground">
-          Can&apos;t find the sticker you need? Have your agent draw an original Trazo-style SVG and
-          check how it reads at small sizes.
+          {t.description}
         </Description>
 
         {/* Install command in the app's code viewer style */}
@@ -1973,8 +2113,11 @@ function AgentSkillView({
             <SkillCopyButton
               value={illustrationSkill.command}
               copyState={installCopy}
-              idleLabel="Copy install command"
-              copiedLabel="Copied install command"
+              idleLabel={t.copyInstallIdle}
+              copiedLabel={t.copyInstallCopied}
+              copyTooltip={detailCopy.copyTooltip}
+              copiedTooltip={detailCopy.copiedTooltip}
+              copyFailedTooltip={detailCopy.copyFailedTooltip}
             />
           </div>
           <div className="overflow-hidden rounded-[12px] bg-background shadow-[0_1px_2px_rgba(0,0,0,0.03)] ring-1 ring-inset ring-foreground/[0.07]">
@@ -2004,13 +2147,16 @@ function AgentSkillView({
           <div className="flex items-center justify-between gap-2 px-1 pb-1 pt-0.5">
             <span className="inline-flex h-7 items-center gap-1.5 px-2 text-xs font-medium text-muted-foreground">
               <Sparkles className="size-3.5 shrink-0 text-muted-foreground/85" />
-              <span>Example prompt</span>
+              <span>{t.examplePromptLabel}</span>
             </span>
             <SkillCopyButton
-              value={illustrationSkill.prompt}
+              value={examplePromptText}
               copyState={promptCopy}
-              idleLabel="Copy example prompt"
-              copiedLabel="Copied example prompt"
+              idleLabel={t.copyPromptIdle}
+              copiedLabel={t.copyPromptCopied}
+              copyTooltip={detailCopy.copyTooltip}
+              copiedTooltip={detailCopy.copiedTooltip}
+              copyFailedTooltip={detailCopy.copyFailedTooltip}
             />
           </div>
           <div className="overflow-hidden rounded-[12px] bg-background shadow-[0_1px_2px_rgba(0,0,0,0.03)] ring-1 ring-inset ring-foreground/[0.07]">
@@ -2027,7 +2173,7 @@ function AgentSkillView({
                   {promptSuffix}
                 </>
               ) : (
-                illustrationSkill.prompt
+                examplePromptText
               )}
             </p>
           </div>
@@ -2052,9 +2198,9 @@ function AgentSkillView({
           )}
         >
           <GitHubLogo className="size-3.5 shrink-0" />
-          <span>View on GitHub</span>
+          <span>{t.viewOnGithub}</span>
           <ArrowUpRight className="size-3 shrink-0 transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover/gh:-translate-y-0.5 group-hover/gh:translate-x-0.5 motion-reduce:transition-none" />
-          <span className="sr-only"> (opens in a new tab)</span>
+          <span className="sr-only">{messages.hero.opensInNewTab}</span>
         </a>
       </div>
     </div>
@@ -2072,13 +2218,13 @@ function OverlayBody({
   isMobile: boolean;
   stars: number | null;
 }) {
-  const { overlayView } = useTrazo();
+  const { overlayView } = useTrazoOverlayState();
   const reduceMotion = useReducedMotion();
   const offset = overlayView === "grid" ? -12 : 12;
 
   return (
     <AnimatePresence mode="wait" initial={false}>
-      <motion.div
+      <m.div
         key={overlayView}
         initial={reduceMotion ? { opacity: 0 } : { opacity: 0, x: offset }}
         animate={{ opacity: 1, x: 0 }}
@@ -2098,14 +2244,26 @@ function OverlayBody({
         ) : (
           <AgentSkillView Title={Title} Description={Description} isMobile={isMobile} />
         )}
-      </motion.div>
+      </m.div>
     </AnimatePresence>
   );
 }
 
-export function TrazoOverlay({ stars }: { stars: number | null }) {
-  const { overlayOpen, setOverlayOpen, overlayView } = useTrazo();
+export const TrazoOverlay = memo(function TrazoOverlay({
+  stars,
+}: {
+  stars: number | null;
+}) {
+  const { overlayOpen, overlayView } = useTrazoOverlayState();
+  const { setOverlayOpen } = useTrazoActions();
   const isMobile = useIsMobile();
+
+  const renderMobileBody = useCallback(
+    ({ Title, Description }: { Title: SlotComponent; Description: SlotComponent }) => (
+      <OverlayBody Title={Title} Description={Description} isMobile stars={stars} />
+    ),
+    [stars],
+  );
 
   useEffect(() => {
     const timers = new Map<HTMLElement, number>();
@@ -2142,19 +2300,12 @@ export function TrazoOverlay({ stars }: { stars: number | null }) {
 
   if (isMobile) {
     return (
-      <Drawer open={overlayOpen} onOpenChange={setOverlayOpen}>
-        <DrawerContent
-          onOpenAutoFocus={(event) => event.preventDefault()}
-          className={cn(
-            overlayDrawerClass,
-            overlayView === "grid" ? "h-[84dvh]" : "max-h-[90dvh]",
-          )}
-        >
-          <div className="flex min-h-0 flex-1 flex-col pt-1">
-            <OverlayBody Title={DrawerTitle} Description={DrawerDescription} isMobile stars={stars} />
-          </div>
-        </DrawerContent>
-      </Drawer>
+      <LazyOverlayMobileDrawer
+        open={overlayOpen}
+        onOpenChange={setOverlayOpen}
+        overlayView={overlayView}
+        renderBody={renderMobileBody}
+      />
     );
   }
 
@@ -2171,4 +2322,4 @@ export function TrazoOverlay({ stars }: { stars: number | null }) {
       </DialogContent>
     </Dialog>
   );
-}
+});

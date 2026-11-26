@@ -1,8 +1,10 @@
+English | [简体中文](README.zh-CN.md) | [日本語](README.ja.md)
+
 # Trazo
 
-Hand-drawn crayon stickers for the web. 100 wax-textured SVG stickers (sea creatures, cats, school accessories, food, hearts, arrows, stars, clouds, celebration & emphasis marks) baked into clean vector paths. Recolor them live, copy the SVG, or install them from npm.
+Hand-drawn crayon stickers for the web. 100 wax-textured SVG stickers (sea creatures, cats, school accessories, food, hearts, arrows, stars, clouds, celebration & emphasis marks) baked into clean vector paths. Recolor them live, download bulk SVG/PNG ZIP packs, copy the SVG, or install them from npm.
 
-**Site:** [trazo.akoder.xyz](https://trazo.akoder.xyz) · **npm:** [`trazo-stickers`](https://www.npmjs.com/package/trazo-stickers)
+**Site:** [trazo.akoder.xyz](https://trazo.akoder.xyz) · **npm:** [`trazo-stickers`](https://www.npmjs.com/package/trazo-stickers) · **LLMs:** [`llms.txt`](https://trazo.akoder.xyz/llms.txt) / [`llms-full.txt`](https://trazo.akoder.xyz/llms-full.txt)
 
 ## Install
 

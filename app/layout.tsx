@@ -5,8 +5,11 @@ import type { ReactNode } from "react";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { siteConfig } from "@/config/site";
+import { DocumentLocaleSync, LocaleProvider } from "@/lib/use-locale";
 import { cn } from "@/lib/utils";
 import "./globals.css";
+
+const LOCALE_INIT_SCRIPT = `(function(){try{var k="trazo:locale",s=localStorage.getItem(k),l;if(s==="en"||s==="zh-CN"||s==="ja"){l=s}else{var c=navigator.languages&&navigator.languages.length?navigator.languages:[navigator.language];for(var i=0;i<c.length;i++){var r=(c[i]||"").toLowerCase();if(r==="zh"||r.indexOf("zh-")===0){l="zh-CN";break}if(r==="ja"||r.indexOf("ja-")===0){l="ja";break}if(r==="en"||r.indexOf("en-")===0){l="en";break}}}if(l&&document.documentElement.lang!==l){document.documentElement.lang=l}}catch(e){}})();`;
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -18,7 +21,7 @@ export const viewport: Viewport = {
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
-  variable: "--font-sans",
+  variable: "--font-dm-sans",
   display: "swap",
 });
 
@@ -44,6 +47,9 @@ export const metadata: Metadata = {
     "free svg stickers",
     "react svg stickers",
     "vue svg stickers",
+    "svelte svg stickers",
+    "bulk svg sticker pack",
+    "trazo illustration skill",
     "doodle svg icons",
     "scribble svg",
     "wax crayon vector",
@@ -96,6 +102,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={cn(
         "bg-background font-sans",
         dmSans.variable,
@@ -103,10 +110,16 @@ export default function RootLayout({
         caveat.variable,
       )}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: LOCALE_INIT_SCRIPT }} />
+      </head>
       <body className="antialiased">
-        <TooltipProvider>{children}</TooltipProvider>
+        <LocaleProvider>
+          <DocumentLocaleSync />
+          <TooltipProvider>{children}</TooltipProvider>
+        </LocaleProvider>
         <Script
-          defer
+          strategy="lazyOnload"
           src="https://talvess.app/script.js"
           data-website-id="021c9712-faed-478f-a94b-a771e1692c49"
         />

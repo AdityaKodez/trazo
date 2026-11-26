@@ -1,4 +1,4 @@
-import type { FC, SVGProps } from "react";
+import { memo, type FC, type SVGProps } from "react";
 
 import {
   getViewBoxCenter,
@@ -21,6 +21,26 @@ export {
   type ToSvgStringOptions,
 };
 
+const DEFAULT_VIEWBOX = "0 0 256 256";
+const DEFAULT_CENTER = { cx: 128, cy: 128 } as const;
+const viewBoxCenterCache = new Map<string, { cx: number; cy: number }>([
+  [DEFAULT_VIEWBOX, DEFAULT_CENTER],
+]);
+
+function getCachedViewBoxCenter(viewBox: string): { cx: number; cy: number } {
+  if (viewBox === DEFAULT_VIEWBOX) {
+    return DEFAULT_CENTER;
+  }
+  const cached = viewBoxCenterCache.get(viewBox);
+  if (cached) {
+    return cached;
+  }
+  const [cx, cy] = getViewBoxCenter(viewBox);
+  const entry = { cx, cy };
+  viewBoxCenterCache.set(viewBox, entry);
+  return entry;
+}
+
 export interface StickerProps
   extends Omit<SVGProps<SVGSVGElement>, "children" | "rotate"> {
   def: StickerDef;
@@ -34,7 +54,7 @@ export interface StickerProps
 
 export type NamedStickerProps = Omit<StickerProps, "def">;
 
-export function Sticker({
+function StickerBase({
   def,
   size = 48,
   color,
@@ -47,7 +67,7 @@ export function Sticker({
   const useLayers = shouldUseLayers(def, trimmedColor);
   const resolvedFill = trimmedColor || "currentColor";
   const normalizedRotate = normalizeRotation(rotate);
-  const [cx, cy] = getViewBoxCenter(def.viewBox);
+  const { cx, cy } = getCachedViewBoxCenter(def.viewBox);
 
   const artwork =
     useLayers && def.layers ? (
@@ -85,6 +105,9 @@ export function Sticker({
     </svg>
   );
 }
+
+export const Sticker = memo(StickerBase);
+Sticker.displayName = "Sticker";
 
 export function createStickerComponent(def: StickerDef): FC<NamedStickerProps> {
   const Component: FC<NamedStickerProps> = (props) => <Sticker def={def} {...props} />;

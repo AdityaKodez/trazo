@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  memo,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -10,7 +11,7 @@ import {
   type PointerEvent,
 } from "react";
 import {
-  motion,
+  m,
   useMotionValue,
   useReducedMotion,
   useSpring,
@@ -53,7 +54,7 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
-export function SizeSlider({
+export const SizeSlider = memo(function SizeSlider({
   steps,
   value,
   onChange,
@@ -273,7 +274,7 @@ export function SizeSlider({
           const isCovered = index <= activeIndex;
           const isHovered = !isDragging && hoveredIndex === index && !isCovered;
           return (
-            <motion.span
+            <m.span
               key={step}
               initial={false}
               animate={{
@@ -300,7 +301,7 @@ export function SizeSlider({
         )}
         style={{ height: THUMB_SIZE }}
       >
-        <motion.div
+        <m.div
           style={{
             x: pillTranslateX,
             opacity: pillOpacity,
@@ -312,7 +313,7 @@ export function SizeSlider({
       </div>
 
       {/* Floating circular thumb */}
-      <motion.div
+      <m.div
         aria-hidden
         style={{
           x: thumbX,
@@ -332,4 +333,4 @@ export function SizeSlider({
       />
     </div>
   );
-}
+});

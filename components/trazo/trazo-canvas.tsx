@@ -2,15 +2,15 @@
 
 import {
   animate,
-  motion,
+  m,
   useMotionValue,
   useReducedMotion,
   useSpring,
   type AnimationPlaybackControls,
 } from "motion/react";
 import {
-  useCallback,
   memo,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -21,6 +21,7 @@ import {
   type KeyboardEvent,
   type MouseEvent,
   type PointerEvent,
+  type RefObject,
   type WheelEvent,
 } from "react";
 import type { StickerCategory, StickerDef } from "trazo/core";
@@ -30,7 +31,8 @@ import { CanvasTestimonialScribble } from "@/components/trazo/canvas-testimonial
 import { HomeView } from "@/components/trazo/home-view";
 import {
   LOCATE_SHAKE_DELAY_MS,
-  useTrazo,
+  useTrazoActions,
+  useTrazoCanvasState,
 } from "@/components/trazo/trazo-experience";
 import {
   CANVAS_WORLD,
@@ -38,6 +40,8 @@ import {
   canvasZones,
   type ResolvedCanvasStickerPlacement,
 } from "@/config/canvas";
+import { getMessages } from "@/config/i18n/messages";
+import { getLocalizedStickerName } from "@/config/i18n/stickers";
 import { resolveStickerColor } from "@/config/palette";
 import {
   canvasTestimonials,
@@ -48,6 +52,7 @@ import {
   loadCategories,
   useStickerLoaderVersion,
 } from "@/lib/sticker-loader";
+import { useLocale } from "@/lib/use-locale";
 import { cn } from "@/lib/utils";
 
 const DRAG_THRESHOLD_PX = 5;
@@ -56,8 +61,14 @@ const KEYBOARD_PAN_STEP_PX = 120;
 // Quantize viewport-culling updates to 120px camera steps so smooth 60fps panning
 // never triggers React re-renders on every animation frame.
 const CULL_BUCKET_PX = 120;
-const RENDER_BUFFER_PX = 520;
-const PREFETCH_BUFFER_PX = 960;
+// Tight buffers keep initial mount lean while staying ahead of fast drags.
+const DESKTOP_RENDER_BUFFER_PX = 240;
+const DESKTOP_PREFETCH_BUFFER_PX = 440;
+const MOBILE_RENDER_BUFFER_PX = 220;
+const MOBILE_PREFETCH_BUFFER_PX = 440;
+const IDLE_PREFETCH_TIMEOUT_MS = 2000;
+
+const DEFAULT_CANVAS_MESSAGES = getMessages("en").canvas;
 
 const emptySubscribe = () => () => {};
 const getClientSnapshot = () => true;
@@ -94,6 +105,115 @@ function rubberBandClamp(value: number, min: number, max: number, factor = 0.28)
   }
   return value;
 }
+
+/**
+ * Tiny zero-DOM leaf that keeps the canvas viewport's ARIA region attributes
+ * localized without subscribing TrazoCanvas (or any Sticker SVG) to useLocale().
+ */
+const CanvasRegionA11ySync = memo(function CanvasRegionA11ySync({
+  viewportRef,
+}: {
+  viewportRef: RefObject<HTMLDivElement | null>;
+}) {
+  const locale = useLocale();
+
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+    const t = getMessages(locale).canvas;
+    el.setAttribute("aria-roledescription", t.roleDescription);
+    el.setAttribute("aria-label", t.regionAriaLabel);
+  }, [locale, viewportRef]);
+
+  return null;
+});
+
+/**
+ * Leaf component for localized zone headers so switching locale never touches
+ * TrazoCanvas or mounted Sticker SVGs.
+ */
+const CanvasZoneLabel = memo(function CanvasZoneLabel({
+  zoneId,
+}: {
+  zoneId: StickerCategory;
+}) {
+  const locale = useLocale();
+  const isCjk = locale !== "en";
+  const label = getMessages(locale).canvas.zoneLabels[zoneId];
+
+  return (
+    <span
+      className={cn(
+        "leading-none text-muted-foreground/65 transition-opacity duration-150",
+        isCjk
+          ? "text-sm font-medium sm:text-base"
+          : "font-caveat text-[20px] sm:text-[24px]",
+      )}
+    >
+      {label}
+    </span>
+  );
+});
+
+/**
+ * Leaf component for localized per-sticker accessible label, hover pill, and
+ * handwritten margin note so switching locale never busts memo(CanvasSticker).
+ */
+const CanvasStickerLabels = memo(function CanvasStickerLabels({
+  def,
+  placement,
+  labelId,
+}: {
+  def: StickerDef;
+  placement: ResolvedCanvasStickerPlacement;
+  labelId: string;
+}) {
+  const locale = useLocale();
+  const t = getMessages(locale).canvas;
+  const isCjk = locale !== "en";
+  const displayName = getLocalizedStickerName(def, locale);
+  const inspectAriaLabel = t.inspectStickerAriaLabel(displayName);
+  const marginNoteText = placement.marginNote
+    ? (t.marginNotes[placement.id] ?? placement.marginNote)
+    : undefined;
+
+  return (
+    <>
+      <span id={labelId} className="sr-only">
+        {inspectAriaLabel}
+      </span>
+
+      {/* Origin-aware springy hover / focus name pill */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute -bottom-6 left-1/2 z-20 hidden -translate-x-1/2 translate-y-1.5 scale-95 whitespace-nowrap rounded-full bg-foreground px-2.5 py-0.5 text-[11px] font-medium text-background opacity-0 shadow-sm transition-all duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:scale-100 group-focus-visible:opacity-100 sm:block"
+      >
+        {displayName}
+      </span>
+
+      {/* Handwritten Caveat margin note on key stickers (desktop/tablet where perimeter has room) */}
+      {marginNoteText ? (
+        <span
+          aria-hidden="true"
+          className={cn(
+            "pointer-events-none absolute hidden whitespace-nowrap leading-none text-muted-foreground/80 transition-[color,opacity] duration-150 sm:block sm:group-hover:text-foreground",
+            isCjk ? "text-xs font-medium" : "font-caveat text-[19px]",
+            placement.noteSide === "top" &&
+              "-top-5 left-1/2 -translate-x-1/2",
+            placement.noteSide === "bottom" &&
+              "-bottom-5 left-1/2 -translate-x-1/2 sm:group-hover:opacity-0",
+            placement.noteSide === "left" &&
+              "right-full mr-2 top-1/2 -translate-y-1/2",
+            placement.noteSide === "right" &&
+              "left-full ml-2 top-1/2 -translate-y-1/2",
+          )}
+        >
+          {marginNoteText}
+        </span>
+      ) : null}
+    </>
+  );
+});
 
 interface CanvasStickerProps {
   placement: ResolvedCanvasStickerPlacement;
@@ -135,6 +255,7 @@ const CanvasSticker = memo(function CanvasSticker({
     Math.min(420, (radialDist / 1150) * 340 + (index % 5) * 16),
   );
   const hoverTilt = placement.rotate + (placement.rotate >= 0 ? -8 : 8);
+  const labelId = `canvas-sticker-label-${placement.id}`;
 
   const buttonStyle = {
     "--sticker-rot": `${placement.rotate}deg`,
@@ -176,7 +297,7 @@ const CanvasSticker = memo(function CanvasSticker({
           {/* Inner button owns zero-latency GPU-composited hover & press physics */}
           <button
             type="button"
-            aria-label={`Inspect ${def.name} sticker`}
+            aria-labelledby={labelId}
             onFocus={(event) => onFocusSticker(placement, event)}
             onClick={() => onClickSticker(def.id)}
             style={buttonStyle}
@@ -186,35 +307,13 @@ const CanvasSticker = memo(function CanvasSticker({
               def={def}
               size={renderedSize}
               color={stickerColor}
-              className="pointer-events-none relative z-10 drop-shadow-[0_2px_3px_rgba(0,0,0,0.04)] transition-[filter,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] sm:group-hover:drop-shadow-[0_10px_14px_rgba(0,0,0,0.14)]"
+              className="pointer-events-none relative z-10 transition-[filter,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] sm:group-hover:drop-shadow-[0_10px_14px_rgba(0,0,0,0.14)]"
             />
-
-            {/* Origin-aware springy hover / focus name pill */}
-            {" "}
-            <span aria-hidden className="pointer-events-none absolute -bottom-6 left-1/2 z-20 hidden -translate-x-1/2 translate-y-1.5 scale-95 whitespace-nowrap rounded-full bg-foreground px-2.5 py-0.5 text-[11px] font-medium text-background opacity-0 shadow-sm transition-all duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:scale-100 group-focus-visible:opacity-100 sm:block">
-              {def.name}
-            </span>
-
-            {/* Handwritten Caveat margin note on key stickers (desktop/tablet where perimeter has room) */}
-            {placement.marginNote ? " " : null}
-            {placement.marginNote ? (
-              <span
-                aria-hidden
-                className={cn(
-                  "pointer-events-none absolute hidden whitespace-nowrap font-caveat text-[19px] leading-none text-muted-foreground/80 transition-colors duration-150 sm:block sm:group-hover:text-foreground",
-                  placement.noteSide === "top" &&
-                    "-top-5 left-1/2 -translate-x-1/2",
-                  placement.noteSide === "bottom" &&
-                    "-bottom-5 left-1/2 -translate-x-1/2 sm:group-hover:opacity-0",
-                  placement.noteSide === "left" &&
-                    "right-full mr-2 top-1/2 -translate-y-1/2",
-                  placement.noteSide === "right" &&
-                    "left-full ml-2 top-1/2 -translate-y-1/2",
-                )}
-              >
-                {placement.marginNote}
-              </span>
-            ) : null}
+            <CanvasStickerLabels
+              def={def}
+              placement={placement}
+              labelId={labelId}
+            />
           </button>
         </div>
       </div>
@@ -223,12 +322,8 @@ const CanvasSticker = memo(function CanvasSticker({
 });
 
 export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
-  const {
-    paletteId,
-    openStickerDetail,
-    cameraTarget,
-    locatedSticker,
-  } = useTrazo();
+  const { openStickerDetail } = useTrazoActions();
+  const { paletteId, cameraTarget, locatedSticker } = useTrazoCanvasState();
   const reduceMotion = useReducedMotion();
   const loaderVersion = useStickerLoaderVersion();
 
@@ -240,6 +335,8 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
   );
   const [viewportSize, setViewportSize] = useState({ width: 1440, height: 900 });
   const [cameraBucket, setCameraBucket] = useState({ cx: 0, cy: 0 });
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const isInteracted = hasInteracted || cameraTarget.seq > 0;
   const [isDragging, setIsDragging] = useState(false);
   const [shakingSticker, setShakingSticker] = useState<{
     id: string;
@@ -282,6 +379,10 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
 
   const suppressNextClickRef = useRef(false);
 
+  const markInteracted = useCallback(() => {
+    setHasInteracted((prev) => (prev ? prev : true));
+  }, []);
+
   useEffect(() => {
     function updateSize() {
       if (!viewportRef.current) return;
@@ -321,9 +422,10 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
   const stickerScale = isMobileViewport ? 0.76 : isTabletViewport ? 0.9 : 1;
   const heroOffsetY = isMobileViewport ? -22 : isTabletViewport ? -10 : 0;
 
-  // Determine which placements are inside the visible viewport + buffer, and which
-  // nearby categories should be prefetched before they enter view.
-  const { visiblePlacements, prefetchCategories } = useMemo(() => {
+  // Determine which placements are inside the visible viewport + buffer, and
+  // separate immediately on-screen categories from outer-quadrant prefetches
+  // so initial mount doesn't burst ~920 KB of off-screen category chunks.
+  const { visiblePlacements, immediateCategories, deferredCategories } = useMemo(() => {
     // During SSR and initial hydration, only render the inner ocean showcase ring
     // so SSR HTML stays lightweight (~100 KB instead of 2+ MB) with zero mismatch.
     if (!mounted) {
@@ -331,19 +433,29 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
         visiblePlacements: canvasPlacements
           .map((placement, index) => ({ placement, index }))
           .filter(({ placement }) => placement.category === "ocean"),
-        prefetchCategories: [] as StickerCategory[],
+        immediateCategories: [] as StickerCategory[],
+        deferredCategories: [] as StickerCategory[],
       };
     }
 
     const viewCenterX = -cameraBucket.cx;
     const viewCenterY = -cameraBucket.cy;
-    const renderHalfW = viewportSize.width / 2 + RENDER_BUFFER_PX;
-    const renderHalfH = viewportSize.height / 2 + RENDER_BUFFER_PX;
-    const prefetchHalfW = viewportSize.width / 2 + PREFETCH_BUFFER_PX;
-    const prefetchHalfH = viewportSize.height / 2 + PREFETCH_BUFFER_PX;
+    const renderBuffer = isMobileViewport
+      ? MOBILE_RENDER_BUFFER_PX
+      : DESKTOP_RENDER_BUFFER_PX;
+    const prefetchBuffer = isMobileViewport
+      ? MOBILE_PREFETCH_BUFFER_PX
+      : DESKTOP_PREFETCH_BUFFER_PX;
+    const onScreenHalfW = viewportSize.width / 2 + 48;
+    const onScreenHalfH = viewportSize.height / 2 + 48;
+    const renderHalfW = viewportSize.width / 2 + renderBuffer;
+    const renderHalfH = viewportSize.height / 2 + renderBuffer;
+    const prefetchHalfW = viewportSize.width / 2 + prefetchBuffer;
+    const prefetchHalfH = viewportSize.height / 2 + prefetchBuffer;
 
     const visible: { placement: ResolvedCanvasStickerPlacement; index: number }[] = [];
-    const toPrefetch = new Set<StickerCategory>();
+    const immediate = new Set<StickerCategory>();
+    const deferred = new Set<StickerCategory>();
 
     for (let index = 0; index < canvasPlacements.length; index++) {
       const placement = canvasPlacements[index];
@@ -353,22 +465,33 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
       const dy = Math.abs(py - viewCenterY);
 
       const isLocated = locatedSticker?.id === placement.id;
+      const isOnScreen = dx <= onScreenHalfW && dy <= onScreenHalfH;
+      const isInRenderRect = isLocated || (dx <= renderHalfW && dy <= renderHalfH);
 
-      if (isLocated || (dx <= prefetchHalfW && dy <= prefetchHalfH)) {
-        toPrefetch.add(placement.category);
+      if (isLocated || isOnScreen || (isInteracted && isInRenderRect)) {
+        immediate.add(placement.category);
+      } else if (dx <= prefetchHalfW && dy <= prefetchHalfH) {
+        deferred.add(placement.category);
       }
 
-      if (isLocated || (dx <= renderHalfW && dy <= renderHalfH)) {
+      if (isInRenderRect) {
         visible.push({ placement, index });
       }
     }
 
+    for (const category of immediate) {
+      deferred.delete(category);
+    }
+
     return {
       visiblePlacements: visible,
-      prefetchCategories: [...toPrefetch],
+      immediateCategories: [...immediate],
+      deferredCategories: [...deferred],
     };
   }, [
     mounted,
+    isInteracted,
+    isMobileViewport,
     cameraBucket.cx,
     cameraBucket.cy,
     viewportSize.width,
@@ -379,9 +502,31 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
   ]);
 
   useEffect(() => {
-    if (!mounted || prefetchCategories.length === 0) return;
-    void loadCategories(prefetchCategories);
-  }, [mounted, prefetchCategories]);
+    if (!mounted || immediateCategories.length === 0) return;
+    void loadCategories(immediateCategories);
+  }, [mounted, immediateCategories]);
+
+  useEffect(() => {
+    if (!mounted || deferredCategories.length === 0) return;
+    if (isInteracted) {
+      void loadCategories(deferredCategories);
+      return;
+    }
+
+    const trigger = () => {
+      void loadCategories(deferredCategories);
+    };
+
+    if (typeof window.requestIdleCallback === "function") {
+      const idleId = window.requestIdleCallback(trigger, {
+        timeout: IDLE_PREFETCH_TIMEOUT_MS,
+      });
+      return () => window.cancelIdleCallback(idleId);
+    }
+
+    const timerId = window.setTimeout(trigger, IDLE_PREFETCH_TIMEOUT_MS);
+    return () => window.clearTimeout(timerId);
+  }, [mounted, isInteracted, deferredCategories]);
 
   const getPanBounds = useCallback(() => {
     const scaledWorldW = CANVAS_WORLD.width * posScaleX;
@@ -467,6 +612,7 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
     const target = event.target as HTMLElement | null;
     if (target?.closest("[data-no-pan]")) return;
 
+    markInteracted();
     stopCameraAnimations();
     dragStateRef.current = {
       active: true,
@@ -569,6 +715,7 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
   }
 
   function handleWheel(event: WheelEvent<HTMLDivElement>) {
+    markInteracted();
     stopCameraAnimations();
     const { maxX, maxY } = getPanBounds();
     const deltaX = event.shiftKey ? event.deltaY : event.deltaX;
@@ -601,12 +748,14 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
         break;
       case "Home":
         event.preventDefault();
+        markInteracted();
         glideCameraTo(0, 0);
         return;
       default:
         return;
     }
     event.preventDefault();
+    markInteracted();
     stopCameraAnimations();
     const { maxX, maxY } = getPanBounds();
     targetX.set(clamp(targetX.get() + dx, -maxX, maxX));
@@ -706,8 +855,8 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
       onKeyDown={handleKeyDown}
       tabIndex={0}
       role="region"
-      aria-roledescription="canvas"
-      aria-label="Sticker canvas. Use arrow keys to pan, Home to recenter, Tab to move between stickers."
+      aria-roledescription={DEFAULT_CANVAS_MESSAGES.roleDescription ?? "canvas"}
+      aria-label={DEFAULT_CANVAS_MESSAGES.regionAriaLabel}
       onScroll={(event) => {
         event.currentTarget.scrollLeft = 0;
         event.currentTarget.scrollTop = 0;
@@ -717,8 +866,10 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
         isDragging ? "cursor-grabbing" : "cursor-grab",
       )}
     >
+      <CanvasRegionA11ySync viewportRef={viewportRef} />
+
       {/* World plane centered at viewport midpoint with spring follow + subtle tactile drag scale & tilt */}
-      <motion.div
+      <m.div
         style={{
           x: cameraX,
           y: cameraY,
@@ -762,9 +913,7 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
               }}
               className="pointer-events-none absolute left-0 top-0 w-max whitespace-nowrap text-center"
             >
-              <span className="font-caveat text-[20px] leading-none text-muted-foreground/65 sm:text-[24px]">
-                {zone.label}
-              </span>
+              <CanvasZoneLabel zoneId={zone.id} />
             </div>
           );
         })}
@@ -814,7 +963,7 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
             />
           );
         })}
-      </motion.div>
+      </m.div>
     </div>
   );
 }

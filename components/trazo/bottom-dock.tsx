@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState, type KeyboardEvent, type ReactNode } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { memo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { AnimatePresence, m, useReducedMotion } from "motion/react";
 import { STICKER_COUNT } from "trazo/meta";
 
 import { LayoutGrid } from "@/components/trazo/icons";
@@ -16,13 +16,18 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useTrazo } from "@/components/trazo/trazo-experience";
+import {
+  useTrazoActions,
+  useTrazoCanvasState,
+} from "@/components/trazo/trazo-experience";
+import { getMessages } from "@/config/i18n/messages";
 import {
   findPaletteOption,
   paletteOptions,
   type PaletteId,
   type PaletteOption,
 } from "@/config/palette";
+import { useLocale } from "@/lib/use-locale";
 import { useModKey } from "@/lib/use-mod-key";
 import { cn } from "@/lib/utils";
 
@@ -32,9 +37,10 @@ const MIX_GRADIENT =
 const selectSpring = { type: "spring", stiffness: 520, damping: 34, mass: 0.6 } as const;
 const liftSpring = { type: "spring", stiffness: 600, damping: 24, mass: 0.4 } as const;
 const enterSpring = { type: "spring", stiffness: 380, damping: 30 } as const;
+const labelFadeEase = [0.22, 1, 0.36, 1] as const;
 
 const PANEL_CLASS =
-  "flex items-center rounded-[20px] bg-popover/92 p-1 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_14px_36px_-10px_rgba(0,0,0,0.18)] ring-1 ring-foreground/[0.07] backdrop-blur-md sm:rounded-[22px] sm:p-1.5";
+  "flex items-center rounded-[20px] bg-popover/95 p-1 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_14px_36px_-10px_rgba(0,0,0,0.18)] ring-1 ring-foreground/[0.07] backdrop-blur-sm sm:rounded-[22px] sm:p-1.5";
 
 function SwatchDot({
   option,
@@ -73,19 +79,22 @@ function DeckPanel({
 }) {
   const reduceMotion = useReducedMotion();
   return (
-    <motion.div
+    <m.div
       initial={reduceMotion ? false : { opacity: 0, y: 20, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ ...enterSpring, delay: 0.2 + index * 0.06 }}
+      transition={reduceMotion ? { duration: 0 } : { ...enterSpring, delay: 0.2 + index * 0.06 }}
       className={cn(PANEL_CLASS, className)}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }
 
 function SwatchRail() {
-  const { paletteId, setPaletteId } = useTrazo();
+  const { paletteId } = useTrazoCanvasState();
+  const { setPaletteId } = useTrazoActions();
+  const locale = useLocale();
+  const messages = getMessages(locale);
   const reduceMotion = useReducedMotion();
   const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
@@ -115,23 +124,24 @@ function SwatchRail() {
   return (
     <div
       role="radiogroup"
-      aria-label="Sticker color palette"
+      aria-label={messages.dock.paletteGroupAriaLabel}
       onKeyDown={handleKeyDown}
       className="flex items-center gap-0.5"
     >
       {paletteOptions.map((option, index) => {
         const isSelected = paletteId === option.id;
+        const label = messages.palettes[option.id];
         return (
           <Tooltip key={option.id}>
             <TooltipTrigger asChild>
-              <motion.button
+              <m.button
                 ref={(node) => {
                   buttonRefs.current[index] = node;
                 }}
                 type="button"
                 role="radio"
                 aria-checked={isSelected}
-                aria-label={option.label}
+                aria-label={label}
                 tabIndex={isSelected ? 0 : -1}
                 onClick={() => setPaletteId(option.id)}
                 whileHover={reduceMotion ? undefined : "lift"}
@@ -139,14 +149,14 @@ function SwatchRail() {
                 className="relative flex size-10 items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 {isSelected ? (
-                  <motion.span
+                  <m.span
                     aria-hidden
                     layoutId="dock-swatch-selection"
                     transition={reduceMotion ? { duration: 0 } : selectSpring}
                     className="absolute inset-[3px] rounded-full ring-2 ring-foreground"
                   />
                 ) : null}
-                <motion.span
+                <m.span
                   className="relative"
                   variants={{
                     lift: { y: -3, scale: 1.12 },
@@ -161,11 +171,11 @@ function SwatchRail() {
                       isSelected && "scale-[0.84]",
                     )}
                   />
-                </motion.span>
-              </motion.button>
+                </m.span>
+              </m.button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{option.label}</p>
+              <p>{label}</p>
             </TooltipContent>
           </Tooltip>
         );
@@ -175,9 +185,14 @@ function SwatchRail() {
 }
 
 function MobileColorPicker() {
-  const { paletteId, setPaletteId } = useTrazo();
+  const { paletteId } = useTrazoCanvasState();
+  const { setPaletteId } = useTrazoActions();
+  const locale = useLocale();
+  const reduceMotion = useReducedMotion();
+  const messages = getMessages(locale);
   const [open, setOpen] = useState(false);
   const activeOption = findPaletteOption(paletteId);
+  const activeLabel = messages.palettes[activeOption.id];
 
   function pick(id: PaletteId) {
     setPaletteId(id);
@@ -189,11 +204,28 @@ function MobileColorPicker() {
       <PopoverTrigger asChild>
         <button
           type="button"
-          aria-label={`Color: ${activeOption.label}`}
+          aria-label={messages.dock.colorButtonAriaLabel(activeLabel)}
           className="flex h-10 items-center gap-2 rounded-2xl pl-2 pr-3 text-xs font-medium text-foreground micro-transition hover:bg-muted active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:h-11"
         >
           <SwatchDot option={activeOption} className="size-6 sm:size-7" />
-          <span className="max-w-[92px] truncate whitespace-nowrap">{activeOption.label}</span>
+          <span className="inline-grid w-[5.5rem] items-center overflow-hidden text-left">
+            <AnimatePresence initial={false}>
+              <m.span
+                key={`${locale}-${activeOption.id}`}
+                initial={reduceMotion ? false : { opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={
+                  reduceMotion
+                    ? { duration: 0 }
+                    : { duration: 0.16, ease: labelFadeEase }
+                }
+                className="col-start-1 row-start-1 truncate whitespace-nowrap"
+              >
+                {activeLabel}
+              </m.span>
+            </AnimatePresence>
+          </span>
         </button>
       </PopoverTrigger>
       <PopoverContent
@@ -203,14 +235,22 @@ function MobileColorPicker() {
         className="w-[min(296px,calc(100vw-1.5rem))] rounded-2xl p-3"
       >
         <div className="mb-2.5 flex items-center justify-between px-0.5">
-          <span className="text-xs font-medium text-foreground">Crayon palette</span>
-          <span className="font-caveat text-lg leading-none text-muted-foreground">
-            {activeOption.label}
+          <span className="text-xs font-medium text-foreground">
+            {messages.dock.crayonPaletteTitle}
+          </span>
+          <span
+            className={cn(
+              "leading-none text-muted-foreground",
+              locale === "en" ? "font-caveat text-lg" : "text-xs",
+            )}
+          >
+            {activeLabel}
           </span>
         </div>
         <div className="grid grid-cols-3 gap-1.5">
           {paletteOptions.map((option) => {
             const isSelected = paletteId === option.id;
+            const optionLabel = messages.palettes[option.id];
             return (
               <button
                 key={option.id}
@@ -225,7 +265,7 @@ function MobileColorPicker() {
                 )}
               >
                 <SwatchDot option={option} className="size-7" />
-                <span className="truncate">{option.label}</span>
+                <span className="truncate">{optionLabel}</span>
               </button>
             );
           })}
@@ -235,14 +275,18 @@ function MobileColorPicker() {
   );
 }
 
-export function BottomDock() {
-  const { paletteId, centerCanvas, openLibraryGrid } = useTrazo();
+export const BottomDock = memo(function BottomDock() {
+  const { paletteId } = useTrazoCanvasState();
+  const { centerCanvas, openLibraryGrid } = useTrazoActions();
+  const locale = useLocale();
+  const reduceMotion = useReducedMotion();
+  const t = getMessages(locale).dock;
   const modKey = useModKey();
   const activeOption = findPaletteOption(paletteId);
 
   return (
     <nav
-      aria-label="Canvas controls"
+      aria-label={t.navAriaLabel}
       data-no-pan=""
       className="fixed bottom-[max(0.875rem,env(safe-area-inset-bottom))] left-1/2 z-30 flex max-w-[calc(100vw-1.25rem)] -translate-x-1/2 items-center gap-1.5 sm:bottom-[max(1rem,env(safe-area-inset-bottom))] sm:gap-2"
     >
@@ -252,7 +296,7 @@ export function BottomDock() {
             <button
               type="button"
               onClick={centerCanvas}
-              aria-label="Center canvas"
+              aria-label={t.centerCanvasAriaLabel}
               className="group flex h-10 items-center gap-0.5 rounded-2xl px-1 micro-transition hover:bg-muted active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:h-11 sm:pl-1 sm:pr-3"
             >
               <TrazoMark
@@ -265,7 +309,7 @@ export function BottomDock() {
             </button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Back to center</p>
+            <p>{t.backToCenterTooltip}</p>
           </TooltipContent>
         </Tooltip>
       </DeckPanel>
@@ -281,12 +325,29 @@ export function BottomDock() {
         <button
           type="button"
           onClick={openLibraryGrid}
-          aria-label={`Open sticker library (${STICKER_COUNT} stickers)`}
+          aria-label={t.libraryAriaLabel(STICKER_COUNT)}
           aria-keyshortcuts="Meta+K Control+K"
-          className="flex h-10 items-center gap-1.5 rounded-2xl pl-3 pr-2 text-[13px] font-medium text-background micro-transition hover:bg-background/10 active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-background sm:h-11 sm:gap-2 sm:text-sm"
+          className="flex h-10 items-center gap-1.5 rounded-2xl pl-3 pr-2.5 text-[13px] font-medium text-background micro-transition hover:bg-background/10 active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-background sm:h-11 sm:gap-2 sm:pr-2 sm:text-sm"
         >
           <LayoutGrid className="size-[17px] shrink-0 sm:size-[18px]" />
-          <span>Library</span>
+          <span className="inline-grid place-items-center">
+            <AnimatePresence initial={false} mode="popLayout">
+              <m.span
+                key={locale}
+                initial={reduceMotion ? false : { opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={
+                  reduceMotion
+                    ? { duration: 0 }
+                    : { duration: 0.16, ease: labelFadeEase }
+                }
+                className="col-start-1 row-start-1 whitespace-nowrap"
+              >
+                {t.libraryLabel}
+              </m.span>
+            </AnimatePresence>
+          </span>
           <kbd aria-hidden className="hidden whitespace-nowrap rounded-lg bg-background/15 px-1.5 py-1 font-sans text-[10px] leading-none text-background/80 sm:inline">
             {modKey} K
           </kbd>
@@ -294,4 +355,4 @@ export function BottomDock() {
       </DeckPanel>
     </nav>
   );
-}
+});

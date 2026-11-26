@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, m, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { curlyArrowDef, spiralDef } from "trazo/catalog/arrows";
 import { bowtieCatDef, daisyCatDef, heartCatDef } from "trazo/catalog/cats";
@@ -23,6 +23,7 @@ import { STICKER_COUNT } from "trazo/meta";
 import { Sticker } from "trazo/scribble";
 
 import { GitHubLogo } from "@/components/trazo/icons";
+import { LocaleSwitcher } from "@/components/trazo/locale-switcher";
 import { ArrowLeft, RotateCw } from "@/components/trazo/overlay-icons";
 import { TrazoMark } from "@/components/trazo/trazo-logo";
 import {
@@ -30,18 +31,22 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { getMessages } from "@/config/i18n/messages";
+import { getLocalizedStickerName } from "@/config/i18n/stickers";
 import { findPaletteOption } from "@/config/palette";
 import { siteConfig } from "@/config/site";
 import { playLocateShakeSound } from "@/lib/sound";
+import { useLocale } from "@/lib/use-locale";
 import { cn } from "@/lib/utils";
 
 const easeOutQuart = [0.23, 1, 0.32, 1] as const;
+const copyEase = [0.22, 1, 0.36, 1] as const;
 const enterSpring = { type: "spring", stiffness: 380, damping: 30 } as const;
 const flipSpring = { type: "spring", stiffness: 420, damping: 24, mass: 0.55 } as const;
 const stickerSpring = { type: "spring", stiffness: 520, damping: 20, mass: 0.48 } as const;
 
 const PILL_CLASS =
-  "pointer-events-auto flex items-center rounded-[18px] bg-popover/92 p-1 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_12px_30px_-10px_rgba(0,0,0,0.14)] ring-1 ring-foreground/[0.07] backdrop-blur-md sm:rounded-[20px]";
+  "pointer-events-auto flex items-center rounded-[18px] bg-popover/95 p-1 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_12px_30px_-10px_rgba(0,0,0,0.14)] ring-1 ring-foreground/[0.07] backdrop-blur-sm sm:rounded-[20px]";
 
 const MIX_PALETTE = findPaletteOption("mix");
 
@@ -187,7 +192,13 @@ const ORBIT_STICKERS: readonly OrbitItem[] = [
   },
 ] as const;
 
-function GitHubPillLink() {
+function GitHubPillLink({
+  ariaLabel,
+  tooltip,
+}: {
+  ariaLabel: string;
+  tooltip: string;
+}) {
   const reduceMotion = useReducedMotion();
   const [flipped, setFlipped] = useState(false);
 
@@ -202,7 +213,7 @@ function GitHubPillLink() {
           onPointerLeave={() => setFlipped(false)}
           onFocus={() => setFlipped(true)}
           onBlur={() => setFlipped(false)}
-          aria-label="Trazo on GitHub (opens in a new tab)"
+          aria-label={ariaLabel}
           className="group flex h-8 items-center gap-1.5 rounded-[14px] px-2.5 text-xs font-medium text-foreground outline-none micro-transition hover:bg-muted active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-ring sm:h-9 sm:gap-2 sm:px-3"
         >
           <span
@@ -216,7 +227,7 @@ function GitHubPillLink() {
                 <GitHubLogo className="size-[17px] text-foreground" />
               )
             ) : (
-              <motion.span
+              <m.span
                 animate={{
                   rotateY: flipped ? 180 : 0,
                   scale: flipped ? 1.12 : 1,
@@ -230,7 +241,7 @@ function GitHubPillLink() {
                 <span className="absolute inset-0 flex items-center justify-center [backface-visibility:hidden] [transform:rotateY(180deg)]">
                   <Sticker def={starfishDef} size={22} className="-rotate-6" />
                 </span>
-              </motion.span>
+              </m.span>
             )}
           </span>
           <span className="text-muted-foreground transition-colors group-hover:text-foreground">
@@ -239,7 +250,7 @@ function GitHubPillLink() {
         </a>
       </TooltipTrigger>
       <TooltipContent side="bottom" align="end">
-        <p>View Trazo on GitHub</p>
+        <p>{tooltip}</p>
       </TooltipContent>
     </Tooltip>
   );
@@ -247,10 +258,18 @@ function GitHubPillLink() {
 
 function OrbitSticker({
   item,
+  displayName,
+  wiggleAriaLabel,
+  noteText,
+  isCjk,
   shuffleSeq,
   onPoke,
 }: {
   item: OrbitItem;
+  displayName: string;
+  wiggleAriaLabel: string;
+  noteText?: string;
+  isCjk: boolean;
   shuffleSeq: number;
   onPoke: () => void;
 }) {
@@ -286,7 +305,7 @@ function OrbitSticker({
 
   return (
     <div className={cn("pointer-events-auto absolute", item.positionClass)}>
-      <motion.div
+      <m.div
         initial={
           reduceMotion
             ? false
@@ -300,7 +319,7 @@ function OrbitSticker({
           delay: item.delay,
         }}
       >
-        <motion.div
+        <m.div
           animate={
             isShaking && !reduceMotion
               ? SHAKE_KEYFRAMES
@@ -312,10 +331,10 @@ function OrbitSticker({
               : { duration: 0.16, ease: "easeOut" }
           }
         >
-          <motion.button
+          <m.button
             type="button"
             onClick={handleClick}
-            aria-label={`Wiggle ${item.def.name} sticker`}
+            aria-label={wiggleAriaLabel}
             initial={false}
             animate={{ rotate: item.rotate, scale: 1, y: 0 }}
             whileHover={
@@ -339,34 +358,53 @@ function OrbitSticker({
               )}
             />
 
-            <span className="pointer-events-none absolute -bottom-6 left-1/2 z-20 hidden -translate-x-1/2 translate-y-1.5 scale-95 whitespace-nowrap rounded-full bg-foreground px-2.5 py-0.5 text-[11px] font-medium text-background opacity-0 shadow-sm transition-all duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:scale-100 group-focus-visible:opacity-100 sm:block">
-              {item.def.name}
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute -bottom-6 left-1/2 z-20 hidden -translate-x-1/2 translate-y-1.5 scale-95 whitespace-nowrap rounded-full bg-foreground px-2.5 py-0.5 text-[11px] font-medium text-background opacity-0 shadow-sm transition-all duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:scale-100 group-focus-visible:opacity-100 sm:block"
+            >
+              {displayName}
             </span>
 
-            {item.note ? (
+            {noteText ? (
               <span
                 aria-hidden
                 className={cn(
-                  "pointer-events-none absolute hidden whitespace-nowrap font-caveat text-[19px] leading-none text-muted-foreground/80 transition-colors duration-150 lg:block lg:group-hover:text-foreground",
+                  "pointer-events-none absolute hidden whitespace-nowrap leading-none text-muted-foreground/80 transition-colors duration-150 lg:block lg:group-hover:text-foreground",
+                  isCjk ? "text-xs font-medium" : "font-caveat text-[19px]",
                   item.notePositionClass,
                 )}
               >
-                {item.note}
+                {noteText}
               </span>
             ) : null}
-          </motion.button>
-        </motion.div>
-      </motion.div>
+          </m.button>
+        </m.div>
+      </m.div>
     </div>
   );
 }
 
 export function NotFoundView() {
+  const locale = useLocale();
+  const t = getMessages(locale).notFound;
+  const isCjk = locale !== "en";
   const reduceMotion = useReducedMotion();
   const [zeroIndex, setZeroIndex] = useState(0);
   const [shuffleSeq, setShuffleSeq] = useState(0);
 
   const activeZero = ZERO_STICKERS[zeroIndex];
+  const activeZeroName = getLocalizedStickerName(activeZero, locale);
+
+  const crossfadeInitial = reduceMotion
+    ? false
+    : { opacity: 0, filter: "blur(3px)", y: 2 };
+  const crossfadeAnimate = { opacity: 1, filter: "blur(0px)", y: 0 };
+  const crossfadeExit = reduceMotion
+    ? { opacity: 0 }
+    : { opacity: 0, filter: "blur(3px)", y: -2 };
+  const crossfadeTransition = reduceMotion
+    ? { duration: 0 }
+    : { duration: 0.18, ease: copyEase };
 
   function cycleZeroSticker() {
     playLocateShakeSound(0);
@@ -383,17 +421,17 @@ export function NotFoundView() {
     <main className="paper-dot-grid relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-background px-4 py-20 select-none">
       {/* Floating top chrome matching TopBar */}
       <header className="pointer-events-none fixed inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] z-30 flex items-center justify-between gap-2 sm:inset-x-4 sm:top-[max(1rem,env(safe-area-inset-top))]">
-        <motion.div
+        <m.div
           initial={reduceMotion ? false : { opacity: 0, y: -12, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ ...enterSpring, delay: 0.08 }}
+          transition={reduceMotion ? { duration: 0 } : { ...enterSpring, delay: 0.08 }}
           className={PILL_CLASS}
         >
           <Tooltip>
             <TooltipTrigger asChild>
               <Link
                 href="/"
-                aria-label="Back to Trazo canvas"
+                aria-label={t.backToCanvasAriaLabel}
                 className="group flex h-8 items-center gap-0.5 rounded-[14px] pl-1 pr-2.5 outline-none micro-transition hover:bg-muted active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-ring sm:h-9 sm:pl-1 sm:pr-3"
               >
                 <TrazoMark
@@ -406,34 +444,44 @@ export function NotFoundView() {
               </Link>
             </TooltipTrigger>
             <TooltipContent side="bottom" align="start">
-              <p>Back to sticker canvas</p>
+              <p>{t.backToCanvasTooltip}</p>
             </TooltipContent>
           </Tooltip>
-        </motion.div>
+        </m.div>
 
-        <motion.div
+        <m.div
           initial={reduceMotion ? false : { opacity: 0, y: -12, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ ...enterSpring, delay: 0.14 }}
-          className={PILL_CLASS}
+          transition={reduceMotion ? { duration: 0 } : { ...enterSpring, delay: 0.14 }}
+          className="flex items-center gap-1.5 sm:gap-2"
         >
-          <GitHubPillLink />
-        </motion.div>
+          <LocaleSwitcher />
+          <div className={PILL_CLASS}>
+            <GitHubPillLink ariaLabel={t.githubAriaLabel} tooltip={t.githubTooltip} />
+          </div>
+        </m.div>
       </header>
 
       {/* Hand-placed Trazo stickers framing the 404 stage */}
       <div
-        aria-label="Decorative Trazo stickers"
+        aria-label={t.decorativeStickersAriaLabel}
         className="pointer-events-none fixed inset-0 z-10 overflow-hidden"
       >
-        {ORBIT_STICKERS.map((item) => (
-          <OrbitSticker
-            key={item.def.id}
-            item={item}
-            shuffleSeq={shuffleSeq}
-            onPoke={() => playLocateShakeSound(0)}
-          />
-        ))}
+        {ORBIT_STICKERS.map((item) => {
+          const displayName = getLocalizedStickerName(item.def, locale);
+          return (
+            <OrbitSticker
+              key={item.def.id}
+              item={item}
+              displayName={displayName}
+              wiggleAriaLabel={t.wiggleStickerAriaLabel(displayName)}
+              noteText={item.note ? (t.orbitNotes[item.def.id] ?? item.note) : undefined}
+              isCjk={isCjk}
+              shuffleSeq={shuffleSeq}
+              onPoke={() => playLocateShakeSound(0)}
+            />
+          );
+        })}
       </div>
 
       {/* Centered 404 Hero Composition */}
@@ -442,7 +490,7 @@ export function NotFoundView() {
         className="relative z-20 flex w-[min(352px,calc(100vw-2rem))] flex-col items-center text-center sm:w-[460px]"
       >
         {/* Illustrated 4 [Sticker] 4 lockup */}
-        <motion.div
+        <m.div
           initial={reduceMotion ? false : { opacity: 0, y: 12, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.3, ease: easeOutQuart }}
@@ -457,10 +505,10 @@ export function NotFoundView() {
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <motion.button
+              <m.button
                 type="button"
                 onClick={cycleZeroSticker}
-                aria-label={`Zero illustrated as ${activeZero.name} sticker — click to swap sticker`}
+                aria-label={t.swapZeroAriaLabel(activeZeroName)}
                 whileHover={
                   reduceMotion ? undefined : { scale: 1.1, rotate: -5, y: -5 }
                 }
@@ -469,7 +517,7 @@ export function NotFoundView() {
                 className="group relative flex size-[112px] items-center justify-center rounded-3xl outline-none focus-visible:ring-2 focus-visible:ring-ring sm:size-[144px]"
               >
                 <AnimatePresence mode="popLayout" initial={false}>
-                  <motion.span
+                  <m.span
                     key={activeZero.id}
                     initial={
                       reduceMotion
@@ -494,12 +542,12 @@ export function NotFoundView() {
                       def={activeZero}
                       className="size-[104px] drop-shadow-[0_3px_5px_rgba(0,0,0,0.06)] transition-[filter] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:drop-shadow-[0_12px_16px_rgba(0,0,0,0.14)] sm:size-[136px]"
                     />
-                  </motion.span>
+                  </m.span>
                 </AnimatePresence>
-              </motion.button>
+              </m.button>
             </TooltipTrigger>
             <TooltipContent side="top">
-              <p>{activeZero.name} · click to swap</p>
+              <p>{t.swapZeroTooltip(activeZeroName)}</p>
             </TooltipContent>
           </Tooltip>
 
@@ -509,36 +557,58 @@ export function NotFoundView() {
           >
             4
           </span>
-          <span className="sr-only">Error 404</span>
-        </motion.div>
+          <span className="sr-only">{t.errorSrLabel}</span>
+        </m.div>
 
-        {/* Handwritten headline */}
-        <motion.h1
-          id="not-found-heading"
+        {/* Stabilized crossfade wrapper for headline & subcopy */}
+        <m.div
           initial={reduceMotion ? false : { opacity: 0, y: 10, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.28, delay: 0.05, ease: easeOutQuart }}
-          className="mt-2 font-caveat text-balance text-[38px] font-bold leading-[1.04] text-foreground sm:mt-3 sm:text-[52px] sm:leading-[1.03]"
+          transition={reduceMotion ? { duration: 0 } : { duration: 0.28, delay: 0.05, ease: easeOutQuart }}
+          className="mt-2 grid min-h-[156px] w-full items-center sm:mt-3 sm:min-h-[172px]"
         >
-          This page drifted off the sheet.
-        </motion.h1>
+          <AnimatePresence initial={false}>
+            <m.div
+              key={locale}
+              initial={crossfadeInitial}
+              animate={crossfadeAnimate}
+              exit={crossfadeExit}
+              transition={crossfadeTransition}
+              className="col-start-1 row-start-1 flex w-full flex-col items-center"
+            >
+              {/* Handwritten headline */}
+              <h1
+                id="not-found-heading"
+                className={cn(
+                  "flex min-h-[82px] items-end justify-center text-balance font-bold text-foreground sm:min-h-[108px]",
+                  isCjk
+                    ? "font-sans text-[26px] leading-[1.28] tracking-[-0.02em] sm:text-[34px] sm:leading-[1.24]"
+                    : "font-caveat text-[38px] leading-[1.04] sm:text-[52px] sm:leading-[1.03]",
+                )}
+              >
+                {t.headline}
+              </h1>
 
-        {/* Handwritten subcopy */}
-        <motion.p
-          initial={reduceMotion ? false : { opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.28, delay: 0.1, ease: easeOutQuart }}
-          className="mt-2 max-w-[310px] font-caveat text-pretty text-[20px] leading-[1.26] text-muted-foreground sm:mt-2.5 sm:max-w-[400px] sm:text-[24px] sm:leading-[1.24]"
-        >
-          We checked every corner of the canvas, but there&apos;s no sticker
-          pinned here.
-        </motion.p>
+              {/* Handwritten subcopy */}
+              <p
+                className={cn(
+                  "mt-2 min-h-[60px] text-pretty text-muted-foreground sm:mt-2.5 sm:min-h-[54px]",
+                  isCjk
+                    ? "max-w-[320px] font-sans text-[14px] leading-[1.65] sm:max-w-[400px] sm:text-[15px]"
+                    : "max-w-[310px] font-caveat text-[20px] leading-[1.26] sm:max-w-[400px] sm:text-[24px] sm:leading-[1.24]",
+                )}
+              >
+                {t.subcopy}
+              </p>
+            </m.div>
+          </AnimatePresence>
+        </m.div>
 
         {/* Action pills matching BottomDock chrome */}
-        <motion.div
+        <m.div
           initial={reduceMotion ? false : { opacity: 0, y: 12, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ ...enterSpring, delay: 0.14 }}
+          transition={reduceMotion ? { duration: 0 } : { ...enterSpring, delay: 0.14 }}
           className="mt-5 flex flex-wrap items-center justify-center gap-2 sm:mt-6"
         >
           <div className="flex items-center rounded-[20px] bg-foreground p-1 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_14px_36px_-10px_rgba(0,0,0,0.18)] ring-1 ring-foreground sm:rounded-[22px] sm:p-1.5">
@@ -547,33 +617,47 @@ export function NotFoundView() {
               className="flex h-10 items-center gap-2 rounded-2xl px-4 text-[13px] font-medium text-background outline-none micro-transition hover:bg-background/10 active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-background sm:h-11 sm:px-5 sm:text-sm"
             >
               <ArrowLeft className="size-[16px] shrink-0 sm:size-[17px]" />
-              <span>Back to canvas</span>
+              <span>{t.backToCanvasButton}</span>
             </Link>
           </div>
 
-          <div className="flex items-center rounded-[20px] bg-popover/92 p-1 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_14px_36px_-10px_rgba(0,0,0,0.14)] ring-1 ring-foreground/[0.07] backdrop-blur-md sm:rounded-[22px] sm:p-1.5">
+          <div className="flex items-center rounded-[20px] bg-popover/95 p-1 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_14px_36px_-10px_rgba(0,0,0,0.14)] ring-1 ring-foreground/[0.07] backdrop-blur-sm sm:rounded-[22px] sm:p-1.5">
             <button
               type="button"
               onClick={shuffleScene}
               className="group flex h-10 items-center gap-1.5 rounded-2xl px-3.5 text-[13px] font-medium text-muted-foreground outline-none micro-transition hover:bg-muted hover:text-foreground active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-ring sm:h-11 sm:px-4 sm:text-sm"
             >
               <RotateCw className="size-[15px] shrink-0 transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:rotate-45 sm:size-[16px]" />
-              <span>Swap sticker</span>
+              <span>{t.swapStickerButton}</span>
             </button>
           </div>
-        </motion.div>
+        </m.div>
 
         {/* Quiet sketchbook margin footnote matching TrazoCanvas fun facts */}
-        <motion.div
+        <m.div
           aria-hidden
           initial={reduceMotion ? false : { opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.28, delay: 0.24, ease: easeOutQuart }}
+          transition={reduceMotion ? { duration: 0 } : { duration: 0.28, delay: 0.24, ease: easeOutQuart }}
           className="mt-6 flex flex-col items-center gap-1.5 sm:mt-7"
         >
-          <p className="font-caveat text-[18px] leading-none text-muted-foreground/80 sm:text-[20px]">
-            All {STICKER_COUNT} hand-drawn stickers are waiting back home.
-          </p>
+          <div className="grid min-h-[22px] w-full place-items-center sm:min-h-[24px]">
+            <AnimatePresence initial={false}>
+              <m.p
+                key={locale}
+                initial={crossfadeInitial}
+                animate={crossfadeAnimate}
+                exit={crossfadeExit}
+                transition={crossfadeTransition}
+                className={cn(
+                  "col-start-1 row-start-1 leading-none text-muted-foreground/80",
+                  isCjk ? "text-xs" : "font-caveat text-[18px] sm:text-[20px]",
+                )}
+              >
+                {t.footnote(STICKER_COUNT)}
+              </m.p>
+            </AnimatePresence>
+          </div>
           <svg
             viewBox="0 0 44 6"
             width="40"
@@ -588,7 +672,7 @@ export function NotFoundView() {
               strokeLinecap="round"
             />
           </svg>
-        </motion.div>
+        </m.div>
       </section>
     </main>
   );

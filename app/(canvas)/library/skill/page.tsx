@@ -1,5 +1,5 @@
+/* eslint-disable @next/next/no-html-link-for-pages */
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import { illustrationSkill, siteConfig } from "@/config/site";
 
@@ -41,7 +41,7 @@ export default function AgentSkillPage() {
         <a href={illustrationSkill.source}>View the skill on GitHub</a>
       </p>
       <p>
-        <Link href="/library">Browse the Trazo sticker library</Link>
+        <a href="/library">Browse the Trazo sticker library</a>
       </p>
     </article>
   );
