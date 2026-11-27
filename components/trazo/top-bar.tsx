@@ -455,7 +455,7 @@ export const TopBar = memo(function TopBar({ stars }: { stars: number | null }) 
   const t = getMessages(locale).topBar;
 
   return (
-    <header className="pointer-events-none fixed inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] z-30 flex items-center justify-between gap-2 sm:inset-x-4 sm:top-[max(1rem,env(safe-area-inset-top))]">
+    <header className="pointer-events-none fixed inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] z-30 flex items-center justify-between gap-1.5 sm:inset-x-4 sm:top-[max(1rem,env(safe-area-inset-top))]">
       {/* Author attribution */}
       <m.div
         data-no-pan=""

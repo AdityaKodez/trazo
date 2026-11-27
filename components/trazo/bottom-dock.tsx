@@ -205,10 +205,10 @@ function MobileColorPicker() {
         <button
           type="button"
           aria-label={messages.dock.colorButtonAriaLabel(activeLabel)}
-          className="flex h-10 items-center gap-2 rounded-2xl pl-2 pr-3 text-xs font-medium text-foreground micro-transition hover:bg-muted active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:h-11"
+          className="flex h-10 items-center gap-1.5 rounded-2xl pl-1.5 pr-2.5 text-xs font-medium text-foreground micro-transition hover:bg-muted active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:h-11"
         >
           <SwatchDot option={activeOption} className="size-6 sm:size-7" />
-          <span className="inline-grid w-[5.5rem] items-center overflow-hidden text-left">
+          <span className="inline-grid w-[4.75rem] items-center overflow-hidden text-left">
             <AnimatePresence initial={false}>
               <m.span
                 key={`${locale}-${activeOption.id}`}
@@ -288,7 +288,7 @@ export const BottomDock = memo(function BottomDock() {
     <nav
       aria-label={t.navAriaLabel}
       data-no-pan=""
-      className="fixed bottom-[max(0.875rem,env(safe-area-inset-bottom))] left-1/2 z-30 flex max-w-[calc(100vw-1.25rem)] -translate-x-1/2 items-center gap-1.5 sm:bottom-[max(1rem,env(safe-area-inset-bottom))] sm:gap-2"
+      className="pointer-events-none fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 flex items-center justify-center gap-1.5 sm:inset-x-4 sm:bottom-[max(1rem,env(safe-area-inset-bottom))] sm:gap-2 [&>*]:pointer-events-auto"
     >
       <DeckPanel index={0}>
         <Tooltip>
@@ -327,7 +327,7 @@ export const BottomDock = memo(function BottomDock() {
           onClick={openLibraryGrid}
           aria-label={t.libraryAriaLabel(STICKER_COUNT)}
           aria-keyshortcuts="Meta+K Control+K"
-          className="flex h-10 items-center gap-1.5 rounded-2xl pl-3 pr-2.5 text-[13px] font-medium text-background micro-transition hover:bg-background/10 active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-background sm:h-11 sm:gap-2 sm:pr-2 sm:text-sm"
+          className="flex h-10 items-center gap-1.5 rounded-2xl px-3 text-[13px] font-medium text-background micro-transition hover:bg-background/10 active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-background sm:h-11 sm:gap-2 sm:pl-3 sm:pr-2 sm:text-sm"
         >
           <LayoutGrid className="size-[17px] shrink-0 sm:size-[18px]" />
           <span className="inline-grid place-items-center">
