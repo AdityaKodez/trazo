@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Caveat, DM_Sans, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Plus_Jakarta_Sans, Shantell_Sans } from "next/font/google";
 import Script from "next/script";
 import type { ReactNode } from "react";
 
@@ -19,9 +19,9 @@ export const viewport: Viewport = {
   colorScheme: "light",
 };
 
-const dmSans = DM_Sans({
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  variable: "--font-dm-sans",
+  variable: "--font-plus-jakarta-sans",
   display: "swap",
 });
 
@@ -31,9 +31,9 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
-const caveat = Caveat({
+const shantellSans = Shantell_Sans({
   subsets: ["latin"],
-  variable: "--font-caveat",
+  variable: "--font-shantell-sans",
   display: "swap",
 });
 
@@ -105,9 +105,9 @@ export default function RootLayout({
       suppressHydrationWarning
       className={cn(
         "bg-background font-sans",
-        dmSans.variable,
+        plusJakartaSans.variable,
         geistMono.variable,
-        caveat.variable,
+        shantellSans.variable,
       )}
     >
       <head>

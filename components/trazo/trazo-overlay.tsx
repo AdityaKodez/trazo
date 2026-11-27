@@ -154,6 +154,7 @@ const CATEGORY_TABS: readonly {
   iconId: string;
 }[] = [
   { id: "all", iconId: "solid-star" },
+  { id: "games", iconId: "game-coin" },
   { id: "ocean", iconId: "dolphin" },
   { id: "arrows", iconId: "loop-arrow-orange" },
   { id: "nature", iconId: "flower-red" },
@@ -232,9 +233,13 @@ function Kbd({ children, className }: { children: ReactNode; className?: string 
   );
 }
 
-function MiniPaletteBar() {
-  const { paletteId } = useTrazoCanvasState();
-  const { setPaletteId } = useTrazoActions();
+function MiniPaletteBar({
+  paletteId,
+  onSelect,
+}: {
+  paletteId: PaletteId;
+  onSelect: (id: PaletteId) => void;
+}) {
   const locale = useLocale();
   const messages = getMessages(locale);
   const reduceMotion = useReducedMotion();
@@ -250,7 +255,7 @@ function MiniPaletteBar() {
     else return;
     event.preventDefault();
     const index = (next + paletteOptions.length) % paletteOptions.length;
-    setPaletteId(paletteOptions[index].id);
+    onSelect(paletteOptions[index].id);
     buttonRefs.current[index]?.focus();
   }
 
@@ -277,7 +282,7 @@ function MiniPaletteBar() {
             tabIndex={isSelected ? 0 : -1}
             aria-label={label}
             title={label}
-            onClick={() => setPaletteId(option.id)}
+            onClick={() => onSelect(option.id)}
             className="relative flex size-7 shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring sm:size-6"
           >
             {isSelected ? (
@@ -1099,7 +1104,7 @@ function LibraryPalette({
               className={cn(
                 "text-foreground",
                 locale === "en"
-                  ? "font-caveat text-[26px] leading-none"
+                  ? "font-hand text-[19px] font-semibold leading-tight tracking-[-0.015em]"
                   : "text-base font-semibold",
               )}
             >
@@ -1416,13 +1421,17 @@ function StickerDetailView({
   Description: SlotComponent;
   stars: number | null;
 }) {
-  const { paletteId } = useTrazoCanvasState();
+  const { paletteId: canvasPaletteId } = useTrazoCanvasState();
   const {
     selectedStickerMeta,
     selectedSticker,
     selectedSize,
     selectedRotation,
   } = useTrazoOverlayState();
+  const [paletteOverrides, setPaletteOverrides] = useState<
+    Partial<Record<string, PaletteId>>
+  >({});
+  const paletteId = paletteOverrides[selectedStickerMeta.id] ?? canvasPaletteId;
   const {
     setSelectedSize,
     setSelectedRotation,
@@ -1765,7 +1774,15 @@ function StickerDetailView({
             }
           >
             <div className="flex min-w-0 flex-1 items-center">
-              <MiniPaletteBar />
+              <MiniPaletteBar
+                paletteId={paletteId}
+                onSelect={(nextId) =>
+                  setPaletteOverrides((prev) => ({
+                    ...prev,
+                    [selectedStickerMeta.id]: nextId,
+                  }))
+                }
+              />
             </div>
           </DetailRow>
         </div>

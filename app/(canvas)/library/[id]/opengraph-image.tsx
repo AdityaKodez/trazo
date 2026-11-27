@@ -4,28 +4,29 @@ import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { findSticker, type StickerDef } from "trazo/svg";
 
-import { siteConfig } from "@/config/site";
+import { akoderMarkLayers } from "@/config/akoder-mark";
 
 export const alt = "Trazo hand-drawn crayon SVG sticker";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-const caveatBold = await readFile(
-  join(process.cwd(), "app/_fonts/Caveat-Bold.ttf"),
+const shantellBold = await readFile(
+  join(process.cwd(), "app/_fonts/ShantellSans-Bold.ttf"),
 );
 
-const INK = "#1f1e1b";
-const MUTED = "#6b6860";
+const imageOptions = {
+  ...size,
+  fonts: [
+    {
+      name: "Shantell Sans",
+      data: shantellBold,
+      style: "normal" as const,
+      weight: 700 as const,
+    },
+  ],
+};
 
-const MIX_STOPS = [
-  "#ef4444",
-  "#f97316",
-  "#eab308",
-  "#16a34a",
-  "#38bdf8",
-  "#2563eb",
-  "#ec4899",
-] as const;
+const INK = "#1f1e1b";
 
 function StickerArt({ def, px }: { def: StickerDef; px: number }) {
   const layers =
@@ -61,8 +62,8 @@ export default async function StickerOpenGraphImage({
             alignItems: "center",
             justifyContent: "center",
             backgroundColor: "#ffffff",
-            fontFamily: "Caveat",
-            fontSize: "96px",
+            fontFamily: "Shantell Sans",
+            fontSize: 76,
             fontWeight: 700,
             color: INK,
           }}
@@ -70,17 +71,7 @@ export default async function StickerOpenGraphImage({
           trazo
         </div>
       ),
-      {
-        ...size,
-        fonts: [
-          {
-            name: "Caveat",
-            data: caveatBold,
-            style: "normal",
-            weight: 700,
-          },
-        ],
-      },
+      imageOptions,
     );
   }
 
@@ -92,177 +83,57 @@ export default async function StickerOpenGraphImage({
           height: "100%",
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
-          backgroundColor: "#ffffff",
-          padding: "56px 76px",
+          justifyContent: "center",
           position: "relative",
+          backgroundColor: "#ffffff",
+          fontFamily: "Shantell Sans",
+          fontWeight: 700,
         }}
       >
-        {/* Left: Large Sticker Artwork */}
         <div
           style={{
-            width: "410px",
-            height: "410px",
+            position: "absolute",
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            fontSize: Math.min(300, Math.floor(1560 / sticker.name.length)),
+            lineHeight: 1,
+            whiteSpace: "nowrap",
+            color: "#c8bbab",
           }}
         >
-          <StickerArt def={sticker} px={350} />
+          {sticker.name}
         </div>
 
-        {/* Right: Sticker Title, Category, Component & Brand */}
+        <StickerArt def={sticker} px={390} />
+
         <div
           style={{
-            width: "580px",
+            position: "absolute",
+            right: 40,
+            bottom: 32,
             display: "flex",
-            flexDirection: "column",
-            alignItems: "flex-start",
-            justifyContent: "center",
-            gap: "18px",
+            alignItems: "center",
+            gap: 2,
+            fontSize: 28,
+            lineHeight: 1,
+            color: INK,
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                padding: "8px 18px",
-                borderRadius: "999px",
-                backgroundColor: "#f4f2ec",
-                fontSize: "24px",
-                fontWeight: 600,
-                color: MUTED,
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-              }}
-            >
-              {sticker.category}
-            </div>
-            <div
-              style={{
-                display: "flex",
-                padding: "8px 18px",
-                borderRadius: "999px",
-                backgroundColor: "#f4f2ec",
-                fontSize: "24px",
-                fontWeight: 600,
-                color: INK,
-              }}
-            >
-              {`<${sticker.componentName} />`}
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              fontFamily: "Caveat",
-              fontWeight: 700,
-              fontSize: "104px",
-              lineHeight: 0.96,
-              letterSpacing: "-0.02em",
-              color: INK,
-            }}
-          >
-            {sticker.name}
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              fontSize: "28px",
-              lineHeight: 1.35,
-              color: MUTED,
-            }}
-          >
-            Free hand-drawn crayon SVG sticker for React, Vue &amp; web.
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              marginTop: "14px",
-            }}
-          >
-            <svg viewBox="0 0 32 32" width="44" height="44" fill="none">
-              <defs>
-                <linearGradient
-                  id="trazo-sticker-og-mix"
-                  x1="7"
-                  y1="22"
-                  x2="25"
-                  y2="10"
-                  gradientUnits="userSpaceOnUse"
-                >
-                  {MIX_STOPS.map((hex, index) => (
-                    <stop
-                      key={hex}
-                      offset={index / (MIX_STOPS.length - 1)}
-                      stopColor={hex}
-                    />
-                  ))}
-                </linearGradient>
-              </defs>
-              <path
-                d={siteConfig.markStroke}
-                fill="none"
-                stroke="url(#trazo-sticker-og-mix)"
-                strokeWidth="2.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <circle
-                cx="24.4"
-                cy="10"
-                r="2.1"
-                fill={MIX_STOPS[MIX_STOPS.length - 1]}
-              />
-            </svg>
-            <div
-              style={{
-                display: "flex",
-                fontFamily: "Caveat",
-                fontWeight: 700,
-                fontSize: "48px",
-                lineHeight: 1,
-                color: INK,
-                paddingBottom: "4px",
-              }}
-            >
-              trazo
-            </div>
-            <div
-              style={{
-                display: "flex",
-                fontSize: "24px",
-                color: MUTED,
-                marginLeft: "8px",
-              }}
-            >
-              · trazo.akoder.xyz
-            </div>
-          </div>
+          <div style={{ whiteSpace: "pre" }}>{"made by "}</div>
+          <svg viewBox="0 1 16 15" width="32" height="30" fill="none">
+            {akoderMarkLayers.map((layer) => (
+              <path key={layer.fill} d={layer.d} fill={layer.fill} />
+            ))}
+          </svg>
+          <div>ditya</div>
         </div>
       </div>
     ),
-    {
-      ...size,
-      fonts: [
-        {
-          name: "Caveat",
-          data: caveatBold,
-          style: "normal",
-          weight: 700,
-        },
-      ],
-    },
+    imageOptions,
   );
 }

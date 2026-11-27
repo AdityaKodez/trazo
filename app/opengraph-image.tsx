@@ -27,8 +27,8 @@ export const alt = "Trazo · Hand-drawn crayon sticker SVGs for React and web";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-const caveatBold = await readFile(
-  join(process.cwd(), "app/_fonts/Caveat-Bold.ttf"),
+const shantellBold = await readFile(
+  join(process.cwd(), "app/_fonts/ShantellSans-Bold.ttf"),
 );
 
 const INK = "#1f1e1b";
@@ -179,13 +179,13 @@ export default function OpenGraphImage() {
           <div
             style={{
               display: "flex",
-              fontFamily: "Caveat",
+              fontFamily: "Shantell Sans",
               fontWeight: 700,
-              fontSize: "164px",
+              fontSize: "124px",
               lineHeight: 1,
               letterSpacing: "-0.03em",
               color: INK,
-              paddingBottom: "14px",
+              paddingBottom: "10px",
             }}
           >
             trazo
@@ -205,9 +205,9 @@ export default function OpenGraphImage() {
           <div
             style={{
               display: "flex",
-              fontFamily: "Caveat",
+              fontFamily: "Shantell Sans",
               fontWeight: 700,
-              fontSize: "38px",
+              fontSize: "28px",
               lineHeight: 1,
               color: INK,
               whiteSpace: "pre",
@@ -215,7 +215,7 @@ export default function OpenGraphImage() {
           >
             {"made by "}
           </div>
-          <svg viewBox="0 1 16 15" width="38" height="36" fill="none">
+          <svg viewBox="0 1 16 15" width="32" height="30" fill="none">
             {akoderMarkLayers.map((layer) => (
               <path key={layer.fill} d={layer.d} fill={layer.fill} />
             ))}
@@ -223,9 +223,9 @@ export default function OpenGraphImage() {
           <div
             style={{
               display: "flex",
-              fontFamily: "Caveat",
+              fontFamily: "Shantell Sans",
               fontWeight: 700,
-              fontSize: "38px",
+              fontSize: "28px",
               lineHeight: 1,
               color: INK,
             }}
@@ -239,8 +239,8 @@ export default function OpenGraphImage() {
       ...size,
       fonts: [
         {
-          name: "Caveat",
-          data: caveatBold,
+          name: "Shantell Sans",
+          data: shantellBold,
           style: "normal",
           weight: 700,
         },

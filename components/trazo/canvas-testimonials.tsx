@@ -147,7 +147,7 @@ export const CanvasTestimonialScribble = memo(
               </span>
             </span>
 
-            {/* Handwritten Caveat ink quote + handle + crayon underline */}
+            {/* Handwritten ink quote + handle + crayon underline */}
             <span
               className={cn(
                 "flex min-w-0 flex-col",
@@ -160,10 +160,10 @@ export const CanvasTestimonialScribble = memo(
                   "font-bold text-foreground/85 transition-colors duration-150 group-hover:text-foreground",
                   isCjkQuote
                     ? "text-[15px] leading-[1.3] sm:text-[17px]"
-                    : "font-caveat text-[20px] leading-[1.06] sm:text-[23px]",
+                    : "font-hand text-[14px] leading-[1.24] tracking-[-0.015em] sm:text-[15.5px]",
                   isCenter
                     ? "whitespace-nowrap"
-                    : "max-w-[162px] text-balance sm:max-w-[186px]",
+                    : "max-w-[172px] text-balance sm:max-w-[198px]",
                 )}
               >
                 {item.quote}

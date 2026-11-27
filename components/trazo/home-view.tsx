@@ -41,7 +41,7 @@ function SponsorContact({ reduceMotion }: { reduceMotion: boolean | null }) {
           "col-start-1 row-start-1 inline-flex items-center justify-center gap-1 -rotate-1 leading-none text-muted-foreground outline-none transition-colors duration-200 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring",
           isCjk
             ? "text-[13px] font-medium sm:text-[14px]"
-            : "font-caveat text-[20px] sm:text-[22px]",
+            : "font-hand text-[14.5px] font-medium sm:text-[15.5px]",
         )}
       >
         {t.sponsorCta}
@@ -92,7 +92,7 @@ export const HomeView = memo(function HomeView({
                 "flex min-h-[84px] items-end justify-center text-balance font-bold text-foreground sm:min-h-[118px]",
                 isCjk
                   ? "font-sans text-[26px] leading-[1.28] tracking-[-0.02em] sm:text-[34px] sm:leading-[1.24]"
-                  : "font-caveat text-[38px] leading-[1.04] sm:text-[56px] sm:leading-[1.03]",
+                  : "font-hand text-[28px] leading-[1.16] tracking-[-0.02em] sm:text-[38px] sm:leading-[1.14]",
               )}
             >
               {t.headline}
@@ -102,7 +102,7 @@ export const HomeView = memo(function HomeView({
                 "mt-2 min-h-[100px] text-pretty text-muted-foreground sm:mt-2.5 sm:min-h-[94px]",
                 isCjk
                   ? "max-w-[320px] font-sans text-[13.5px] leading-[1.65] sm:max-w-[430px] sm:text-[15px] sm:leading-[1.65]"
-                  : "max-w-[310px] font-caveat text-[19px] leading-[1.28] sm:max-w-[420px] sm:text-[24px] sm:leading-[1.25]",
+                  : "max-w-[320px] font-hand text-[14px] leading-[1.52] sm:max-w-[430px] sm:text-[16px] sm:leading-[1.5]",
               )}
             >
               {t.description}

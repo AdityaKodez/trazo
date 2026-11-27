@@ -3,6 +3,13 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { m, useReducedMotion } from "motion/react";
 
+import {
+  CHROME_DARK_PILL_ACTIVE,
+  CHROME_LIGHT_BUTTON,
+  CHROME_LIGHT_SURFACE,
+  CHROME_POPOVER_SURFACE,
+  CHROME_RECESSED_CHANNEL,
+} from "@/components/trazo/chrome-surfaces";
 import { Check, Languages } from "@/components/trazo/icons";
 import { useIsMobile } from "@/components/trazo/overlay-layout";
 import {
@@ -26,9 +33,6 @@ import {
   type Locale,
 } from "@/lib/use-locale";
 import { cn } from "@/lib/utils";
-
-const PILL_CLASS =
-  "pointer-events-auto flex items-center rounded-[18px] bg-popover/95 p-1 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_12px_30px_-10px_rgba(0,0,0,0.14)] ring-1 ring-foreground/[0.07] backdrop-blur-sm sm:rounded-[20px]";
 
 const segmentSpring = {
   type: "spring",
@@ -115,7 +119,7 @@ function MobileLocaleSwitcher({ className }: { className?: string }) {
   }
 
   return (
-    <div className={cn(PILL_CLASS, "sm:hidden", className)} data-no-pan="">
+    <div className={cn("pointer-events-auto flex items-center sm:hidden", className)} data-no-pan="">
       <Popover open={open} onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>
           <button
@@ -123,12 +127,15 @@ function MobileLocaleSwitcher({ className }: { className?: string }) {
             onPointerEnter={() => preloadOtherLocales(locale)}
             onFocus={() => preloadOtherLocales(locale)}
             aria-label={`${t.languageMenuAriaLabel} (${activeOption.nativeLabel})`}
-            className="flex h-8 min-w-[4.75rem] items-center justify-center gap-1.5 rounded-[14px] px-2.5 text-xs font-medium text-foreground outline-none micro-transition hover:bg-muted active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-ring"
+            className={cn(
+              CHROME_LIGHT_BUTTON,
+              "flex h-10 min-w-[5rem] items-center justify-center gap-1.5 px-3 text-xs font-medium text-foreground data-[state=open]:translate-y-[0.5px]",
+            )}
           >
             <Languages className="size-3.5 shrink-0 text-muted-foreground" />
             <span
               lang={activeOption.id}
-              className="inline-block min-w-[3em] whitespace-nowrap text-center leading-none"
+              className="inline-block min-w-[2.5em] whitespace-nowrap text-center leading-none"
             >
               {activeOption.shortLabel}
             </span>
@@ -140,7 +147,10 @@ function MobileLocaleSwitcher({ className }: { className?: string }) {
           sideOffset={10}
           collisionPadding={12}
           data-no-pan=""
-          className="w-[172px] max-w-[calc(100vw-1.5rem)] gap-1 rounded-2xl p-1.5"
+          className={cn(
+            CHROME_POPOVER_SURFACE,
+            "w-[172px] max-w-[calc(100vw-1.5rem)] gap-1 rounded-[20px] p-1.5",
+          )}
         >
           <div
             role="radiogroup"
@@ -168,10 +178,10 @@ function MobileLocaleSwitcher({ className }: { className?: string }) {
                   }}
                   onClick={() => pick(option.id)}
                   className={cn(
-                    "flex min-h-[38px] w-full items-center justify-between gap-2 rounded-xl px-2.5 py-2 text-left text-[13px] font-medium outline-none micro-transition active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ring",
+                    "flex min-h-[38px] w-full items-center justify-between gap-2 rounded-[14px] px-3 py-2 text-left text-[13px] font-medium outline-none transition-transform duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none",
                     isSelected
-                      ? "bg-foreground text-background"
-                      : "text-foreground hover:bg-muted/80",
+                      ? cn(CHROME_DARK_PILL_ACTIVE, "text-background")
+                      : "text-foreground hover:bg-foreground/[0.04]",
                   )}
                 >
                   <span className="truncate leading-none">{option.nativeLabel}</span>
@@ -229,69 +239,80 @@ function DesktopLocaleSwitcher({ className }: { className?: string }) {
 
   return (
     <div
-      role="radiogroup"
-      aria-label={t.languageMenuAriaLabel}
-      onKeyDown={handleKeyDown}
       data-no-pan=""
-      className={cn(PILL_CLASS, "hidden gap-0.5 sm:flex", className)}
+      className={cn(
+        CHROME_LIGHT_SURFACE,
+        "pointer-events-auto hidden h-11 items-center p-1 sm:flex",
+        className,
+      )}
     >
-      {LOCALE_OPTIONS.map((option, index) => {
-        const isSelected = option.id === locale;
-        return (
-          <Tooltip
-            key={option.id}
-            delayDuration={300}
-            open={!isSelected && openTooltipId === option.id}
-            onOpenChange={(nextOpen) => {
-              setOpenTooltipId((prev) => {
-                if (nextOpen && !isSelected) return option.id;
-                return prev === option.id ? null : prev;
-              });
-            }}
-          >
-            <TooltipTrigger asChild>
-              <button
-                ref={(node) => {
-                  buttonRefs.current[index] = node;
-                }}
-                type="button"
-                role="radio"
-                lang={option.id}
-                aria-checked={isSelected}
-                aria-label={option.nativeLabel}
-                tabIndex={isSelected ? 0 : -1}
-                onPointerEnter={() => void preloadLocale(option.id)}
-                onFocus={() => void preloadLocale(option.id)}
-                onClick={() => select(option.id)}
-                className={cn(
-                  "relative flex h-8 min-w-[48px] items-center justify-center rounded-[14px] px-2 text-[11px] font-medium outline-none transition-colors duration-200 active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-ring sm:h-9 sm:min-w-[54px] sm:px-2 sm:text-xs",
-                  isSelected
-                    ? "text-background"
-                    : "text-muted-foreground hover:bg-muted/75 hover:text-foreground",
-                )}
-              >
-                {isSelected ? (
-                  <m.span
-                    aria-hidden="true"
-                    layoutId={activePillId}
-                    initial={false}
-                    transition={reduceMotion ? { duration: 0 } : segmentSpring}
-                    className="absolute inset-0 rounded-[14px] bg-foreground shadow-[0_1px_2px_rgba(0,0,0,0.14)]"
-                  />
-                ) : null}
-                <span className="relative z-10 whitespace-nowrap leading-none">
-                  {option.shortLabel}
-                </span>
-              </button>
-            </TooltipTrigger>
-            {!isSelected ? (
-              <TooltipContent side="bottom" align="center">
-                <p>{option.nativeLabel}</p>
-              </TooltipContent>
-            ) : null}
-          </Tooltip>
-        );
-      })}
+      <div
+        role="radiogroup"
+        aria-label={t.languageMenuAriaLabel}
+        onKeyDown={handleKeyDown}
+        className={cn(
+          CHROME_RECESSED_CHANNEL,
+          "flex h-full items-center gap-0.5 p-[2px]",
+        )}
+      >
+        {LOCALE_OPTIONS.map((option, index) => {
+          const isSelected = option.id === locale;
+          return (
+            <Tooltip
+              key={option.id}
+              delayDuration={300}
+              open={!isSelected && openTooltipId === option.id}
+              onOpenChange={(nextOpen) => {
+                setOpenTooltipId((prev) => {
+                  if (nextOpen && !isSelected) return option.id;
+                  return prev === option.id ? null : prev;
+                });
+              }}
+            >
+              <TooltipTrigger asChild>
+                <button
+                  ref={(node) => {
+                    buttonRefs.current[index] = node;
+                  }}
+                  type="button"
+                  role="radio"
+                  lang={option.id}
+                  aria-checked={isSelected}
+                  aria-label={option.nativeLabel}
+                  tabIndex={isSelected ? 0 : -1}
+                  onPointerEnter={() => void preloadLocale(option.id)}
+                  onFocus={() => void preloadLocale(option.id)}
+                  onClick={() => select(option.id)}
+                  className={cn(
+                    "relative flex h-8 min-w-[50px] items-center justify-center rounded-full px-2.5 text-xs font-medium outline-none transition-colors duration-200 active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-ring",
+                    isSelected
+                      ? "text-background"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {isSelected ? (
+                    <m.span
+                      aria-hidden="true"
+                      layoutId={activePillId}
+                      initial={false}
+                      transition={reduceMotion ? { duration: 0 } : segmentSpring}
+                      className={cn("absolute inset-0 rounded-full", CHROME_DARK_PILL_ACTIVE)}
+                    />
+                  ) : null}
+                  <span className="relative z-10 whitespace-nowrap leading-none">
+                    {option.shortLabel}
+                  </span>
+                </button>
+              </TooltipTrigger>
+              {!isSelected ? (
+                <TooltipContent side="bottom" align="center">
+                  <p>{option.nativeLabel}</p>
+                </TooltipContent>
+              ) : null}
+            </Tooltip>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { AnimatePresence, m, useReducedMotion } from "motion/react";
 import { starfishDef } from "trazo/catalog/ocean";
 import { Sticker } from "trazo/scribble";
 
+import { CHROME_LIGHT_BUTTON } from "@/components/trazo/chrome-surfaces";
 import { AkoderMark, GitHubLogo } from "@/components/trazo/icons";
 import { LocaleSwitcher } from "@/components/trazo/locale-switcher";
 import { useTrazoCanvasState } from "@/components/trazo/trazo-experience";
@@ -30,9 +31,6 @@ const puffEase = [0.22, 1, 0.36, 1] as const;
 const enterFrom = { opacity: 0, y: -12, scale: 0.96 } as const;
 const enterTo = { opacity: 1, y: 0, scale: 1 } as const;
 const reduceEntrance = "motion-reduce:opacity-100! motion-reduce:transform-none!";
-
-const PILL_CLASS =
-  "pointer-events-auto flex items-center rounded-[18px] bg-popover/95 p-1 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_12px_30px_-10px_rgba(0,0,0,0.14)] ring-1 ring-foreground/[0.07] backdrop-blur-sm sm:rounded-[20px]";
 
 type BadgeSparkleKind =
   | "sparkle-four"
@@ -364,87 +362,88 @@ const GitHubStarBadge = memo(function GitHubStarBadge({ stars }: { stars: number
         ) : null}
       </AnimatePresence>
 
-      <div className={cn(PILL_CLASS, "relative z-10")}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <a
-              href={siteConfig.github}
-              target="_blank"
-              rel="noopener noreferrer"
-              onPointerEnter={() => setHovered(true)}
-              onPointerLeave={() => setHovered(false)}
-              onFocus={() => setHovered(true)}
-              onBlur={() => setHovered(false)}
-              aria-label={t.starAriaLabel(stars)}
-              className="group flex h-8 items-center gap-1.5 rounded-[14px] px-2.5 text-xs font-medium text-foreground outline-none micro-transition hover:bg-muted active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-ring sm:h-9 sm:gap-2 sm:px-3"
-            >
-              <span
-                aria-hidden
-                className="relative flex size-[22px] shrink-0 items-center justify-center [perspective:260px]"
-              >
-                <m.span
-                  animate={{
-                    rotateY: flipped ? 180 : 0,
-                    scale: flipped && !reduceMotion ? 1.12 : 1,
-                  }}
-                  transition={reduceMotion ? { duration: 0 } : flipSpring}
-                  className="relative flex size-full items-center justify-center [transform-style:preserve-3d]"
-                >
-                  <span className="absolute inset-0 flex items-center justify-center [backface-visibility:hidden]">
-                    <GitHubLogo className="size-[17px] text-foreground" />
-                  </span>
-                  <span className="absolute inset-0 flex items-center justify-center [backface-visibility:hidden] [transform:rotateY(180deg)]">
-                    <m.span
-                      className="flex items-center justify-center"
-                      animate={
-                        activeIntro
-                          ? {
-                              rotate: [-6, -18, 10, -10, -6],
-                              scale: [1, 1.14, 1.1, 1.05, 1],
-                            }
-                          : { rotate: -6, scale: 1 }
-                      }
-                      transition={
-                        activeIntro
-                          ? { duration: 0.62, ease: puffEase }
-                          : { duration: 0.2 }
-                      }
-                    >
-                      <Sticker def={starfishDef} size={22} />
-                    </m.span>
-                  </span>
-                </m.span>
-              </span>
-
-              {stars !== null ? (
-                <span className="font-mono text-[12px] font-medium tabular-nums text-foreground">
-                  {formatStarCount(stars, locale)}
-                </span>
-              ) : (
-                <span className="text-muted-foreground transition-colors group-hover:text-foreground">
-                  {t.starLabel}
-                </span>
-              )}
-            </a>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" align="end">
-            {isMilestone ? (
-              <p
-                className={cn(
-                  "text-[#f9a8d4]",
-                  locale === "en"
-                    ? "font-caveat text-[16px] leading-none"
-                    : "text-xs font-medium",
-                )}
-              >
-                {t.starMilestoneTooltip}
-              </p>
-            ) : (
-              <p>{t.starTooltip(stars)}</p>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <a
+            href={siteConfig.github}
+            target="_blank"
+            rel="noopener noreferrer"
+            onPointerEnter={() => setHovered(true)}
+            onPointerLeave={() => setHovered(false)}
+            onFocus={() => setHovered(true)}
+            onBlur={() => setHovered(false)}
+            aria-label={t.starAriaLabel(stars)}
+            className={cn(
+              CHROME_LIGHT_BUTTON,
+              "pointer-events-auto relative z-10 group flex h-10 items-center gap-1.5 px-3 text-xs font-medium text-foreground sm:h-11 sm:gap-2 sm:px-3.5",
             )}
-          </TooltipContent>
-        </Tooltip>
-      </div>
+          >
+            <span
+              aria-hidden
+              className="relative flex size-[22px] shrink-0 items-center justify-center [perspective:260px]"
+            >
+              <m.span
+                animate={{
+                  rotateY: flipped ? 180 : 0,
+                  scale: flipped && !reduceMotion ? 1.12 : 1,
+                }}
+                transition={reduceMotion ? { duration: 0 } : flipSpring}
+                className="relative flex size-full items-center justify-center [transform-style:preserve-3d]"
+              >
+                <span className="absolute inset-0 flex items-center justify-center [backface-visibility:hidden]">
+                  <GitHubLogo className="size-[17px] text-foreground" />
+                </span>
+                <span className="absolute inset-0 flex items-center justify-center [backface-visibility:hidden] [transform:rotateY(180deg)]">
+                  <m.span
+                    className="flex items-center justify-center"
+                    animate={
+                      activeIntro
+                        ? {
+                            rotate: [-6, -18, 10, -10, -6],
+                            scale: [1, 1.14, 1.1, 1.05, 1],
+                          }
+                        : { rotate: -6, scale: 1 }
+                    }
+                    transition={
+                      activeIntro
+                        ? { duration: 0.62, ease: puffEase }
+                        : { duration: 0.2 }
+                    }
+                  >
+                    <Sticker def={starfishDef} size={22} />
+                  </m.span>
+                </span>
+              </m.span>
+            </span>
+
+            {stars !== null ? (
+              <span className="font-mono text-[12px] font-medium tabular-nums text-foreground">
+                {formatStarCount(stars, locale)}
+              </span>
+            ) : (
+              <span className="text-muted-foreground transition-colors group-hover:text-foreground">
+                {t.starLabel}
+              </span>
+            )}
+          </a>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" align="end">
+          {isMilestone ? (
+            <p
+              className={cn(
+                "text-[#f9a8d4]",
+                locale === "en"
+                  ? "font-hand text-[12.5px] font-medium leading-none"
+                  : "text-xs font-medium",
+              )}
+            >
+              {t.starMilestoneTooltip}
+            </p>
+          ) : (
+            <p>{t.starTooltip(stars)}</p>
+          )}
+        </TooltipContent>
+      </Tooltip>
     </div>
   );
 });
@@ -455,14 +454,14 @@ export const TopBar = memo(function TopBar({ stars }: { stars: number | null }) 
   const t = getMessages(locale).topBar;
 
   return (
-    <header className="pointer-events-none fixed inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] z-30 flex items-center justify-between gap-1.5 sm:inset-x-4 sm:top-[max(1rem,env(safe-area-inset-top))]">
+    <header className="pointer-events-none fixed inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] z-30 flex items-center justify-between gap-2 sm:inset-x-4 sm:top-[max(1rem,env(safe-area-inset-top))]">
       {/* Author attribution */}
       <m.div
         data-no-pan=""
         initial={enterFrom}
         animate={enterTo}
         transition={reduceMotion ? { duration: 0 } : { ...enterSpring, delay: 0.16 }}
-        className={cn(PILL_CLASS, reduceEntrance)}
+        className={cn("pointer-events-auto flex items-center", reduceEntrance)}
       >
         <Tooltip>
           <TooltipTrigger asChild>
@@ -471,7 +470,10 @@ export const TopBar = memo(function TopBar({ stars }: { stars: number | null }) 
               target="_blank"
               rel="noopener noreferrer"
               aria-label={t.authorAriaLabel(siteConfig.author.name)}
-              className="group flex h-8 items-center gap-1 whitespace-nowrap rounded-[14px] px-2.5 text-xs text-muted-foreground outline-none micro-transition hover:bg-muted hover:text-foreground active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-ring sm:h-9 sm:px-3"
+              className={cn(
+                CHROME_LIGHT_BUTTON,
+                "group flex h-10 items-center gap-1 whitespace-nowrap pl-2.5 pr-3.5 text-xs text-muted-foreground hover:text-foreground sm:h-11 sm:gap-1.5 sm:pl-3 sm:pr-4",
+              )}
             >
               <span className="inline-grid h-5 w-[1.65rem] shrink-0 place-items-center">
                 <AnimatePresence initial={false}>
@@ -487,7 +489,7 @@ export const TopBar = memo(function TopBar({ stars }: { stars: number | null }) 
                     }
                     className={cn(
                       "col-start-1 row-start-1 whitespace-nowrap leading-none text-muted-foreground/85 transition-colors group-hover:text-foreground",
-                      locale === "en" ? "font-caveat text-[18px]" : "text-[11px]",
+                      locale === "en" ? "font-hand text-[13.5px] font-medium" : "text-[11px]",
                     )}
                   >
                     {t.byLabel}
@@ -512,7 +514,7 @@ export const TopBar = memo(function TopBar({ stars }: { stars: number | null }) 
         initial={enterFrom}
         animate={enterTo}
         transition={reduceMotion ? { duration: 0 } : { ...enterSpring, delay: 0.22 }}
-        className={cn("flex items-center gap-1.5 sm:gap-2", reduceEntrance)}
+        className={cn("flex items-center gap-2 sm:gap-2.5", reduceEntrance)}
       >
         <LocaleSwitcher />
         <GitHubStarBadge stars={stars} />

@@ -370,7 +370,7 @@ function OrbitSticker({
                 aria-hidden
                 className={cn(
                   "pointer-events-none absolute hidden whitespace-nowrap leading-none text-muted-foreground/80 transition-colors duration-150 lg:block lg:group-hover:text-foreground",
-                  isCjk ? "text-xs font-medium" : "font-caveat text-[19px]",
+                  isCjk ? "text-xs font-medium" : "font-hand text-[13.5px] font-medium",
                   item.notePositionClass,
                 )}
               >
@@ -438,7 +438,7 @@ export function NotFoundView() {
                   option={MIX_PALETTE}
                   className="size-7 transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:-rotate-6 group-hover:scale-105 sm:size-8"
                 />
-                <span className="font-caveat text-[24px] font-bold leading-none tracking-tight text-foreground sm:text-[26px]">
+                <span className="font-hand text-[19px] font-bold leading-none tracking-[-0.02em] text-foreground sm:text-[20px]">
                   trazo
                 </span>
               </Link>
@@ -498,7 +498,7 @@ export function NotFoundView() {
         >
           <span
             aria-hidden
-            className="-rotate-6 font-caveat text-[112px] font-bold leading-[0.82] tracking-tight text-foreground sm:text-[152px]"
+            className="-rotate-6 font-hand text-[88px] font-bold leading-[0.86] tracking-[-0.03em] text-foreground sm:text-[118px]"
           >
             4
           </span>
@@ -553,7 +553,7 @@ export function NotFoundView() {
 
           <span
             aria-hidden
-            className="rotate-6 font-caveat text-[112px] font-bold leading-[0.82] tracking-tight text-foreground sm:text-[152px]"
+            className="rotate-6 font-hand text-[88px] font-bold leading-[0.86] tracking-[-0.03em] text-foreground sm:text-[118px]"
           >
             4
           </span>
@@ -583,7 +583,7 @@ export function NotFoundView() {
                   "flex min-h-[82px] items-end justify-center text-balance font-bold text-foreground sm:min-h-[108px]",
                   isCjk
                     ? "font-sans text-[26px] leading-[1.28] tracking-[-0.02em] sm:text-[34px] sm:leading-[1.24]"
-                    : "font-caveat text-[38px] leading-[1.04] sm:text-[52px] sm:leading-[1.03]",
+                    : "font-hand text-[28px] leading-[1.16] tracking-[-0.02em] sm:text-[36px] sm:leading-[1.14]",
                 )}
               >
                 {t.headline}
@@ -595,7 +595,7 @@ export function NotFoundView() {
                   "mt-2 min-h-[60px] text-pretty text-muted-foreground sm:mt-2.5 sm:min-h-[54px]",
                   isCjk
                     ? "max-w-[320px] font-sans text-[14px] leading-[1.65] sm:max-w-[400px] sm:text-[15px]"
-                    : "max-w-[310px] font-caveat text-[20px] leading-[1.26] sm:max-w-[400px] sm:text-[24px] sm:leading-[1.24]",
+                    : "max-w-[320px] font-hand text-[14.5px] leading-[1.52] sm:max-w-[410px] sm:text-[16px] sm:leading-[1.5]",
                 )}
               >
                 {t.subcopy}
@@ -651,7 +651,7 @@ export function NotFoundView() {
                 transition={crossfadeTransition}
                 className={cn(
                   "col-start-1 row-start-1 leading-none text-muted-foreground/80",
-                  isCjk ? "text-xs" : "font-caveat text-[18px] sm:text-[20px]",
+                  isCjk ? "text-xs" : "font-hand text-[13.5px] font-medium sm:text-[14.5px]",
                 )}
               >
                 {t.footnote(STICKER_COUNT)}
