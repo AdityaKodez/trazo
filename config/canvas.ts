@@ -3,9 +3,9 @@ import { findStickerMeta } from "trazo/meta";
 
 export const CANVAS_WORLD = {
   width: 3456,
-  height: 2640,
+  height: 2880,
   halfWidth: 1728,
-  halfHeight: 1320,
+  halfHeight: 1440,
 } as const;
 
 /**
@@ -80,7 +80,7 @@ const zoneAnchors: readonly ZoneAnchor[] = [
     id: "games",
     label: "Games",
     x: 0,
-    y: 940,
+    y: 985,
   },
 ] as const;
 
@@ -854,47 +854,50 @@ const stickerPlacements: readonly CanvasStickerPlacement[] = [
     size: 94,
     rotate: 6,
   },
+  // ---------------------------------------------------------------------------
+  // FAR SOUTH QUADRANT: Games (6 stickers)
+  // ---------------------------------------------------------------------------
   {
     id: "game-coin",
-    x: -510,
-    y: 1035,
-    size: 96,
-    rotate: -6,
-  },
-  {
-    id: "game-coin-stack",
-    x: -305,
-    y: 1040,
-    size: 102,
-    rotate: 3,
-  },
-  {
-    id: "game-mint-gem",
-    x: -103,
-    y: 1030,
-    size: 98,
-    rotate: -4,
-  },
-  {
-    id: "game-xp-badge",
-    x: 103,
-    y: 1038,
-    size: 96,
-    rotate: 4,
-  },
-  {
-    id: "game-reward-chest",
-    x: 305,
-    y: 1035,
-    size: 108,
-    rotate: -3,
+    x: -355,
+    y: 995,
+    size: 76,
+    rotate: -7,
   },
   {
     id: "game-coral-key",
-    x: 510,
-    y: 1034,
-    size: 104,
-    rotate: 6,
+    x: 340,
+    y: 985,
+    size: 82,
+    rotate: 8,
+  },
+  {
+    id: "game-coin-stack",
+    x: -485,
+    y: 1140,
+    size: 80,
+    rotate: 4,
+  },
+  {
+    id: "game-mint-gem",
+    x: -165,
+    y: 1110,
+    size: 78,
+    rotate: -5,
+  },
+  {
+    id: "game-xp-badge",
+    x: 135,
+    y: 1145,
+    size: 76,
+    rotate: 5,
+  },
+  {
+    id: "game-reward-chest",
+    x: 445,
+    y: 1125,
+    size: 84,
+    rotate: -4,
   },
 ] as const;
 
