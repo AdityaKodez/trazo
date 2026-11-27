@@ -61,6 +61,14 @@ const jaStickerNames: Readonly<Record<string, string>> = {
   "party-popper": "クラッカー",
   crown: "王冠",
 
+  // Games (6)
+  "game-coin": "コイン",
+  "game-coin-stack": "コインの山",
+  "game-mint-gem": "ミント色の宝石",
+  "game-xp-badge": "経験値バッジ",
+  "game-reward-chest": "宝箱",
+  "game-coral-key": "コーラル色の鍵",
+
   // Symbols (14)
   diamond: "ダイヤ",
   "anger-mark": "ぷんぷんマーク",

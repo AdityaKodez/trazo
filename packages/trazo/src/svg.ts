@@ -93,6 +93,15 @@ import {
   checkmarkDef,
 } from "./catalog/symbols";
 import {
+  gamesStickers,
+  coinDef,
+  coinStackDef,
+  mintGemDef,
+  xpBadgeDef,
+  rewardChestDef,
+  coralKeyDef,
+} from "./catalog/games";
+import {
   catsStickers,
   heartCatDef,
   daisyCatDef,
@@ -143,6 +152,7 @@ export {
   natureStickers,
   heartsStickers,
   symbolsStickers,
+  gamesStickers,
   catsStickers,
   charactersStickers,
   schoolStickers,
@@ -249,6 +259,12 @@ export {
   glazedDonutDef,
   mushroomDef,
   sleepyFoxDef,
+  coinDef,
+  coinStackDef,
+  mintGemDef,
+  xpBadgeDef,
+  rewardChestDef,
+  coralKeyDef,
 };
 
 export const trazoCatalog: readonly StickerDef[] = [
@@ -352,6 +368,12 @@ export const trazoCatalog: readonly StickerDef[] = [
   glazedDonutDef,
   mushroomDef,
   sleepyFoxDef,
+  coinDef,
+  coinStackDef,
+  mintGemDef,
+  xpBadgeDef,
+  rewardChestDef,
+  coralKeyDef,
 ];
 
 const stickerById = new Map<string, StickerDef>(

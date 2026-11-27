@@ -3,9 +3,9 @@ import { findStickerMeta } from "trazo/meta";
 
 export const CANVAS_WORLD = {
   width: 3456,
-  height: 2352,
+  height: 2640,
   halfWidth: 1728,
-  halfHeight: 1176,
+  halfHeight: 1320,
 } as const;
 
 /**
@@ -76,6 +76,12 @@ const zoneAnchors: readonly ZoneAnchor[] = [
     x: -1020,
     y: -740,
   },
+  {
+    id: "games",
+    label: "Games",
+    x: 0,
+    y: 940,
+  },
 ] as const;
 
 export const canvasZones: readonly ZoneAnchor[] = zoneAnchors.map((zone) => ({
@@ -94,7 +100,7 @@ export interface CanvasStickerPlacement {
   size: number;
   /** Subtle rotation in degrees for a hand-placed sticker sheet feel. */
   rotate: number;
-  /** Optional Caveat handwritten margin note displayed near edge-peeking items. */
+  /** Optional handwritten margin note displayed near edge-peeking items. */
   marginNote?: string;
   /** Optional placement of the handwritten margin note. */
   noteSide?: "top" | "bottom" | "left" | "right";
@@ -846,6 +852,48 @@ const stickerPlacements: readonly CanvasStickerPlacement[] = [
     x: -1185,
     y: -480,
     size: 94,
+    rotate: 6,
+  },
+  {
+    id: "game-coin",
+    x: -510,
+    y: 1035,
+    size: 96,
+    rotate: -6,
+  },
+  {
+    id: "game-coin-stack",
+    x: -305,
+    y: 1040,
+    size: 102,
+    rotate: 3,
+  },
+  {
+    id: "game-mint-gem",
+    x: -103,
+    y: 1030,
+    size: 98,
+    rotate: -4,
+  },
+  {
+    id: "game-xp-badge",
+    x: 103,
+    y: 1038,
+    size: 96,
+    rotate: 4,
+  },
+  {
+    id: "game-reward-chest",
+    x: 305,
+    y: 1035,
+    size: 108,
+    rotate: -3,
+  },
+  {
+    id: "game-coral-key",
+    x: 510,
+    y: 1034,
+    size: 104,
     rotate: 6,
   },
 ] as const;

@@ -872,6 +872,7 @@ async function main() {
     "characters",
     "school",
     "food",
+    "games",
   ];
 
   for (const category of categories) {

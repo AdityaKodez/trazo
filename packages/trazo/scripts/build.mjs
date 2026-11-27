@@ -15,6 +15,7 @@ const srcMetaPath = path.join(pkgDir, "src/catalog-meta.ts");
 
 function buildCatalogMetaSource(catalog) {
   const counts = {
+    games: 0,
     ocean: 0,
     arrows: 0,
     nature: 0,

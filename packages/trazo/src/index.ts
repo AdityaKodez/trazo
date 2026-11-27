@@ -87,6 +87,14 @@ import {
   checkmarkDef,
 } from "./catalog/symbols";
 import {
+  coinDef,
+  coinStackDef,
+  mintGemDef,
+  xpBadgeDef,
+  rewardChestDef,
+  coralKeyDef,
+} from "./catalog/games";
+import {
   heartCatDef,
   daisyCatDef,
   huggingCatsDef,
@@ -227,3 +235,9 @@ export const IcedCoffee = /*#__PURE__*/ createStickerComponent(icedCoffeeDef);
 export const GlazedDonut = /*#__PURE__*/ createStickerComponent(glazedDonutDef);
 export const Mushroom = /*#__PURE__*/ createStickerComponent(mushroomDef);
 export const SleepyFox = /*#__PURE__*/ createStickerComponent(sleepyFoxDef);
+export const Coin = /*#__PURE__*/ createStickerComponent(coinDef);
+export const CoinStack = /*#__PURE__*/ createStickerComponent(coinStackDef);
+export const MintGem = /*#__PURE__*/ createStickerComponent(mintGemDef);
+export const XpBadge = /*#__PURE__*/ createStickerComponent(xpBadgeDef);
+export const RewardChest = /*#__PURE__*/ createStickerComponent(rewardChestDef);
+export const CoralKey = /*#__PURE__*/ createStickerComponent(coralKeyDef);

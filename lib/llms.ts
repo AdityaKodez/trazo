@@ -21,6 +21,7 @@ import {
 } from "@/config/site";
 
 const CATEGORY_ORDER: readonly StickerCategory[] = [
+  "games",
   "ocean",
   "arrows",
   "nature",
@@ -33,6 +34,7 @@ const CATEGORY_ORDER: readonly StickerCategory[] = [
 ] as const;
 
 const CATEGORY_LABELS: Readonly<Record<StickerCategory, string>> = {
+  games: "Games",
   ocean: "Ocean & sea life",
   arrows: "Arrows & flow",
   nature: "Nature & weather",

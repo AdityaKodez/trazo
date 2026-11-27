@@ -61,6 +61,14 @@ const zhCNStickerNames: Readonly<Record<string, string>> = {
   "party-popper": "庆祝礼花",
   crown: "小皇冠",
 
+  // Games (6)
+  "game-coin": "金币",
+  "game-coin-stack": "一叠金币",
+  "game-mint-gem": "薄荷绿宝石",
+  "game-xp-badge": "经验徽章",
+  "game-reward-chest": "奖励宝箱",
+  "game-coral-key": "珊瑚色钥匙",
+
   // Symbols (14)
   diamond: "菱形宝石",
   "anger-mark": "动漫青筋强调",

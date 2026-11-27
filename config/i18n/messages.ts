@@ -49,6 +49,9 @@ export interface Messages {
     regionAriaLabel: string;
     roleDescription: string;
     inspectStickerAriaLabel: (name: string) => string;
+    resetStickersLabel: string;
+    resetStickersAriaLabel: (count: number) => string;
+    resetStickersTooltip: string;
     zoneLabels: Record<StickerCategory, string>;
     marginNotes: Record<string, string>;
   };
@@ -246,6 +249,7 @@ export const en: Messages = {
     nature: "Nature",
     hearts: "Hearts",
     symbols: "Symbols",
+    games: "Games",
     cats: "Cats",
     characters: "Characters",
     school: "School",
@@ -256,12 +260,17 @@ export const en: Messages = {
       "Sticker canvas. Use arrow keys to pan, Home to recenter, Tab to move between stickers.",
     roleDescription: "canvas",
     inspectStickerAriaLabel: (name) => `Inspect ${name} sticker`,
+    resetStickersLabel: "Tidy up",
+    resetStickersAriaLabel: (count) =>
+      `Return ${count} moved ${count === 1 ? "sticker" : "stickers"} to original positions`,
+    resetStickersTooltip: "Put moved stickers back",
     zoneLabels: {
       ocean: "Ocean & sea life",
       arrows: "Arrows & flow",
       nature: "Nature & weather",
       hearts: "Hearts & sparks",
       symbols: "Symbols & marks",
+      games: "Games",
       cats: "Cats & kitties",
       characters: "Characters",
       school: "School & desk",
