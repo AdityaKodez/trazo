@@ -33,6 +33,7 @@ import {
   LOCATE_SHAKE_DELAY_MS,
   useTrazoActions,
   useTrazoCanvasState,
+  type StickerOffset,
 } from "@/components/trazo/trazo-experience";
 import {
   CANVAS_WORLD,
@@ -48,6 +49,11 @@ import {
   type CanvasTestimonial,
 } from "@/config/testimonials";
 import {
+  playStickerPeelSound,
+  playStickerPlaceSound,
+  unlockAudioContext,
+} from "@/lib/sound";
+import {
   getLoadedSticker,
   loadCategories,
   useStickerLoaderVersion,
@@ -56,6 +62,8 @@ import { useLocale } from "@/lib/use-locale";
 import { cn } from "@/lib/utils";
 
 const DRAG_THRESHOLD_PX = 5;
+const TOUCH_HOLD_MS = 220;
+const TOUCH_PAN_CANCEL_PX = 8;
 const KEYBOARD_PAN_STEP_PX = 120;
 
 // Quantize viewport-culling updates to 120px camera steps so smooth 60fps panning
@@ -147,7 +155,7 @@ const CanvasZoneLabel = memo(function CanvasZoneLabel({
         "leading-none text-muted-foreground/65 transition-opacity duration-150",
         isCjk
           ? "text-sm font-medium sm:text-base"
-          : "font-caveat text-[20px] sm:text-[24px]",
+          : "font-hand text-[14.5px] font-medium sm:text-[17px]",
       )}
     >
       {label}
@@ -183,21 +191,21 @@ const CanvasStickerLabels = memo(function CanvasStickerLabels({
         {inspectAriaLabel}
       </span>
 
-      {/* Origin-aware springy hover / focus name pill */}
+      {/* Origin-aware springy hover / focus name pill (hidden while peeled) */}
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute -bottom-6 left-1/2 z-20 hidden -translate-x-1/2 translate-y-1.5 scale-95 whitespace-nowrap rounded-full bg-foreground px-2.5 py-0.5 text-[11px] font-medium text-background opacity-0 shadow-sm transition-all duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:scale-100 group-focus-visible:opacity-100 sm:block"
+        className="pointer-events-none absolute -bottom-6 left-1/2 z-20 hidden -translate-x-1/2 translate-y-1.5 scale-95 whitespace-nowrap rounded-full bg-foreground px-2.5 py-0.5 text-[11px] font-medium text-background opacity-0 shadow-sm transition-all duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:scale-100 group-focus-visible:opacity-100 group-data-[peeled=true]:opacity-0 sm:block"
       >
         {displayName}
       </span>
 
-      {/* Handwritten Caveat margin note on key stickers (desktop/tablet where perimeter has room) */}
+      {/* Handwritten margin note on key stickers (hidden while peeled or moved) */}
       {marginNoteText ? (
         <span
           aria-hidden="true"
           className={cn(
-            "pointer-events-none absolute hidden whitespace-nowrap leading-none text-muted-foreground/80 transition-[color,opacity] duration-150 sm:block sm:group-hover:text-foreground",
-            isCjk ? "text-xs font-medium" : "font-caveat text-[19px]",
+            "pointer-events-none absolute hidden whitespace-nowrap leading-none text-muted-foreground/80 transition-[color,opacity] duration-150 group-data-[peeled=true]:opacity-0 group-data-[moved=true]:opacity-0 sm:block sm:group-hover:text-foreground",
+            isCjk ? "text-xs font-medium" : "font-hand text-[13.5px] font-medium",
             placement.noteSide === "top" &&
               "-top-5 left-1/2 -translate-x-1/2",
             placement.noteSide === "bottom" &&
@@ -224,11 +232,21 @@ interface CanvasStickerProps {
   posScaleX: number;
   posScaleY: number;
   stickerScale: number;
+  offset: StickerOffset | undefined;
   isShaking: boolean;
+  isPeeled: boolean;
+  isSettling: boolean;
+  isResetting: boolean;
   reduceMotion: boolean | null;
   onFocusSticker: (
     placement: ResolvedCanvasStickerPlacement,
     event: FocusEvent<HTMLButtonElement>,
+  ) => void;
+  onPointerDownSticker: (
+    placement: ResolvedCanvasStickerPlacement,
+    event: PointerEvent<HTMLButtonElement>,
+    outerEl: HTMLDivElement | null,
+    btnEl: HTMLButtonElement | null,
   ) => void;
   onClickSticker: (id: string) => void;
 }
@@ -242,13 +260,23 @@ const CanvasSticker = memo(function CanvasSticker({
   posScaleX,
   posScaleY,
   stickerScale,
+  offset,
   isShaking,
+  isPeeled,
+  isSettling,
+  isResetting,
   reduceMotion,
   onFocusSticker,
+  onPointerDownSticker,
   onClickSticker,
 }: CanvasStickerProps) {
-  const px = Math.round(placement.x * posScaleX);
-  const py = Math.round(placement.y * posScaleY);
+  const outerRef = useRef<HTMLDivElement | null>(null);
+  const btnRef = useRef<HTMLButtonElement | null>(null);
+
+  const worldX = placement.x + (offset?.x ?? 0);
+  const worldY = placement.y + (offset?.y ?? 0);
+  const px = Math.round(worldX * posScaleX);
+  const py = Math.round(worldY * posScaleY);
   const renderedSize = Math.round(placement.size * stickerScale);
   const radialDist = Math.hypot(placement.x, placement.y);
   const staggerDelayMs = Math.round(
@@ -256,6 +284,7 @@ const CanvasSticker = memo(function CanvasSticker({
   );
   const hoverTilt = placement.rotate + (placement.rotate >= 0 ? -8 : 8);
   const labelId = `canvas-sticker-label-${placement.id}`;
+  const isMoved = Boolean(offset);
 
   const buttonStyle = {
     "--sticker-rot": `${placement.rotate}deg`,
@@ -266,12 +295,20 @@ const CanvasSticker = memo(function CanvasSticker({
     ? ({ "--enter-delay": `${staggerDelayMs}ms` } as CSSProperties)
     : undefined;
 
+  const wrapperZIndex = isPeeled ? 60 : offset ? Math.min(40, 10 + offset.z) : undefined;
+
   return (
     <div
+      ref={outerRef}
       style={{
         transform: `translate3d(${px}px, ${py}px, 0) translate(-50%, -50%)`,
+        zIndex: wrapperZIndex,
       }}
-      className="absolute left-0 top-0 w-max"
+      className={cn(
+        "absolute left-0 top-0 w-max",
+        isPeeled && "will-change-transform",
+        isResetting && !reduceMotion && "canvas-sticker-resetting",
+      )}
     >
       {/* Outer wrapper owns the one-time CSS pop entrance (initial ring) or subtle pan reveal */}
       <div
@@ -284,20 +321,28 @@ const CanvasSticker = memo(function CanvasSticker({
               : "canvas-sticker-reveal"
         }
       >
-        {/* Middle wrapper owns transient locate-on-canvas wiggle without clashing with hover/tap */}
+        {/* Middle wrapper owns transient locate-on-canvas wiggle or drop-settle pop */}
         <div
           className={
             isShaking
               ? reduceMotion
                 ? "canvas-sticker-pulse"
                 : "canvas-sticker-shake"
-              : undefined
+              : isSettling && !reduceMotion
+                ? "canvas-sticker-settle"
+                : undefined
           }
         >
-          {/* Inner button owns zero-latency GPU-composited hover & press physics */}
+          {/* Inner button owns zero-latency GPU-composited hover, press, and peel-lift physics */}
           <button
+            ref={btnRef}
             type="button"
+            data-peeled={isPeeled ? "true" : undefined}
+            data-moved={isMoved ? "true" : undefined}
             aria-labelledby={labelId}
+            onPointerDown={(event) =>
+              onPointerDownSticker(placement, event, outerRef.current, btnRef.current)
+            }
             onFocus={(event) => onFocusSticker(placement, event)}
             onClick={() => onClickSticker(def.id)}
             style={buttonStyle}
@@ -307,7 +352,12 @@ const CanvasSticker = memo(function CanvasSticker({
               def={def}
               size={renderedSize}
               color={stickerColor}
-              className="pointer-events-none relative z-10 transition-[filter,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] sm:group-hover:drop-shadow-[0_10px_14px_rgba(0,0,0,0.14)]"
+              className={cn(
+                "pointer-events-none relative z-10 transition-[filter,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]",
+                isPeeled
+                  ? "drop-shadow-[0_18px_22px_rgba(24,23,21,0.22)]"
+                  : "sm:group-hover:drop-shadow-[0_10px_14px_rgba(0,0,0,0.14)]",
+              )}
             />
             <CanvasStickerLabels
               def={def}
@@ -322,8 +372,14 @@ const CanvasSticker = memo(function CanvasSticker({
 });
 
 export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
-  const { openStickerDetail } = useTrazoActions();
-  const { paletteId, cameraTarget, locatedSticker } = useTrazoCanvasState();
+  const { openStickerDetail, setStickerOffset } = useTrazoActions();
+  const {
+    paletteId,
+    cameraTarget,
+    locatedSticker,
+    stickerOffsets,
+    isResettingStickers,
+  } = useTrazoCanvasState();
   const reduceMotion = useReducedMotion();
   const loaderVersion = useStickerLoaderVersion();
 
@@ -338,10 +394,21 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
   const [hasInteracted, setHasInteracted] = useState(false);
   const isInteracted = hasInteracted || cameraTarget.seq > 0;
   const [isDragging, setIsDragging] = useState(false);
+  const [draggingStickerId, setDraggingStickerId] = useState<string | null>(null);
+  const [settlingSticker, setSettlingSticker] = useState<{
+    id: string;
+    seq: number;
+  } | null>(null);
+  const settleSeqRef = useRef(0);
   const [shakingSticker, setShakingSticker] = useState<{
     id: string;
     seq: number;
   } | null>(null);
+  const stickerOffsetsRef = useRef(stickerOffsets);
+
+  useEffect(() => {
+    stickerOffsetsRef.current = stickerOffsets;
+  }, [stickerOffsets]);
 
   // Target camera coordinates updated by drag, wheel, or programmatic glides
   const targetX = useMotionValue(0);
@@ -378,6 +445,39 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
   } | null>(null);
 
   const suppressNextClickRef = useRef(false);
+
+  const stickerDragRef = useRef<{
+    id: string;
+    placement: ResolvedCanvasStickerPlacement;
+    pointerId: number;
+    isTouch: boolean;
+    peeled: boolean;
+    startClientX: number;
+    startClientY: number;
+    lastClientX: number;
+    lastTime: number;
+    vx: number;
+    startOffsetX: number;
+    startOffsetY: number;
+    currentOffsetX: number;
+    currentOffsetY: number;
+    outerEl: HTMLDivElement | null;
+    btnEl: HTMLButtonElement | null;
+    holdTimer: number | null;
+    cleanupListeners: (() => void) | null;
+  } | null>(null);
+
+  useEffect(() => {
+    return () => {
+      const active = stickerDragRef.current;
+      if (!active) return;
+      if (active.holdTimer !== null) {
+        window.clearTimeout(active.holdTimer);
+      }
+      active.cleanupListeners?.();
+      stickerDragRef.current = null;
+    };
+  }, []);
 
   const markInteracted = useCallback(() => {
     setHasInteracted((prev) => (prev ? prev : true));
@@ -459,16 +559,19 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
 
     for (let index = 0; index < canvasPlacements.length; index++) {
       const placement = canvasPlacements[index];
-      const px = placement.x * posScaleX;
-      const py = placement.y * posScaleY;
+      const offset = stickerOffsets[placement.id];
+      const px = (placement.x + (offset?.x ?? 0)) * posScaleX;
+      const py = (placement.y + (offset?.y ?? 0)) * posScaleY;
       const dx = Math.abs(px - viewCenterX);
       const dy = Math.abs(py - viewCenterY);
 
       const isLocated = locatedSticker?.id === placement.id;
+      const isDragged = draggingStickerId === placement.id;
       const isOnScreen = dx <= onScreenHalfW && dy <= onScreenHalfH;
-      const isInRenderRect = isLocated || (dx <= renderHalfW && dy <= renderHalfH);
+      const isInRenderRect =
+        isLocated || isDragged || (dx <= renderHalfW && dy <= renderHalfH);
 
-      if (isLocated || isOnScreen || (isInteracted && isInRenderRect)) {
+      if (isLocated || isDragged || isOnScreen || (isInteracted && isInRenderRect)) {
         immediate.add(placement.category);
       } else if (dx <= prefetchHalfW && dy <= prefetchHalfH) {
         deferred.add(placement.category);
@@ -499,6 +602,8 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
     posScaleX,
     posScaleY,
     locatedSticker?.id,
+    draggingStickerId,
+    stickerOffsets,
   ]);
 
   useEffect(() => {
@@ -770,8 +875,9 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
       }
       if (!event.currentTarget.matches(":focus-visible")) return;
 
-      const scaledX = placement.x * posScaleX;
-      const scaledY = placement.y * posScaleY;
+      const offset = stickerOffsetsRef.current[placement.id];
+      const scaledX = (placement.x + (offset?.x ?? 0)) * posScaleX;
+      const scaledY = (placement.y + (offset?.y ?? 0)) * posScaleY;
       const screenOffsetX = scaledX + targetX.get();
       const screenOffsetY = scaledY + targetY.get();
       const safeHalfW = viewportSize.width * 0.36;
@@ -785,6 +891,193 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
       }
     },
     [glideCameraTo, posScaleX, posScaleY, targetX, targetY, viewportSize.height, viewportSize.width],
+  );
+
+  const handleStickerPointerDown = useCallback(
+    (
+      placement: ResolvedCanvasStickerPlacement,
+      event: PointerEvent<HTMLButtonElement>,
+      outerEl: HTMLDivElement | null,
+      btnEl: HTMLButtonElement | null,
+    ) => {
+      if (event.button !== 0) return;
+      if (stickerDragRef.current) return;
+
+      const isTouch = event.pointerType === "touch";
+      if (!isTouch) {
+        // Mouse/pen: sticker owns drag; dragging empty paper pans the sheet
+        event.stopPropagation();
+      }
+
+      unlockAudioContext();
+      markInteracted();
+
+      const existing = stickerOffsetsRef.current[placement.id];
+      const startOffsetX = existing?.x ?? 0;
+      const startOffsetY = existing?.y ?? 0;
+
+      const state = {
+        id: placement.id,
+        placement,
+        pointerId: event.pointerId,
+        isTouch,
+        peeled: false,
+        startClientX: event.clientX,
+        startClientY: event.clientY,
+        lastClientX: event.clientX,
+        lastTime: event.timeStamp,
+        vx: 0,
+        startOffsetX,
+        startOffsetY,
+        currentOffsetX: startOffsetX,
+        currentOffsetY: startOffsetY,
+        outerEl,
+        btnEl,
+        holdTimer: null as number | null,
+        cleanupListeners: null as (() => void) | null,
+      };
+
+      const cancelCanvasPanForTouchPeel = () => {
+        const pan = dragStateRef.current;
+        if (pan && pan.pointerId === state.pointerId) {
+          dragStateRef.current = null;
+          setIsDragging(false);
+          rawTilt.set(0);
+          rawScale.set(1);
+          if (viewportRef.current?.hasPointerCapture(state.pointerId)) {
+            viewportRef.current.releasePointerCapture(state.pointerId);
+          }
+        }
+      };
+
+      const activatePeel = () => {
+        if (state.peeled || stickerDragRef.current !== state) return;
+        state.peeled = true;
+        stopCameraAnimations();
+        cancelCanvasPanForTouchPeel();
+        setDraggingStickerId(state.id);
+        playStickerPeelSound();
+        if (state.isTouch && typeof navigator !== "undefined" && "vibrate" in navigator) {
+          try {
+            navigator.vibrate(12);
+          } catch {
+            // Ignore unsupported haptics
+          }
+        }
+      };
+
+      const cleanup = () => {
+        if (state.holdTimer !== null) {
+          window.clearTimeout(state.holdTimer);
+          state.holdTimer = null;
+        }
+        window.removeEventListener("pointermove", onWindowMove);
+        window.removeEventListener("pointerup", onWindowEnd);
+        window.removeEventListener("pointercancel", onWindowEnd);
+        if (stickerDragRef.current === state) {
+          stickerDragRef.current = null;
+        }
+      };
+
+      const onWindowMove = (moveEvent: globalThis.PointerEvent) => {
+        if (moveEvent.pointerId !== state.pointerId) return;
+        const dx = moveEvent.clientX - state.startClientX;
+        const dy = moveEvent.clientY - state.startClientY;
+
+        if (!state.peeled) {
+          const dist = Math.hypot(dx, dy);
+          if (state.isTouch) {
+            if (dist >= TOUCH_PAN_CANCEL_PX) {
+              // User is panning on touch before hold completed — hand off cleanly to canvas
+              cleanup();
+            }
+            return;
+          }
+          if (dist < DRAG_THRESHOLD_PX) return;
+          activatePeel();
+        }
+
+        const now = moveEvent.timeStamp;
+        const dt = Math.max(1, now - state.lastTime);
+        const instVx = ((moveEvent.clientX - state.lastClientX) / dt) * 1000;
+        state.vx = state.vx * 0.65 + instVx * 0.35;
+        state.lastClientX = moveEvent.clientX;
+        state.lastTime = now;
+
+        const rawWorldX = state.placement.x + state.startOffsetX + dx / posScaleX;
+        const rawWorldY = state.placement.y + state.startOffsetY + dy / posScaleY;
+        const clampedWorldX = clamp(rawWorldX, -CANVAS_WORLD.halfWidth, CANVAS_WORLD.halfWidth);
+        const clampedWorldY = clamp(rawWorldY, -CANVAS_WORLD.halfHeight, CANVAS_WORLD.halfHeight);
+        state.currentOffsetX = clampedWorldX - state.placement.x;
+        state.currentOffsetY = clampedWorldY - state.placement.y;
+
+        if (state.outerEl) {
+          const px = Math.round(clampedWorldX * posScaleX);
+          const py = Math.round(clampedWorldY * posScaleY);
+          state.outerEl.style.transform = `translate3d(${px}px, ${py}px, 0) translate(-50%, -50%)`;
+        }
+        if (state.btnEl && !reduceMotion) {
+          const dragLean = clamp(state.vx * 0.012, -10, 10);
+          state.btnEl.style.setProperty(
+            "--sticker-drag-rot",
+            `${(state.placement.rotate + dragLean).toFixed(1)}deg`,
+          );
+        }
+      };
+
+      const onWindowEnd = (endEvent: globalThis.PointerEvent) => {
+        if (endEvent.pointerId !== state.pointerId) return;
+        const wasPeeled = state.peeled;
+        cleanup();
+
+        if (state.btnEl) {
+          state.btnEl.style.removeProperty("--sticker-drag-rot");
+        }
+
+        if (wasPeeled) {
+          suppressNextClickRef.current = true;
+          window.setTimeout(() => {
+            suppressNextClickRef.current = false;
+          }, 160);
+          setDraggingStickerId(null);
+          setStickerOffset(state.id, state.currentOffsetX, state.currentOffsetY);
+          playStickerPlaceSound();
+
+          settleSeqRef.current += 1;
+          const seq = settleSeqRef.current;
+          setSettlingSticker({ id: state.id, seq });
+          window.setTimeout(() => {
+            setSettlingSticker((current) =>
+              current?.seq === seq ? null : current,
+            );
+          }, 260);
+        }
+      };
+
+      state.cleanupListeners = cleanup;
+      stickerDragRef.current = state;
+
+      window.addEventListener("pointermove", onWindowMove);
+      window.addEventListener("pointerup", onWindowEnd);
+      window.addEventListener("pointercancel", onWindowEnd);
+
+      if (isTouch) {
+        state.holdTimer = window.setTimeout(() => {
+          state.holdTimer = null;
+          activatePeel();
+        }, TOUCH_HOLD_MS);
+      }
+    },
+    [
+      markInteracted,
+      posScaleX,
+      posScaleY,
+      rawScale,
+      rawTilt,
+      reduceMotion,
+      setStickerOffset,
+      stopCameraAnimations,
+    ],
   );
 
   const handleStickerClick = useCallback(
@@ -944,6 +1237,8 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
             locatedSticker !== null &&
             shakingSticker.seq === locatedSticker.seq &&
             shakingSticker.id === placement.id;
+          const isPeeled = draggingStickerId === placement.id;
+          const isSettling = settlingSticker?.id === placement.id;
 
           return (
             <CanvasSticker
@@ -956,9 +1251,14 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
               posScaleX={posScaleX}
               posScaleY={posScaleY}
               stickerScale={stickerScale}
+              offset={stickerOffsets[placement.id]}
               isShaking={isShaking}
+              isPeeled={isPeeled}
+              isSettling={isSettling}
+              isResetting={isResettingStickers}
               reduceMotion={reduceMotion}
               onFocusSticker={handleStickerFocus}
+              onPointerDownSticker={handleStickerPointerDown}
               onClickSticker={handleStickerClick}
             />
           );

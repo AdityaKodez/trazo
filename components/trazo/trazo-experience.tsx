@@ -9,13 +9,14 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import type { StickerCategory, StickerDef, StickerMeta } from "trazo/core";
 import { findStickerMeta, trazoCatalogMeta } from "trazo/meta";
-import { findCanvasPlacement } from "@/config/canvas";
+import { CANVAS_WORLD, findCanvasPlacement } from "@/config/canvas";
 import { type PaletteId } from "@/config/palette";
-import { playLocateShakeSound } from "@/lib/sound";
+import { playLocateShakeSound, playStickerResetSound } from "@/lib/sound";
 import {
   loadAllCategories,
   loadStickerById,
@@ -23,6 +24,121 @@ import {
 } from "@/lib/sticker-loader";
 
 export const LOCATE_SHAKE_DELAY_MS = 180;
+const STICKER_OFFSETS_STORAGE_KEY = "trazo:sticker-offsets:v1";
+
+export interface StickerOffset {
+  x: number;
+  y: number;
+  z: number;
+}
+
+export type StickerOffsetMap = Record<string, StickerOffset>;
+
+function clampWorldCoord(value: number, limit: number): number {
+  return Math.min(Math.max(value, -limit), limit);
+}
+
+function readStoredStickerOffsets(): StickerOffsetMap {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(STICKER_OFFSETS_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return {};
+    }
+    const result: StickerOffsetMap = {};
+    for (const [id, entry] of Object.entries(parsed)) {
+      if (!entry || typeof entry !== "object") continue;
+      const placement = findCanvasPlacement(id);
+      if (!placement) continue;
+      const candidate = entry as Partial<StickerOffset>;
+      if (
+        typeof candidate.x !== "number" ||
+        !Number.isFinite(candidate.x) ||
+        typeof candidate.y !== "number" ||
+        !Number.isFinite(candidate.y)
+      ) {
+        continue;
+      }
+      const clampedX =
+        clampWorldCoord(placement.x + candidate.x, CANVAS_WORLD.halfWidth) -
+        placement.x;
+      const clampedY =
+        clampWorldCoord(placement.y + candidate.y, CANVAS_WORLD.halfHeight) -
+        placement.y;
+      if (Math.hypot(clampedX, clampedY) < 2) continue;
+      const z =
+        typeof candidate.z === "number" && Number.isFinite(candidate.z) && candidate.z > 0
+          ? Math.round(candidate.z)
+          : 1;
+      result[id] = {
+        x: Math.round(clampedX),
+        y: Math.round(clampedY),
+        z,
+      };
+    }
+    return result;
+  } catch {
+    return {};
+  }
+}
+
+function writeStoredStickerOffsets(offsets: StickerOffsetMap): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (Object.keys(offsets).length === 0) {
+      window.localStorage.removeItem(STICKER_OFFSETS_STORAGE_KEY);
+    } else {
+      window.localStorage.setItem(
+        STICKER_OFFSETS_STORAGE_KEY,
+        JSON.stringify(offsets),
+      );
+    }
+  } catch {
+    // Ignore quota/private-mode storage errors
+  }
+}
+
+const EMPTY_STICKER_OFFSETS: StickerOffsetMap = {};
+const stickerOffsetListeners = new Set<() => void>();
+let cachedStickerOffsets: StickerOffsetMap | null = null;
+let nextStickerZ = 1;
+
+function getStickerOffsetsSnapshot(): StickerOffsetMap {
+  if (typeof window === "undefined") return EMPTY_STICKER_OFFSETS;
+  if (cachedStickerOffsets === null) {
+    const stored = readStoredStickerOffsets();
+    let maxZ = 0;
+    for (const entry of Object.values(stored)) {
+      if (entry.z > maxZ) maxZ = entry.z;
+    }
+    nextStickerZ = maxZ + 1;
+    cachedStickerOffsets =
+      Object.keys(stored).length === 0 ? EMPTY_STICKER_OFFSETS : stored;
+  }
+  return cachedStickerOffsets;
+}
+
+function getServerStickerOffsetsSnapshot(): StickerOffsetMap {
+  return EMPTY_STICKER_OFFSETS;
+}
+
+function subscribeStickerOffsets(listener: () => void): () => void {
+  stickerOffsetListeners.add(listener);
+  return () => {
+    stickerOffsetListeners.delete(listener);
+  };
+}
+
+function commitStickerOffsets(next: StickerOffsetMap): void {
+  cachedStickerOffsets =
+    Object.keys(next).length === 0 ? EMPTY_STICKER_OFFSETS : next;
+  writeStoredStickerOffsets(cachedStickerOffsets);
+  for (const listener of stickerOffsetListeners) {
+    listener();
+  }
+}
 
 export type OverlayView = "grid" | "detail" | "skill";
 export type CategoryFilter = "all" | StickerCategory;
@@ -93,12 +209,17 @@ export interface TrazoActionsValue {
   backToGrid: () => void;
   locateOnCanvas: (id: string) => void;
   centerCanvas: () => void;
+  setStickerOffset: (id: string, x: number, y: number) => void;
+  resetStickerOffsets: () => void;
 }
 
 export interface TrazoCanvasStateValue {
   paletteId: PaletteId;
   cameraTarget: CameraGlideTarget;
   locatedSticker: LocateTarget | null;
+  stickerOffsets: StickerOffsetMap;
+  movedStickerCount: number;
+  isResettingStickers: boolean;
 }
 
 export interface TrazoOverlayStateValue {
@@ -131,12 +252,27 @@ export function TrazoProvider({ children }: { children: ReactNode }) {
   const [selectedSize, setSelectedSize] = useState<number>(48);
   const [selectedRotation, setSelectedRotation] = useState<number>(0);
   const [locatedSticker, setLocatedSticker] = useState<LocateTarget | null>(null);
+  const stickerOffsets = useSyncExternalStore(
+    subscribeStickerOffsets,
+    getStickerOffsetsSnapshot,
+    getServerStickerOffsetsSnapshot,
+  );
+  const [isResettingStickers, setIsResettingStickers] = useState(false);
+  const resetTimerRef = useRef<number | null>(null);
   const seqRef = useRef(0);
   const [cameraTarget, setCameraTarget] = useState<CameraGlideTarget>({
     x: 0,
     y: 0,
     seq: 0,
   });
+
+  useEffect(() => {
+    return () => {
+      if (resetTimerRef.current !== null) {
+        window.clearTimeout(resetTimerRef.current);
+      }
+    };
+  }, []);
 
   const overlayOpen = overlay.open;
   const overlayView = overlay.view;
@@ -216,6 +352,7 @@ export function TrazoProvider({ children }: { children: ReactNode }) {
     (id: string) => {
       void loadStickerById(id);
       const placement = findCanvasPlacement(id);
+      const offset = getStickerOffsetsSnapshot()[id];
       const prefersReducedMotion =
         typeof window !== "undefined" &&
         window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -224,8 +361,8 @@ export function TrazoProvider({ children }: { children: ReactNode }) {
       seqRef.current += 1;
       setLocatedSticker({ id, seq: seqRef.current });
       setCameraTarget({
-        x: placement ? -placement.x : 0,
-        y: placement ? -placement.y : 0,
+        x: placement ? -(placement.x + (offset?.x ?? 0)) : 0,
+        y: placement ? -(placement.y + (offset?.y ?? 0)) : 0,
         seq: seqRef.current,
       });
       playLocateShakeSound(prefersReducedMotion ? 0 : LOCATE_SHAKE_DELAY_MS);
@@ -244,6 +381,53 @@ export function TrazoProvider({ children }: { children: ReactNode }) {
     });
   }, [closeOverlay]);
 
+  const setStickerOffset = useCallback((id: string, x: number, y: number) => {
+    const placement = findCanvasPlacement(id);
+    if (!placement) return;
+    const clampedX = Math.round(
+      clampWorldCoord(placement.x + x, CANVAS_WORLD.halfWidth) - placement.x,
+    );
+    const clampedY = Math.round(
+      clampWorldCoord(placement.y + y, CANVAS_WORLD.halfHeight) - placement.y,
+    );
+
+    const prev = getStickerOffsetsSnapshot();
+    if (Math.hypot(clampedX, clampedY) < 2) {
+      if (!(id in prev)) return;
+      const next = { ...prev };
+      delete next[id];
+      commitStickerOffsets(next);
+      return;
+    }
+
+    const z = nextStickerZ++;
+    commitStickerOffsets({
+      ...prev,
+      [id]: { x: clampedX, y: clampedY, z },
+    });
+  }, []);
+
+  const resetStickerOffsets = useCallback(() => {
+    const prev = getStickerOffsetsSnapshot();
+    if (Object.keys(prev).length === 0) return;
+    nextStickerZ = 1;
+    setIsResettingStickers(true);
+    if (resetTimerRef.current !== null) {
+      window.clearTimeout(resetTimerRef.current);
+    }
+    resetTimerRef.current = window.setTimeout(() => {
+      resetTimerRef.current = null;
+      setIsResettingStickers(false);
+    }, 520);
+    commitStickerOffsets(EMPTY_STICKER_OFFSETS);
+    playStickerResetSound();
+  }, []);
+
+  const movedStickerCount = useMemo(
+    () => Object.keys(stickerOffsets).length,
+    [stickerOffsets],
+  );
+
   const actionsValue = useMemo<TrazoActionsValue>(
     () => ({
       setPaletteId,
@@ -258,6 +442,8 @@ export function TrazoProvider({ children }: { children: ReactNode }) {
       backToGrid,
       locateOnCanvas,
       centerCanvas,
+      setStickerOffset,
+      resetStickerOffsets,
     }),
     [
       setOverlayOpen,
@@ -267,6 +453,8 @@ export function TrazoProvider({ children }: { children: ReactNode }) {
       backToGrid,
       locateOnCanvas,
       centerCanvas,
+      setStickerOffset,
+      resetStickerOffsets,
     ],
   );
 
@@ -275,8 +463,18 @@ export function TrazoProvider({ children }: { children: ReactNode }) {
       paletteId,
       cameraTarget,
       locatedSticker,
+      stickerOffsets,
+      movedStickerCount,
+      isResettingStickers,
     }),
-    [paletteId, cameraTarget, locatedSticker],
+    [
+      paletteId,
+      cameraTarget,
+      locatedSticker,
+      stickerOffsets,
+      movedStickerCount,
+      isResettingStickers,
+    ],
   );
 
   const overlayStateValue = useMemo<TrazoOverlayStateValue>(

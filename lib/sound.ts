@@ -216,3 +216,157 @@ export function preloadCopySound(): void {
 export function playCopySound(): void {
   copyChannel.play(0);
 }
+
+let noiseBufferCache: AudioBuffer | null = null;
+
+function getNoiseBuffer(ctx: AudioContext): AudioBuffer {
+  if (noiseBufferCache && noiseBufferCache.sampleRate === ctx.sampleRate) {
+    return noiseBufferCache;
+  }
+  const length = Math.floor(ctx.sampleRate * 0.08);
+  const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < length; i++) {
+    data[i] = Math.random() * 2 - 1;
+  }
+  noiseBufferCache = buffer;
+  return buffer;
+}
+
+function withReadyAudioContext(fn: (ctx: AudioContext) => void): void {
+  const ctx = ensureAudioContext();
+  if (!ctx) return;
+
+  if (ctx.state === "suspended") {
+    void ctx
+      .resume()
+      .then(() => {
+        if (ctx.state === "running") {
+          fn(ctx);
+        }
+      })
+      .catch(() => undefined);
+    return;
+  }
+
+  if (ctx.state === "running") {
+    fn(ctx);
+  }
+}
+
+/**
+ * Soft matte paper-peel sound when lifting a sticker off the canvas.
+ */
+export function playStickerPeelSound(): void {
+  withReadyAudioContext((ctx) => {
+    const now = ctx.currentTime;
+    const jitter = 0.96 + Math.random() * 0.08;
+
+    // Tiny filtered noise whisper for the paper peel texture
+    const noise = ctx.createBufferSource();
+    noise.buffer = getNoiseBuffer(ctx);
+    const filter = ctx.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.frequency.setValueAtTime(1600 * jitter, now);
+    filter.frequency.exponentialRampToValueAtTime(3200 * jitter, now + 0.055);
+    filter.Q.value = 1.4;
+
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.0001, now);
+    noiseGain.gain.linearRampToValueAtTime(0.045, now + 0.012);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.06);
+
+    noise.connect(filter);
+    filter.connect(noiseGain);
+    noiseGain.connect(ctx.destination);
+    noise.start(now);
+    noise.stop(now + 0.065);
+
+    // Subtle rising soft pluck
+    const osc = ctx.createOscillator();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(280 * jitter, now);
+    osc.frequency.exponentialRampToValueAtTime(430 * jitter, now + 0.05);
+
+    const oscGain = ctx.createGain();
+    oscGain.gain.setValueAtTime(0.0001, now);
+    oscGain.gain.linearRampToValueAtTime(0.05, now + 0.008);
+    oscGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.055);
+
+    osc.connect(oscGain);
+    oscGain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.06);
+  });
+}
+
+/**
+ * Warm matte tap sound when pressing a dragged sticker back down onto the paper.
+ */
+export function playStickerPlaceSound(): void {
+  withReadyAudioContext((ctx) => {
+    const now = ctx.currentTime;
+    const jitter = 0.95 + Math.random() * 0.1;
+
+    // Soft low matte thump
+    const osc = ctx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(290 * jitter, now);
+    osc.frequency.exponentialRampToValueAtTime(145 * jitter, now + 0.065);
+
+    const oscGain = ctx.createGain();
+    oscGain.gain.setValueAtTime(0.0001, now);
+    oscGain.gain.linearRampToValueAtTime(0.085, now + 0.006);
+    oscGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.07);
+
+    osc.connect(oscGain);
+    oscGain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.075);
+
+    // Brief soft paper-touch brush
+    const noise = ctx.createBufferSource();
+    noise.buffer = getNoiseBuffer(ctx);
+    const filter = ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(1400 * jitter, now);
+
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.0001, now);
+    noiseGain.gain.linearRampToValueAtTime(0.032, now + 0.005);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.035);
+
+    noise.connect(filter);
+    filter.connect(noiseGain);
+    noiseGain.connect(ctx.destination);
+    noise.start(now);
+    noise.stop(now + 0.04);
+  });
+}
+
+/**
+ * Soft two-note sweep when tidying moved stickers back to their original spots.
+ */
+export function playStickerResetSound(): void {
+  withReadyAudioContext((ctx) => {
+    const now = ctx.currentTime;
+    const notes = [440, 554.37];
+    notes.forEach((freq, idx) => {
+      const start = now + idx * 0.055;
+      const osc = ctx.createOscillator();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(freq, start);
+      osc.frequency.exponentialRampToValueAtTime(freq * 1.03, start + 0.09);
+
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.linearRampToValueAtTime(0.048, start + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.11);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.12);
+    });
+  });
+}
