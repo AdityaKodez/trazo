@@ -1,0 +1,3 @@
+#!/bin/sh
+# Enforce npm publish gate whenever staged changes touch packages/trazo/.
+node scripts/check-pkg-published.mjs --staged

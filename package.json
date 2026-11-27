@@ -11,7 +11,8 @@
     "start": "next start",
     "lint": "eslint",
     "pkg:build": "node packages/trazo/scripts/build.mjs",
-    "pkg:check:svelte": "npm run pkg:build && node packages/trazo/scripts/check-svelte.mjs"
+    "pkg:check:svelte": "npm run pkg:build && node packages/trazo/scripts/check-svelte.mjs",
+    "pkg:check:published": "node scripts/check-pkg-published.mjs"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
