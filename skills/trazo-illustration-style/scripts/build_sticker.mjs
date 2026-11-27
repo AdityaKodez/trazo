@@ -1004,8 +1004,23 @@ function buildSticker(spec, args) {
     const d = loopsToPath(loops);
     if (d.length > 0) finalLayers.push({ fill: layer.fill, d });
   }
-  const silhouetteD = loopsToPath(traceField(silhouette));
-  return { finalLayers, silhouetteD };
+  // Ink shares the painted fit and has its own contours.
+  let inkField = silhouette;
+  if (spec.ink) {
+    const inkContours = spec.ink.map((shape, i) =>
+      transformContours(shapeToContours(shape, `ink[${i}]`), scale, offsetX, offsetY),
+    );
+    inkField = signedDistance(inkContours);
+    const inkJitter = noiseField(hashSeed(seed, "ink"), [
+      [9, 0.65 * rough],
+      [3, 0.4 * rough],
+    ]);
+    for (let i = 0; i < CELLS; i++) inkField[i] += inkJitter[i];
+  }
+
+  const inkD = loopsToPath(traceField(inkField));
+  if (!inkD) fail("Ink drawing is empty or outside the canvas");
+  return { finalLayers, inkD };
 }
 
 function main() {
@@ -1013,8 +1028,11 @@ function main() {
   const spec = JSON.parse(fs.readFileSync(args.spec, "utf8"));
   if (!spec.id || !/^[a-z0-9-]+$/.test(spec.id)) fail("spec.id must be kebab-case, e.g. black-hole");
   if (!Array.isArray(spec.parts) || spec.parts.length === 0) fail("spec.parts must be a non-empty array");
+  if (spec.ink !== undefined && (!Array.isArray(spec.ink) || spec.ink.length === 0)) {
+    fail("spec.ink must be a non-empty array of shapes");
+  }
 
-  const { finalLayers, silhouetteD } = buildSticker(spec, args);
+  const { finalLayers, inkD } = buildSticker(spec, args);
   const paths = finalLayers.map((layer) => `<path d="${layer.d}" fill="${layer.fill}" fill-rule="evenodd"/>`).join("\n  ");
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${CANVAS} ${CANVAS}" width="${CANVAS}" height="${CANVAS}" fill="none">\n  ${paths}\n</svg>\n`;
   const sticker = {
@@ -1024,7 +1042,7 @@ function main() {
     mixColor: spec.parts[0].base,
     tags: spec.tags ?? [],
     viewBox: `0 0 ${CANVAS} ${CANVAS}`,
-    d: silhouetteD,
+    d: inkD,
     layers: finalLayers,
   };
 

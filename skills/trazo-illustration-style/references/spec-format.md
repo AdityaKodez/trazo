@@ -52,7 +52,24 @@ Use one shape key per shape object. Add `"holes": [shape, ...]` for interior cut
 "face": { "cx": 128, "cy": 120, "gap": 34, "size": 1, "blush": "#f8b399" }
 ```
 
-The face expands to two eyes and two blush ovals. Set `blush: false` to remove blush, `size` to scale the features, or `eye` to set the eye color. For asymmetric poses, use individual shapes in `details`. Each detail has a `fill` and a `shape` and draws on top of the parts with a light wobble. Use a part for a feature that must contribute to the single-color silhouette.
+The face expands to two eyes and two blush ovals. Set `blush: false` to remove blush, `size` to scale the features, or `eye` to set the eye color. For asymmetric poses, use individual shapes in `details`. Each detail has a `fill` and a `shape` and draws on top of the painted parts with a light wobble. Draw essential single-ink marks separately in `ink`.
+
+## Single-ink geometry
+
+Set the top-level `ink` array to the shapes that carry pigment in the recolored sticker. Use a ring or an outer contour with `holes` for transparent interiors. Add `stroke` or `arc` shapes for seams and identifying details. The builder unions these shapes into one even-odd `d` path. The ink uses the painted artwork's fit and anchor so both modes stay aligned.
+
+```json
+{
+  "ink": [
+    { "ring": [128, 128, 91, 95, -12, 82, 86] },
+    { "stroke": [[95, 136], [116, 155], [159, 105]], "width": 10 }
+  ]
+}
+```
+
+Use the local catalog as the ink reference. In the Trazo repository, render the matching catalog definition and the generated `.sticker.json` with `toSvgString(def, { color: "#1f1e1b" })` from `packages/trazo/src/core.ts`. A standalone recolorable SVG uses the definition's single `d` path with `fill-rule="evenodd"` and `fill="currentColor"`. Check that interior voids show the actual background, and keep only the marks that identify the object at its intended size.
+
+Omitting `ink` keeps the builder's default union of painted parts. Use that fallback for solid marks and simple scribbles whose filled silhouette already carries the drawing.
 
 ## Build and verify
 
@@ -61,5 +78,5 @@ For an early small-size check, preview a temporary copy of the spec with `depth:
 The builder requires Node 18 or newer. By default it centers and fits the artwork and prints the fit scale. If it falls outside 0.75–1.35, redraw closer to the target canvas to keep authored widths representative. Use `--no-fit` on related states drawn with the same canvas anchor so each state keeps its authored position and scale. Check the edges for clipping.
 
 - `<id>.svg` is the standalone layered SVG.
-- `<id>.sticker.json` is the catalog definition. Its `d` is the union of the painted parts and retains their visible cutouts. The layered rendering also includes details. Inspect the single-color rendering before importing.
+- `<id>.sticker.json` is the catalog definition. Its `layers` are the painted artwork and `d` is the single-ink drawing. Inspect both renderings before importing.
 - `--png` writes a 768 px white-background preview when `sharp` resolves from the working directory. For a set, use the [contact sheet](visual-review.md#render-a-sheet). For a single draft, open the preview or render the SVG in a browser to check both the close-up and intended size.
