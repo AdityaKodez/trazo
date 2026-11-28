@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { memo } from "react";
 import { AnimatePresence, m, useReducedMotion } from "motion/react";
 
@@ -60,6 +61,7 @@ export const HomeView = memo(function HomeView({
   const locale = useLocale();
   const t = getMessages(locale).hero;
   const isCjk = locale !== "en";
+  const Heading = usePathname() === "/" ? "h1" : "p";
 
   const crossfadeInitial = reduceMotion
     ? false
@@ -87,7 +89,7 @@ export const HomeView = memo(function HomeView({
             transition={crossfadeTransition}
             className="col-start-1 row-start-1 flex w-full flex-col items-center"
           >
-            <h1
+            <Heading
               className={cn(
                 "flex min-h-[84px] items-end justify-center text-balance font-bold text-foreground sm:min-h-[118px]",
                 isCjk
@@ -96,7 +98,7 @@ export const HomeView = memo(function HomeView({
               )}
             >
               {t.headline}
-            </h1>
+            </Heading>
             <p
               className={cn(
                 "mt-2 min-h-[100px] text-pretty text-muted-foreground sm:mt-2.5 sm:min-h-[94px]",

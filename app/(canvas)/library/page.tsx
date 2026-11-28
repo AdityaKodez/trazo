@@ -1,15 +1,13 @@
 import type { Metadata } from "next";
-import {
-  STICKER_CATEGORY_COUNTS,
-  STICKER_COUNT,
-  trazoCatalogMeta,
-} from "trazo/meta";
+import Link from "next/link";
+import { STICKER_COUNT, trazoCatalogMeta } from "trazo/meta";
 
 import { LibraryJsonLd } from "@/components/seo/json-ld";
+import { LibraryRoutePreview } from "@/components/trazo/library-route-preview";
 import { siteConfig } from "@/config/site";
 
 const title = `${STICKER_COUNT} Free Hand-Drawn Crayon SVG Stickers | ${siteConfig.name}`;
-const description = `Browse, search, and recolor all ${STICKER_COUNT} free hand-drawn crayon SVG stickers across 9 categories. Copy React, Vue, Svelte, or standalone SVG code.`;
+const description = `Browse and recolor ${STICKER_COUNT} free hand-drawn crayon stickers. Download SVG or PNG, or copy code for React, Vue, and Svelte.`;
 const url = `${siteConfig.url}/library`;
 
 export const metadata: Metadata = {
@@ -44,32 +42,27 @@ export const metadata: Metadata = {
 };
 
 export default function LibraryPage() {
-  const categories = Object.entries(STICKER_CATEGORY_COUNTS);
-
   return (
     <>
       <LibraryJsonLd />
-      <section aria-label="Trazo Sticker Library" className="sr-only">
-        <h2>{STICKER_COUNT} Hand-Drawn Crayon SVG Stickers</h2>
-        <p>{description}</p>
-        <p>
-          Categories:{" "}
-          {categories
-            .map(([category, count]) => `${category} (${count})`)
-            .join(", ")}
-          .
-        </p>
-        <ul>
+      <LibraryRoutePreview view="grid" title={`${STICKER_COUNT} Free Crayon SVG Stickers`}>
+        <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+        <ul className="mt-4 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
           {trazoCatalogMeta.map((sticker) => (
             <li key={sticker.id}>
-              <a href={`/library/${sticker.id}`}>
-                {sticker.name} crayon SVG sticker ({sticker.category}) — React{" "}
-                {`<${sticker.componentName} />`} — {sticker.tags.join(", ")}
+              <a
+                href={`/library/${sticker.id}`}
+                className="flex min-h-10 items-center rounded-lg bg-muted/60 px-2.5 py-2 text-sm hover:bg-muted"
+              >
+                {sticker.name}
               </a>
             </li>
           ))}
         </ul>
-      </section>
+        <Link href="/library/skill" prefetch={false} className="mt-4 inline-block text-sm underline underline-offset-4">
+          Trazo illustration skill
+        </Link>
+      </LibraryRoutePreview>
     </>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   createContext,
   useCallback,
@@ -205,7 +205,6 @@ export interface TrazoActionsValue {
   setSelectedRotation: (rotation: number) => void;
   openLibraryGrid: () => void;
   openStickerDetail: (id: string) => void;
-  openAgentSkill: () => void;
   backToGrid: () => void;
   locateOnCanvas: (id: string) => void;
   centerCanvas: () => void;
@@ -243,10 +242,10 @@ const TrazoOverlayStateContext = createContext<TrazoOverlayStateValue | null>(nu
 
 export function TrazoProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
 
   const [paletteId, setPaletteId] = useState<PaletteId>("mix");
-  const [overlay, setOverlay] = useState<OverlayState>(() => parseOverlayRoute(pathname));
-  const overlayRef = useRef(overlay);
+  const overlay = useMemo(() => parseOverlayRoute(pathname), [pathname]);
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSize, setSelectedSize] = useState<number>(48);
@@ -283,14 +282,14 @@ export function TrazoProvider({ children }: { children: ReactNode }) {
   );
   const selectedSticker = useStickerDef(selectedStickerMeta.id);
 
-  const applyOverlay = useCallback((next: OverlayState, path: string) => {
-    overlayRef.current = next;
-    setOverlay(next);
-    if (window.location.pathname !== path) {
-      window.history.pushState(null, "", path);
-      window.dispatchEvent(new Event("trazo:routechange"));
-    }
-  }, []);
+  const navigate = useCallback(
+    (path: string) => {
+      if (window.location.pathname !== path) {
+        router.push(path, { scroll: false });
+      }
+    },
+    [router],
+  );
 
   useEffect(() => {
     if (overlay.open && overlay.view === "grid") {
@@ -298,55 +297,35 @@ export function TrazoProvider({ children }: { children: ReactNode }) {
     }
   }, [overlay.open, overlay.view]);
 
-  useEffect(() => {
-    function handlePopState() {
-      const next = parseOverlayRoute(window.location.pathname);
-      const current = overlayRef.current;
-      const merged: OverlayState = next.open ? next : { ...current, open: false };
-      overlayRef.current = merged;
-      setOverlay(merged);
-    }
-
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
-
   const closeOverlay = useCallback(() => {
-    applyOverlay({ ...overlayRef.current, open: false }, "/");
-  }, [applyOverlay]);
+    navigate("/");
+  }, [navigate]);
 
   const openLibraryGrid = useCallback(() => {
     void loadAllCategories();
-    applyOverlay({ ...overlayRef.current, open: true, view: "grid" }, "/library");
-  }, [applyOverlay]);
+    navigate("/library");
+  }, [navigate]);
 
   const setOverlayOpen = useCallback(
     (open: boolean) => {
       if (open) {
-        if (!overlayRef.current.open) openLibraryGrid();
+        if (!overlayOpen) openLibraryGrid();
       } else {
         closeOverlay();
       }
     },
-    [closeOverlay, openLibraryGrid],
+    [closeOverlay, openLibraryGrid, overlayOpen],
   );
 
   const openStickerDetail = useCallback(
     (id: string) => {
       void loadStickerById(id);
-      applyOverlay(
-        { open: true, view: "detail", stickerId: id },
-        `/library/${encodeURIComponent(id)}`,
-      );
+      navigate(`/library/${encodeURIComponent(id)}`);
     },
-    [applyOverlay],
+    [navigate],
   );
 
   const backToGrid = openLibraryGrid;
-
-  const openAgentSkill = useCallback(() => {
-    applyOverlay({ ...overlayRef.current, open: true, view: "skill" }, AGENT_SKILL_PATH);
-  }, [applyOverlay]);
 
   const locateOnCanvas = useCallback(
     (id: string) => {
@@ -438,7 +417,6 @@ export function TrazoProvider({ children }: { children: ReactNode }) {
       setSelectedRotation,
       openLibraryGrid,
       openStickerDetail,
-      openAgentSkill,
       backToGrid,
       locateOnCanvas,
       centerCanvas,
@@ -449,7 +427,6 @@ export function TrazoProvider({ children }: { children: ReactNode }) {
       setOverlayOpen,
       openLibraryGrid,
       openStickerDetail,
-      openAgentSkill,
       backToGrid,
       locateOnCanvas,
       centerCanvas,

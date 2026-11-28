@@ -116,6 +116,7 @@ export interface Messages {
   };
   detail: {
     backToLibrary: string;
+    relatedStickers: string;
     copyNameAriaLabel: (name: string) => string;
     locateOnCanvas: string;
     close: string;
@@ -198,7 +199,7 @@ export const en: Messages = {
     sectionAriaLabel: "Trazo introduction",
     headline: "Hand-drawn crayon stickers for the web.",
     description:
-      "100 chunky wax-crayon sea creatures, cute cats, arrows, stars, clouds, and emphasis marks. Recolor live, download SVG/PNG packs, or install from npm.",
+      `${STICKER_COUNT} chunky wax-crayon sea creatures, cute cats, arrows, stars, clouds, and emphasis marks. Recolor live, download SVG/PNG packs, or install from npm.`,
     npmDownloads: (count) =>
       `${count.toLocaleString("en-US")} npm ${count === 1 ? "download" : "downloads"} in the last 7 days`,
     opensInNewTab: " (opens in a new tab)",
@@ -349,6 +350,7 @@ export const en: Messages = {
   },
   detail: {
     backToLibrary: "Back to library",
+    relatedStickers: "Related stickers",
     copyNameAriaLabel: (name) => `Copy ${name}`,
     locateOnCanvas: "Locate on canvas",
     close: "Close",

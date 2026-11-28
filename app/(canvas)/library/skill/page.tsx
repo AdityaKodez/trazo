@@ -1,6 +1,6 @@
-/* eslint-disable @next/next/no-html-link-for-pages */
 import type { Metadata } from "next";
 
+import { LibraryRoutePreview } from "@/components/trazo/library-route-preview";
 import { illustrationSkill, siteConfig } from "@/config/site";
 
 const title = `${illustrationSkill.title} agent skill | ${siteConfig.name}`;
@@ -32,17 +32,13 @@ export const metadata: Metadata = {
 
 export default function AgentSkillPage() {
   return (
-    <article aria-label={`${illustrationSkill.title} agent skill`} className="sr-only">
-      <h2>{illustrationSkill.title}</h2>
-      <p>{description}</p>
-      <pre>{illustrationSkill.command}</pre>
-      <p>Example prompt: {illustrationSkill.prompt}</p>
-      <p>
-        <a href={illustrationSkill.source}>View the skill on GitHub</a>
-      </p>
-      <p>
-        <a href="/library">Browse the Trazo sticker library</a>
-      </p>
-    </article>
+    <LibraryRoutePreview view="skill" title={illustrationSkill.title}>
+      <div className="mt-3 space-y-3 text-sm">
+        <p>{description}</p>
+        <pre className="overflow-x-auto rounded-lg bg-muted p-3"><code>{illustrationSkill.command}</code></pre>
+        <p>{illustrationSkill.prompt}</p>
+        <a href={illustrationSkill.source} className="underline underline-offset-4">View the skill on GitHub</a>
+      </div>
+    </LibraryRoutePreview>
   );
 }

@@ -14,7 +14,7 @@ const zhCN: Messages = {
     sectionAriaLabel: "Trazo 简介",
     headline: "专为 Web 打造的手绘蜡笔贴纸。",
     description:
-      "100 款蜡笔质感矢量贴纸：海洋生物、可爱猫咪、箭头、星星、云朵与强调符号。支持实时换色、批量打包下载 SVG/PNG 或通过 npm 安装。",
+      `${STICKER_COUNT} 款蜡笔质感矢量贴纸：海洋生物、可爱猫咪、箭头、星星、云朵与强调符号。支持实时换色、批量打包下载 SVG/PNG 或通过 npm 安装。`,
     npmDownloads: (count) =>
       `过去 7 天 npm 下载量 ${count.toLocaleString("zh-CN")}`,
     opensInNewTab: "（在新标签页中打开）",
@@ -164,6 +164,7 @@ const zhCN: Messages = {
   },
   detail: {
     backToLibrary: "返回贴纸库",
+    relatedStickers: "相关贴纸",
     copyNameAriaLabel: (name) => `复制「${name}」`,
     locateOnCanvas: "在画布中定位",
     close: "关闭",

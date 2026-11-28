@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Image from "next/image";
+import Link from "next/link";
 import {
   memo,
   useCallback,
@@ -81,10 +82,12 @@ import {
 } from "@/components/trazo/overlay-layout";
 import { RotationDial } from "@/components/trazo/rotation-dial";
 import { findNearestStepIndex, SizeSlider } from "@/components/trazo/size-slider";
+import { StickerRelatedLinks } from "@/components/trazo/sticker-related-links";
 import {
   useTrazoActions,
   useTrazoCanvasState,
   useTrazoOverlayState,
+  AGENT_SKILL_PATH,
   type CategoryFilter,
 } from "@/components/trazo/trazo-experience";
 import { getMessages } from "@/config/i18n/messages";
@@ -409,7 +412,6 @@ interface LibraryTileProps {
   color: string | undefined;
   reduceMotion: boolean | null;
   onHover: (id: string) => void;
-  onOpen: (id: string) => void;
   onLocate: (id: string) => void;
 }
 
@@ -420,7 +422,6 @@ const LibraryTile = memo(function LibraryTile({
   color,
   reduceMotion,
   onHover,
-  onOpen,
   onLocate,
 }: LibraryTileProps) {
   return (
@@ -429,8 +430,7 @@ const LibraryTile = memo(function LibraryTile({
       role="option"
       aria-selected={isActive}
       onPointerMove={() => onHover(item.id)}
-      onClick={() => onOpen(item.id)}
-      className="library-tile group relative flex cursor-pointer flex-col items-center gap-1.5 rounded-2xl px-2 pb-2.5 pt-3.5 [content-visibility:auto] [contain-intrinsic-size:auto_108px]"
+      className="library-tile group relative rounded-2xl [content-visibility:auto] [contain-intrinsic-size:auto_108px]"
     >
       {isActive ? (
         <m.span
@@ -440,29 +440,30 @@ const LibraryTile = memo(function LibraryTile({
           className="absolute inset-0 rounded-2xl bg-muted/80 ring-1 ring-inset ring-foreground/[0.06]"
         />
       ) : null}
-      <span className="relative flex size-14 items-center justify-center">
-        {def ? (
-          <Sticker
-            def={def}
-            size={48}
-            color={color}
-            className={cn(
-              "transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]",
-              isActive && !reduceMotion && "-rotate-6 scale-110",
-            )}
-          />
-        ) : (
-          <span
-            aria-hidden
-            className="size-10 rounded-xl bg-muted/70"
-          />
-        )}
-      </span>
-      <LibraryTileLabel
-        id={item.id}
-        fallbackName={item.name}
-        isActive={isActive}
-      />
+      <Link
+        href={`/library/${item.id}`}
+        prefetch={false}
+        scroll={false}
+        tabIndex={-1}
+        className="relative flex flex-col items-center gap-1.5 rounded-2xl px-2 pb-2.5 pt-3.5"
+      >
+        <span className="relative flex size-14 items-center justify-center">
+          {def ? (
+            <Sticker
+              def={def}
+              size={48}
+              color={color}
+              className={cn(
+                "transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]",
+                isActive && !reduceMotion && "-rotate-6 scale-110",
+              )}
+            />
+          ) : (
+            <span aria-hidden className="size-10 rounded-xl bg-muted/70" />
+          )}
+        </span>
+        <LibraryTileLabel id={item.id} fallbackName={item.name} isActive={isActive} />
+      </Link>
       {isActive ? (
         <LibraryTileLocateButton
           id={item.id}
@@ -768,7 +769,6 @@ function LibraryPalette({
     setActiveCategory,
     setSearchQuery,
     openStickerDetail,
-    openAgentSkill,
     locateOnCanvas,
     setOverlayOpen,
   } = useTrazoActions();
@@ -956,7 +956,7 @@ function LibraryPalette({
 
   return (
     <div className={cn("flex min-h-0 flex-1 flex-col", isMobile && "h-full")}>
-      <Title className="sr-only">{t.srTitle}</Title>
+      <Title className="shrink-0 px-3 pt-1 text-sm sm:px-3.5">{t.srTitle}</Title>
       <Description className="sr-only">
         {t.srDescription(STICKER_COUNT, modKey)}
       </Description>
@@ -1124,13 +1124,13 @@ function LibraryPalette({
                 {t.resetFilters}
               </button>
               {t.emptyOr}
-              <button
-                type="button"
-                onClick={openAgentSkill}
+              <Link
+                href={AGENT_SKILL_PATH}
+                scroll={false}
                 className="font-medium text-foreground underline decoration-foreground/30 underline-offset-2 hover:decoration-foreground"
               >
                 {t.drawWithSkill}
-              </button>
+              </Link>
               {t.emptySuffix}
             </p>
           </div>
@@ -1157,7 +1157,6 @@ function LibraryPalette({
                   color={tileColor}
                   reduceMotion={reduceMotion}
                   onHover={setHoveredId}
-                  onOpen={openStickerDetail}
                   onLocate={locateOnCanvas}
                 />
               );
@@ -1198,9 +1197,9 @@ function LibraryPalette({
             isMobile && "flex-1 justify-between",
           )}
         >
-          <button
-            type="button"
-            onClick={openAgentSkill}
+          <Link
+            href={AGENT_SKILL_PATH}
+            scroll={false}
             className={cn(
               "group/skill inline-flex items-center gap-1.5 rounded-lg font-medium text-foreground/80 outline-none micro-transition hover:bg-background/85 hover:text-foreground active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-ring",
               isMobile ? "h-8 px-2" : "-my-1 h-7 px-2",
@@ -1211,7 +1210,7 @@ function LibraryPalette({
               className="size-3.5 shrink-0 transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover/skill:-rotate-12"
             />
             {t.agentSkillButton}
-          </button>
+          </Link>
           <PackDownloadButton
             stickers={filteredStickers}
             activeCategory={activeCategory}
@@ -1597,13 +1596,16 @@ function StickerDetailView({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div
+      data-trazo-detail-editor={selectedSticker ? selectedStickerMeta.id : undefined}
+      className="flex min-h-0 flex-1 flex-col"
+    >
       {/* Header in outer tray: back, name, locate, close */}
       <div className="flex shrink-0 items-center gap-1 px-1.5 pb-1.5 pt-0.5 sm:px-2">
         <IconAction label={t.backToLibrary} onClick={backToGrid}>
           <ArrowLeft className="size-4" />
         </IconAction>
-        <div className="min-w-0 flex-1 px-1">
+        <Title className="min-w-0 flex-1 px-1 text-base font-semibold tracking-tight text-foreground">
           <Tooltip>
             <TooltipTrigger asChild>
               <button
@@ -1612,9 +1614,7 @@ function StickerDetailView({
                 aria-label={t.copyNameAriaLabel(displayName)}
                 className="group -ml-1.5 inline-flex max-w-full items-center gap-1.5 rounded-lg px-1.5 py-0.5 text-left outline-none micro-transition hover:bg-background/85 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ring"
               >
-                <Title className="truncate text-base font-semibold tracking-tight text-foreground">
-                  {displayName}
-                </Title>
+                <span className="truncate">{displayName}</span>
                 {nameCopy.status === "copied" ? (
                   <Check className="size-3.5 shrink-0 text-success" />
                 ) : null}
@@ -1624,7 +1624,7 @@ function StickerDetailView({
               <p>{nameCopy.status === "copied" ? t.copiedTooltip : t.copyTooltip}</p>
             </TooltipContent>
           </Tooltip>
-        </div>
+        </Title>
         <IconAction label={t.locateOnCanvas} onClick={() => locateOnCanvas(selectedStickerMeta.id)}>
           <Compass className="size-4" />
         </IconAction>
@@ -1919,6 +1919,7 @@ function StickerDetailView({
             </div>
           </div>
         </div>
+        <StickerRelatedLinks sticker={selectedStickerMeta} locale={locale} />
       </div>
 
       {/* Expanding outer-tray GitHub star prompt after export/copy */}
@@ -2243,6 +2244,7 @@ function OverlayBody({
     <AnimatePresence mode="wait" initial={false}>
       <m.div
         key={overlayView}
+        data-trazo-overlay-view={overlayView}
         initial={reduceMotion ? { opacity: 0 } : { opacity: 0, x: offset }}
         animate={{ opacity: 1, x: 0 }}
         exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -offset }}
@@ -2263,6 +2265,14 @@ function OverlayBody({
         )}
       </m.div>
     </AnimatePresence>
+  );
+}
+
+function OverlayDialogHeading({ className, children }: { className?: string; children: ReactNode }) {
+  return (
+    <DialogTitle asChild className={className}>
+      <h1>{children}</h1>
+    </DialogTitle>
   );
 }
 
@@ -2335,7 +2345,7 @@ export const TrazoOverlay = memo(function TrazoOverlay({
           overlayView === "grid" ? "max-w-[640px]" : "max-w-[480px]",
         )}
       >
-        <OverlayBody Title={DialogTitle} Description={DialogDescription} isMobile={false} stars={stars} />
+        <OverlayBody Title={OverlayDialogHeading} Description={DialogDescription} isMobile={false} stars={stars} />
       </DialogContent>
     </Dialog>
   );

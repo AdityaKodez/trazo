@@ -1,10 +1,13 @@
-/* eslint-disable @next/next/no-html-link-for-pages */
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { findStickerMeta, STICKER_COUNT, trazoCatalogMeta } from "trazo/meta";
+import { findStickerMeta, trazoCatalogMeta } from "trazo/meta";
+import { findSticker, toSvgString } from "trazo/svg";
 
 import { StickerJsonLd } from "@/components/seo/json-ld";
-import { siteConfig } from "@/config/site";
+import { DetailFirstPaint } from "@/components/trazo/detail-first-paint";
+import { StickerRelatedLinks } from "@/components/trazo/sticker-related-links";
+import { installCommands, siteConfig } from "@/config/site";
 
 export const dynamicParams = false;
 
@@ -24,7 +27,7 @@ export async function generateMetadata({
   }
 
   const title = `${sticker.name} — Free Crayon SVG Sticker | ${siteConfig.name}`;
-  const description = `Free hand-drawn ${sticker.name.toLowerCase()} crayon SVG sticker (${sticker.category}). Recolor live, download SVG/PNG, or import <${sticker.componentName} /> in React, Vue & Svelte.`;
+  const description = `Download the ${sticker.name.toLowerCase()} crayon sticker as SVG or PNG. Recolor it online or use the ${sticker.componentName} component in React, Vue, or Svelte.`;
   const url = `${siteConfig.url}/library/${sticker.id}`;
 
   return {
@@ -72,45 +75,51 @@ export default async function StickerDetailPage({
     notFound();
   }
 
-  const related = trazoCatalogMeta
-    .filter((item) => item.category === sticker.category && item.id !== sticker.id)
-    .slice(0, 8);
+  const artwork = findSticker(id);
 
   return (
     <>
       <StickerJsonLd sticker={sticker} />
-      <article aria-label={`${sticker.name} crayon SVG sticker`} className="sr-only">
-        <h2>{sticker.name} — Hand-Drawn Crayon SVG Sticker</h2>
-        <p>
-          Free MIT-licensed {sticker.name.toLowerCase()} wax-crayon vector
-          sticker in the {sticker.category} collection. Customize size,
-          rotation, and single-color or mix palette live, download SVG or PNG,
-          or import it directly from <code>{siteConfig.npmPackage}</code>.
-        </p>
-        <p>Tags: {sticker.tags.join(", ")}.</p>
-
-        <h3>Install &amp; Usage</h3>
-        <pre>{`npm i ${siteConfig.npmPackage}`}</pre>
-        <pre>{`import { ${sticker.componentName} } from "${siteConfig.npmPackage}";\n\n<${sticker.componentName} size={48} />`}</pre>
-        <pre>{`import { ${sticker.componentName} } from "${siteConfig.npmPackage}/vue";`}</pre>
-        <pre>{`import { ${sticker.componentName} } from "${siteConfig.npmPackage}/svelte";`}</pre>
-
-        <nav aria-label={`More ${sticker.category} stickers`}>
-          <h3>More {sticker.category} crayon stickers</h3>
-          <ul>
-            {related.map((item) => (
-              <li key={item.id}>
-                <a href={`/library/${item.id}`}>{item.name} SVG sticker</a>
-              </li>
-            ))}
-          </ul>
-          <p>
-            <a href="/library">
-              Browse all {STICKER_COUNT} Trazo crayon SVG stickers
-            </a>
-          </p>
-        </nav>
-      </article>
+      {artwork ? (
+        <DetailFirstPaint id={sticker.id}>
+          <div aria-hidden className="fixed inset-0 z-40 bg-black/25 sm:bg-black/20" />
+          <section
+            aria-labelledby="initial-sticker-name"
+            className="fixed inset-x-0 bottom-0 z-40 flex h-[min(37rem,90dvh)] flex-col rounded-t-[24px] bg-[color-mix(in_oklab,var(--muted)_75%,var(--background))] p-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-xl ring-1 ring-inset ring-foreground/10 sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-[12dvh] sm:h-[min(38rem,calc(88dvh-1.25rem))] sm:w-[calc(100%-2rem)] sm:max-w-[480px] sm:-translate-x-1/2 sm:rounded-[22px] sm:pb-1.5"
+          >
+            <div aria-hidden className="mx-auto mb-0.5 mt-1 h-1 w-10 shrink-0 rounded-full bg-foreground/15 sm:hidden" />
+            <div className="flex h-10 shrink-0 items-center gap-2 px-2">
+              <Link href="/library" prefetch={false} aria-label="Back to library" className="flex size-8 items-center justify-center rounded-lg font-mono text-muted-foreground hover:bg-muted">←</Link>
+              <h1 id="initial-sticker-name" className="min-w-0 flex-1 truncate font-medium tracking-tight">{sticker.name} crayon SVG sticker</h1>
+              <Link href="/" prefetch={false} aria-label="Close" className="flex size-8 items-center justify-center rounded-lg font-mono text-muted-foreground hover:bg-muted">×</Link>
+            </div>
+            <div className="flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto rounded-[16px] bg-background p-3 ring-1 ring-inset ring-foreground/[0.07] sm:p-4">
+              <div
+                data-trazo-detail-preview=""
+                className="paper-dot-grid flex h-40 shrink-0 items-center justify-center rounded-xl bg-[color:var(--scribble-paper)] ring-1 ring-inset ring-foreground/8 sm:h-48"
+                dangerouslySetInnerHTML={{ __html: toSvgString(artwork, { size: 48, title: sticker.name }) }}
+              />
+              <div className="flex min-h-11 shrink-0 items-center justify-between gap-2 rounded-xl bg-muted/65 px-3 text-xs ring-1 ring-inset ring-foreground/10">
+                <code className="select-all font-mono">{installCommands.npm}</code>
+                <a href={siteConfig.npm} className="min-w-11 py-3 text-center font-medium text-muted-foreground underline underline-offset-2">npm</a>
+              </div>
+              <div className="space-y-2 text-sm">
+                <p className="text-muted-foreground">
+                  Download the original crayon artwork or use <code>{sticker.componentName}</code> in React, Vue, and Svelte.
+                </p>
+                <a
+                  href={`/library/${sticker.id}/sticker.svg`}
+                  download={`${sticker.id}.svg`}
+                  className="inline-flex min-h-9 items-center rounded-lg bg-muted px-3 font-medium hover:bg-muted/70"
+                >
+                  Download SVG
+                </a>
+              </div>
+              <StickerRelatedLinks sticker={sticker} />
+            </div>
+          </section>
+        </DetailFirstPaint>
+      ) : null}
     </>
   );
 }

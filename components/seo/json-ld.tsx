@@ -138,6 +138,7 @@ export function StickerJsonLd({ sticker }: { sticker: StickerMeta }) {
         name: `${sticker.name} Crayon SVG Sticker`,
         description: `Free hand-drawn ${sticker.name.toLowerCase()} wax-crayon SVG sticker in the ${sticker.category} category. Available as a tree-shakeable React, Vue, or Svelte component (<${sticker.componentName} />), or downloadable SVG/PNG.`,
         url: pageUrl,
+        image: `${pageUrl}/sticker.svg`,
         encodingFormat: "image/svg+xml",
         isAccessibleForFree: true,
         license: `${siteConfig.github}/blob/main/LICENSE`,

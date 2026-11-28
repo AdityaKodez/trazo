@@ -14,7 +14,7 @@ const ja: Messages = {
     sectionAriaLabel: "Trazo について",
     headline: "手描きクレヨンステッカーを Web に。",
     description:
-      "海の生き物、かわいい猫、矢印、星、雲、アクセント記号など 100 種のクレヨン風 SVG ステッカー。リアルタイム配色、SVG/PNG 一括ダウンロード、npm 導入に対応。",
+      `海の生き物、かわいい猫、矢印、星、雲、アクセント記号など ${STICKER_COUNT} 種のクレヨン風 SVG ステッカー。リアルタイム配色、SVG/PNG 一括ダウンロード、npm 導入に対応。`,
     npmDownloads: (count) =>
       `直近7日間の npm ダウンロード数：${count.toLocaleString("ja-JP")}`,
     opensInNewTab: "（新しいタブで開きます）",
@@ -165,6 +165,7 @@ const ja: Messages = {
   },
   detail: {
     backToLibrary: "ライブラリへ戻る",
+    relatedStickers: "関連ステッカー",
     copyNameAriaLabel: (name) => `「${name}」をコピー`,
     locateOnCanvas: "キャンバス上で表示",
     close: "閉じる",

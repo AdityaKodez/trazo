@@ -1,3 +1,5 @@
+import { STICKER_COUNT } from "trazo/meta";
+
 export type PackageManager = "npm" | "pnpm" | "yarn" | "bun";
 
 export const PACKAGE_MANAGERS: readonly PackageManager[] = [
@@ -27,11 +29,11 @@ export const siteConfig = {
   npm: `https://www.npmjs.com/package/${npmPackage}`,
   title: "Trazo · Hand-drawn crayon SVG stickers for React, Vue, Svelte & web",
   description:
-    "100 hand-drawn, wax-textured crayon SVG stickers baked into clean vector paths. Tree-shakeable React, Vue, and Svelte components, standalone SVGs, bulk SVG/PNG ZIP packs, and an agent illustration skill.",
+    `Download ${STICKER_COUNT} free hand-drawn crayon stickers as SVG or PNG. Recolor them in your browser or use them as React, Vue, and Svelte components.`,
   hero: {
     headline: "Hand-drawn crayon stickers for the web.",
     description:
-      "100 chunky wax-crayon sea creatures, cute cats, arrows, stars, clouds, and emphasis marks. Recolor live, download SVG/PNG packs, or install from npm.",
+      `${STICKER_COUNT} chunky wax-crayon sea creatures, cute cats, arrows, stars, clouds, and emphasis marks. Recolor live, download SVG/PNG packs, or install from npm.`,
   },
   author: {
     name: "Aditya Ojha",
