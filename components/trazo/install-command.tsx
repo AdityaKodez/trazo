@@ -6,7 +6,7 @@ import {
   useReducedMotion,
   type Transition,
 } from "motion/react";
-import { memo, type ComponentType, useId, useSyncExternalStore } from "react";
+import { memo, type ComponentType, useId, useRef, useState, useSyncExternalStore } from "react";
 
 import { Check, Copy, X } from "@/components/trazo/icons";
 import {
@@ -17,6 +17,7 @@ import {
 import {
   installCommands,
   PACKAGE_MANAGERS,
+  siteConfig,
   type PackageManager,
 } from "@/config/site";
 import { getMessages } from "@/config/i18n/messages";
@@ -74,10 +75,12 @@ let managerCache: PackageManager | null = null;
 
 function readManager(): PackageManager {
   if (typeof window === "undefined") return DEFAULT_MANAGER;
-  const stored = window.localStorage.getItem(STORAGE_KEY);
-  return stored && (PACKAGE_MANAGERS as readonly string[]).includes(stored)
-    ? (stored as PackageManager)
-    : DEFAULT_MANAGER;
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    return PACKAGE_MANAGERS.find((manager) => manager === stored) ?? DEFAULT_MANAGER;
+  } catch {
+    return DEFAULT_MANAGER;
+  }
 }
 
 function getManagerSnapshot(): PackageManager {
@@ -103,8 +106,12 @@ function subscribeToManager(onStoreChange: () => void) {
 }
 
 export function writeManager(next: PackageManager) {
-  window.localStorage.setItem(STORAGE_KEY, next);
   managerCache = next;
+  try {
+    window.localStorage.setItem(STORAGE_KEY, next);
+  } catch {
+    // The current selection still works with persistent storage disabled.
+  }
   managerListeners.forEach((listener) => listener());
 }
 
@@ -274,11 +281,31 @@ export const InstallCommand = memo(function InstallCommand(props: InstallCommand
   const locale = useLocale();
   const t = getMessages(locale).install;
   const { status, copy, copySeq, isCoolingDown } = useCopy({ sound: true });
+  const commandRef = useRef<HTMLSpanElement>(null);
+  const [manualCommand, setManualCommand] = useState<string | null>(null);
   const reducedMotion = useReducedMotion();
   const fixedCommand = "command" in props ? props : null;
   const commands = "commands" in props ? props.commands ?? installCommands : installCommands;
   const command = fixedCommand?.command ?? commands[manager] ?? commands.npm;
   const copyFeedback = status === "copied" ? t.copied : status === "error" ? t.copyFailed : "";
+  const showManualCopy = manualCommand === command;
+
+  async function copyCommand() {
+    if (isCoolingDown) return;
+    if (await copy(command)) {
+      setManualCommand(null);
+      return;
+    }
+
+    const commandElement = commandRef.current;
+    const selection = window.getSelection();
+    if (!selection || commandElement?.textContent !== command) return;
+    const range = document.createRange();
+    range.selectNodeContents(commandElement);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    setManualCommand(command);
+  }
 
   return (
     <div
@@ -303,10 +330,7 @@ export const InstallCommand = memo(function InstallCommand(props: InstallCommand
               type="button"
               onPointerEnter={preloadCopySound}
               onFocus={preloadCopySound}
-              onClick={() => {
-                if (isCoolingDown) return;
-                void copy(command);
-              }}
+              onClick={() => void copyCommand()}
               aria-disabled={isCoolingDown || undefined}
               aria-label={isCoolingDown ? t.copiedInstallAriaLabel : t.copyInstallAriaLabel}
               className={cn(
@@ -331,14 +355,12 @@ export const InstallCommand = memo(function InstallCommand(props: InstallCommand
           </TooltipContent>
         </Tooltip>
       </div>
-      <span role="status" className="sr-only">{copyFeedback}</span>
-
       {/* Command line body */}
       <div className="relative flex items-center px-3.5 py-2.5 sm:px-4 sm:py-3">
         <div className="blueprint-bg pointer-events-none absolute inset-0 opacity-35" />
         <code className={cn(
-          "palette-scroll relative min-w-0 flex-1 overflow-x-auto font-mono text-[12.5px] leading-relaxed text-foreground sm:text-[13px]",
-          fixedCommand ? "select-all wrap-anywhere" : "whitespace-pre",
+          "palette-scroll relative min-w-0 flex-1 select-all overflow-x-auto font-mono text-[12.5px] leading-relaxed text-foreground sm:text-[13px]",
+          fixedCommand ? "wrap-anywhere" : "whitespace-pre",
         )}>
           <AnimatePresence mode="wait" initial={false}>
             <m.span
@@ -350,11 +372,68 @@ export const InstallCommand = memo(function InstallCommand(props: InstallCommand
               className="block"
             >
               <span aria-hidden="true" className="select-none pr-2 text-muted-foreground">$</span>
-              {command}
+              <span ref={commandRef}>{command}</span>
             </m.span>
           </AnimatePresence>
         </code>
       </div>
+      <p role="status" className={showManualCopy ? "px-3.5 pb-2.5 text-xs text-muted-foreground" : "sr-only"}>
+        {showManualCopy ? t.manualCopy : copyFeedback}
+      </p>
     </div>
   );
 });
+
+export function DetailInstallCommand() {
+  const t = getMessages(useLocale()).install;
+  const { status, copy, isCoolingDown } = useCopy();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [manualCopy, setManualCopy] = useState(false);
+  const command = installCommands.npm;
+
+  async function copyCommand() {
+    if (isCoolingDown) return;
+    if (await copy(command)) {
+      setManualCopy(false);
+      return;
+    }
+    const input = inputRef.current;
+    if (!input) return;
+    input.focus({ preventScroll: true });
+    input.select();
+    setManualCopy(true);
+  }
+
+  const copied = status === "copied";
+  const CopyIcon = copied ? Check : Copy;
+
+  return (
+    <div data-vaul-no-drag="" className="shrink-0">
+      <div className="flex min-h-11 items-center rounded-xl bg-muted/65 pl-2.5 pr-1 ring-1 ring-inset ring-foreground/10">
+        <input
+          ref={inputRef}
+          aria-label={command}
+          readOnly
+          onFocus={(event) => event.currentTarget.select()}
+          value={command}
+          className="h-10 min-w-0 flex-1 rounded bg-transparent font-mono text-xs text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+        />
+        <button
+          type="button"
+          aria-label={copied ? t.copiedInstallAriaLabel : t.copyInstallAriaLabel}
+          aria-disabled={isCoolingDown || undefined}
+          onClick={() => void copyCommand()}
+          className="inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground micro-transition hover:bg-background focus-visible:outline-2 focus-visible:outline-ring"
+        >
+          <CopyIcon className={cn("size-4", copied && "text-success")} />
+        </button>
+        <a href={siteConfig.npm} className="inline-flex h-11 min-w-11 items-center justify-center rounded-lg text-xs font-medium text-muted-foreground underline underline-offset-2 hover:bg-background focus-visible:outline-2 focus-visible:outline-ring">
+          npm
+        </a>
+      </div>
+      <p role="status" className={manualCopy ? "mt-1 px-1 text-xs text-muted-foreground" : "sr-only"}>
+        {manualCopy ? t.manualCopy : copied ? t.copied : ""}
+      </p>
+    </div>
+  );
+}

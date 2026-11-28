@@ -10,7 +10,6 @@ import {
 
 const LazyTrazoOverlay = dynamic(
   () => import("@/components/trazo/trazo-overlay").then((mod) => mod.TrazoOverlay),
-  { ssr: false },
 );
 
 /**

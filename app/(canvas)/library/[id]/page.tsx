@@ -85,7 +85,7 @@ export default async function StickerDetailPage({
           <div aria-hidden className="fixed inset-0 z-40 bg-black/25 sm:bg-black/20" />
           <section
             aria-labelledby="initial-sticker-name"
-            className="fixed inset-x-0 bottom-0 z-40 flex h-[min(37rem,90dvh)] flex-col rounded-t-[24px] bg-[color-mix(in_oklab,var(--muted)_75%,var(--background))] p-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-xl ring-1 ring-inset ring-foreground/10 sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-[12dvh] sm:h-[min(38rem,calc(88dvh-1.25rem))] sm:w-[calc(100%-2rem)] sm:max-w-[480px] sm:-translate-x-1/2 sm:rounded-[22px] sm:pb-1.5"
+            className="fixed inset-x-0 bottom-0 z-40 flex h-[88dvh] flex-col rounded-t-[24px] bg-[color-mix(in_oklab,var(--muted)_75%,var(--background))] p-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-xl ring-1 ring-inset ring-foreground/10 sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-[12dvh] sm:h-[min(38rem,calc(88dvh-1.25rem))] sm:w-[calc(100%-2rem)] sm:max-w-[480px] sm:-translate-x-1/2 sm:rounded-[22px] sm:pb-1.5"
           >
             <div aria-hidden className="mx-auto mb-0.5 mt-1 h-1 w-10 shrink-0 rounded-full bg-foreground/15 sm:hidden" />
             <div className="flex h-10 shrink-0 items-center gap-2 px-2">

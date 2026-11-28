@@ -110,6 +110,7 @@ const zhCN: Messages = {
     copiedInstallAriaLabel: "已复制安装命令",
     copied: "已复制",
     copyFailed: "复制失败",
+    manualCopy: "已选中命令，请使用浏览器的复制功能。",
   },
   library: {
     srTitle: "贴纸库",

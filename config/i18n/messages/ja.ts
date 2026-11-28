@@ -111,6 +111,7 @@ const ja: Messages = {
     copiedInstallAriaLabel: "インストールコマンドをコピーしました",
     copied: "コピーしました",
     copyFailed: "コピー失敗",
+    manualCopy: "コマンドを選択しました。ブラウザーのコピー操作を使ってください。",
   },
   library: {
     srTitle: "ステッカーライブラリ",

@@ -64,6 +64,7 @@ export interface Messages {
     copiedInstallAriaLabel: string;
     copied: string;
     copyFailed: string;
+    manualCopy: string;
   };
   library: {
     srTitle: string;
@@ -296,6 +297,7 @@ export const en: Messages = {
     copiedInstallAriaLabel: "Copied install command",
     copied: "Copied",
     copyFailed: "Copy failed",
+    manualCopy: "Command selected. Use your browser’s Copy action.",
   },
   library: {
     srTitle: "Sticker library",

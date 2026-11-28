@@ -27,8 +27,10 @@ import {
 import type { StickerCategory, StickerDef } from "trazo/core";
 import { Sticker } from "trazo/scribble";
 
+import { BottomDock } from "@/components/trazo/bottom-dock";
 import { CanvasTestimonialScribble } from "@/components/trazo/canvas-testimonials";
 import { HomeView } from "@/components/trazo/home-view";
+import { TopBar } from "@/components/trazo/top-bar";
 import {
   LOCATE_SHAKE_DELAY_MS,
   useTrazoActions,
@@ -355,8 +357,8 @@ const CanvasSticker = memo(function CanvasSticker({
               className={cn(
                 "pointer-events-none relative z-10 transition-[filter,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]",
                 isPeeled
-                  ? "drop-shadow-[0_18px_22px_rgba(24,23,21,0.22)]"
-                  : "sm:group-hover:drop-shadow-[0_10px_14px_rgba(0,0,0,0.14)]",
+                  ? "pointer-fine:drop-shadow-[0_18px_22px_rgba(24,23,21,0.22)]"
+                  : "pointer-fine:group-hover:drop-shadow-[0_10px_14px_rgba(0,0,0,0.14)]",
               )}
             />
             <CanvasStickerLabels
@@ -371,7 +373,23 @@ const CanvasSticker = memo(function CanvasSticker({
   );
 });
 
-export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
+export const TrazoCanvasScene = memo(function TrazoCanvasScene({
+  npmDownloads,
+  stars,
+}: {
+  npmDownloads: number | null;
+  stars: number | null;
+}) {
+  return (
+    <>
+      <TopBar stars={stars} />
+      <TrazoCanvas npmDownloads={npmDownloads} />
+      <BottomDock />
+    </>
+  );
+});
+
+function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
   const { openStickerDetail, setStickerOffset } = useTrazoActions();
   const {
     paletteId,
@@ -464,6 +482,7 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
     outerEl: HTMLDivElement | null;
     btnEl: HTMLButtonElement | null;
     holdTimer: number | null;
+    paintFrame: number | null;
     cleanupListeners: (() => void) | null;
   } | null>(null);
 
@@ -717,7 +736,6 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
     const target = event.target as HTMLElement | null;
     if (target?.closest("[data-no-pan]")) return;
 
-    markInteracted();
     stopCameraAnimations();
     dragStateRef.current = {
       active: true,
@@ -743,8 +761,10 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
     const dy = event.clientY - state.startClientY;
 
     if (!state.moved) {
-      if (Math.hypot(dx, dy) < DRAG_THRESHOLD_PX) return;
+      const threshold = event.pointerType === "touch" ? TOUCH_PAN_CANCEL_PX : DRAG_THRESHOLD_PX;
+      if (Math.hypot(dx, dy) < threshold) return;
       state.moved = true;
+      markInteracted();
       setIsDragging(true);
       if (!reduceMotion) {
         rawScale.set(0.986);
@@ -907,10 +927,8 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
       if (!isTouch) {
         // Mouse/pen: sticker owns drag; dragging empty paper pans the sheet
         event.stopPropagation();
+        unlockAudioContext();
       }
-
-      unlockAudioContext();
-      markInteracted();
 
       const existing = stickerOffsetsRef.current[placement.id];
       const startOffsetX = existing?.x ?? 0;
@@ -934,6 +952,7 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
         outerEl,
         btnEl,
         holdTimer: null as number | null,
+        paintFrame: null as number | null,
         cleanupListeners: null as (() => void) | null,
       };
 
@@ -971,11 +990,31 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
           window.clearTimeout(state.holdTimer);
           state.holdTimer = null;
         }
+        if (state.paintFrame !== null) {
+          window.cancelAnimationFrame(state.paintFrame);
+          state.paintFrame = null;
+        }
         window.removeEventListener("pointermove", onWindowMove);
         window.removeEventListener("pointerup", onWindowEnd);
         window.removeEventListener("pointercancel", onWindowEnd);
         if (stickerDragRef.current === state) {
           stickerDragRef.current = null;
+        }
+      };
+
+      const paintPosition = () => {
+        state.paintFrame = null;
+        if (state.outerEl) {
+          const px = Math.round((placement.x + state.currentOffsetX) * posScaleX);
+          const py = Math.round((placement.y + state.currentOffsetY) * posScaleY);
+          state.outerEl.style.transform = `translate3d(${px}px, ${py}px, 0) translate(-50%, -50%)`;
+        }
+        if (state.btnEl && !reduceMotion) {
+          const dragLean = clamp(state.vx * 0.012, -10, 10);
+          state.btnEl.style.setProperty(
+            "--sticker-drag-rot",
+            `${(placement.rotate + dragLean).toFixed(1)}deg`,
+          );
         }
       };
 
@@ -1011,47 +1050,41 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
         state.currentOffsetX = clampedWorldX - state.placement.x;
         state.currentOffsetY = clampedWorldY - state.placement.y;
 
-        if (state.outerEl) {
-          const px = Math.round(clampedWorldX * posScaleX);
-          const py = Math.round(clampedWorldY * posScaleY);
-          state.outerEl.style.transform = `translate3d(${px}px, ${py}px, 0) translate(-50%, -50%)`;
-        }
-        if (state.btnEl && !reduceMotion) {
-          const dragLean = clamp(state.vx * 0.012, -10, 10);
-          state.btnEl.style.setProperty(
-            "--sticker-drag-rot",
-            `${(state.placement.rotate + dragLean).toFixed(1)}deg`,
-          );
+        if (state.paintFrame === null) {
+          state.paintFrame = window.requestAnimationFrame(paintPosition);
         }
       };
 
       const onWindowEnd = (endEvent: globalThis.PointerEvent) => {
         if (endEvent.pointerId !== state.pointerId) return;
-        const wasPeeled = state.peeled;
         cleanup();
+        if (!state.peeled) return;
 
-        if (state.btnEl) {
-          state.btnEl.style.removeProperty("--sticker-drag-rot");
+        const cancelled = endEvent.type === "pointercancel";
+        if (cancelled) {
+          state.currentOffsetX = state.startOffsetX;
+          state.currentOffsetY = state.startOffsetY;
         }
+        paintPosition();
+        state.btnEl?.style.removeProperty("--sticker-drag-rot");
+        setDraggingStickerId(null);
+        if (cancelled) return;
 
-        if (wasPeeled) {
-          suppressNextClickRef.current = true;
-          window.setTimeout(() => {
-            suppressNextClickRef.current = false;
-          }, 160);
-          setDraggingStickerId(null);
-          setStickerOffset(state.id, state.currentOffsetX, state.currentOffsetY);
-          playStickerPlaceSound();
+        suppressNextClickRef.current = true;
+        window.setTimeout(() => {
+          suppressNextClickRef.current = false;
+        }, 160);
+        setStickerOffset(state.id, state.currentOffsetX, state.currentOffsetY);
+        playStickerPlaceSound();
 
-          settleSeqRef.current += 1;
-          const seq = settleSeqRef.current;
-          setSettlingSticker({ id: state.id, seq });
-          window.setTimeout(() => {
-            setSettlingSticker((current) =>
-              current?.seq === seq ? null : current,
-            );
-          }, 260);
-        }
+        settleSeqRef.current += 1;
+        const seq = settleSeqRef.current;
+        setSettlingSticker({ id: state.id, seq });
+        window.setTimeout(() => {
+          setSettlingSticker((current) =>
+            current?.seq === seq ? null : current,
+          );
+        }, 260);
       };
 
       state.cleanupListeners = cleanup;
@@ -1069,7 +1102,6 @@ export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
       }
     },
     [
-      markInteracted,
       posScaleX,
       posScaleY,
       rawScale,

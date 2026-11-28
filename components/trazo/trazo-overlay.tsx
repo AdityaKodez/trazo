@@ -1,6 +1,5 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -74,7 +73,9 @@ import {
 import {
   CopyCooldownFill,
   CopyStatusIcon,
+  DetailInstallCommand,
 } from "@/components/trazo/install-command";
+import { OverlayMobileDrawer } from "@/components/trazo/overlay-mobile-drawer";
 import {
   overlayCardClass,
   overlayDialogClass,
@@ -119,14 +120,6 @@ import {
   useStarPromptStatus,
 } from "@/lib/use-star-prompt";
 import { cn } from "@/lib/utils";
-
-const LazyOverlayMobileDrawer = dynamic(
-  () =>
-    import("@/components/trazo/overlay-mobile-drawer").then(
-      (mod) => mod.OverlayMobileDrawer,
-    ),
-  { ssr: false },
-);
 
 const SIZE_STEPS = [16, 24, 32, 48, 64, 80, 96, 112, 128] as const;
 type CodeTab = "react" | "vue" | "svelte" | "js";
@@ -1411,6 +1404,75 @@ function StarTrayButton({
   );
 }
 
+function StickerDetailPreview({
+  id,
+  sticker,
+  size,
+  color,
+  rotation,
+}: {
+  id: string;
+  sticker: StickerDef | undefined;
+  size: number;
+  color: string | undefined;
+  rotation: number;
+}) {
+  const t = getMessages(useLocale()).detail;
+  const reduceMotion = useReducedMotion();
+  const darkPreview = usePreviewTheme() === "dark";
+
+  return (
+    <div
+      className={cn(
+        "paper-dot-grid relative flex h-40 shrink-0 items-center justify-center rounded-xl bg-[color:var(--scribble-paper)] ring-1 ring-inset ring-foreground/8 transition-[background-color] duration-200 sm:h-48",
+        darkPreview && "preview-dark",
+      )}
+    >
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={() => writePreviewTheme(darkPreview ? "light" : "dark")}
+            aria-pressed={darkPreview}
+            aria-label={darkPreview ? t.previewLightAriaLabel : t.previewDarkAriaLabel}
+            className="absolute right-2 top-2 flex size-8 items-center justify-center rounded-full bg-[color:var(--scribble-paper)] text-[color:var(--scribble-ink)] opacity-70 outline-none ring-1 ring-inset ring-foreground/10 micro-transition hover:opacity-100 active:scale-[0.92] focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {darkPreview ? <Sun className="size-4" /> : <Moon className="size-4" />}
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{darkPreview ? t.lightBackgroundTooltip : t.darkBackgroundTooltip}</p>
+        </TooltipContent>
+      </Tooltip>
+      <AnimatePresence mode="popLayout" initial={false}>
+        <m.span
+          key={id}
+          initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.85, rotate: -8 }}
+          animate={{ opacity: 1, scale: 1, rotate: 0 }}
+          exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.92 }}
+          transition={{ type: "spring", duration: 0.35, bounce: 0.3 }}
+        >
+          {sticker ? (
+            <Sticker
+              def={sticker}
+              size={size}
+              color={color}
+              rotate={rotation}
+              className="drop-shadow-[0_6px_10px_rgba(0,0,0,0.08)] transition-[color] duration-200"
+            />
+          ) : (
+            <span
+              aria-hidden
+              style={{ width: size, height: size }}
+              className="block animate-pulse rounded-2xl bg-muted/70"
+            />
+          )}
+        </m.span>
+      </AnimatePresence>
+    </div>
+  );
+}
+
 function StickerDetailView({
   Title,
   Description,
@@ -1445,8 +1507,6 @@ function StickerDetailView({
   const displayName = getLocalizedStickerName(selectedStickerMeta, locale);
   const reduceMotion = useReducedMotion();
   const [codeTab, setCodeTab] = useState<CodeTab>("react");
-  const previewTheme = usePreviewTheme();
-  const darkPreview = previewTheme === "dark";
   const codeCopy = useCopy({ sound: true });
   const hexCopy = useCopy();
   const nameCopy = useCopy();
@@ -1496,19 +1556,6 @@ function StickerDetailView({
   const displayColor = stickerColor(paletteId);
   const size = SIZE_STEPS[findNearestStepIndex(SIZE_STEPS, selectedSize)];
   const rotation = Math.max(-180, Math.min(180, Math.round(selectedRotation)));
-
-  const svgMarkup = useMemo(
-    () =>
-      selectedSticker
-        ? toSvgString(selectedSticker, {
-            size,
-            color: concreteColor,
-            rotate: rotation,
-            title: selectedSticker.name,
-          })
-        : "",
-    [concreteColor, rotation, size, selectedSticker],
-  );
 
   const codeSnippet = useMemo(() => {
     if (codeTab !== "js") {
@@ -1568,8 +1615,14 @@ function StickerDetailView({
   }, [codeTab, concreteColor, rotation, size, selectedStickerMeta]);
 
   async function handleDownloadSvg() {
-    if (!selectedSticker || !svgMarkup) return;
+    if (!selectedSticker) return;
     const { downloadBlob } = await import("@/lib/sticker-export");
+    const svgMarkup = toSvgString(selectedSticker, {
+      size,
+      color: concreteColor,
+      rotate: rotation,
+      title: selectedSticker.name,
+    });
     const blob = new Blob([svgMarkup], { type: "image/svg+xml;charset=utf-8" });
     const suffix = rotation !== 0 ? `-${size}px-${rotation}deg` : `-${size}px`;
     downloadBlob(blob, `${selectedSticker.id}${suffix}.svg`);
@@ -1638,55 +1691,15 @@ function StickerDetailView({
 
       {/* Inset white card for preview, controls & usage */}
       <div className={overlayCardClass}>
-        {/* Live preview at the true selected size */}
-        <div
-          className={cn(
-            "paper-dot-grid relative flex h-40 shrink-0 items-center justify-center rounded-xl bg-[color:var(--scribble-paper)] ring-1 ring-inset ring-foreground/8 transition-[background-color] duration-200 sm:h-48",
-            darkPreview && "preview-dark",
-          )}
-        >
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={() => writePreviewTheme(darkPreview ? "light" : "dark")}
-                aria-pressed={darkPreview}
-                aria-label={darkPreview ? t.previewLightAriaLabel : t.previewDarkAriaLabel}
-                className="absolute right-2 top-2 flex size-8 items-center justify-center rounded-full bg-[color:var(--scribble-paper)] text-[color:var(--scribble-ink)] opacity-70 outline-none ring-1 ring-inset ring-foreground/10 micro-transition hover:opacity-100 active:scale-[0.92] focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                {darkPreview ? <Sun className="size-4" /> : <Moon className="size-4" />}
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{darkPreview ? t.lightBackgroundTooltip : t.darkBackgroundTooltip}</p>
-            </TooltipContent>
-          </Tooltip>
-          <AnimatePresence mode="popLayout" initial={false}>
-            <m.span
-              key={selectedStickerMeta.id}
-              initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.85, rotate: -8 }}
-              animate={{ opacity: 1, scale: 1, rotate: 0 }}
-              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.92 }}
-              transition={{ type: "spring", duration: 0.35, bounce: 0.3 }}
-            >
-              {selectedSticker ? (
-                <Sticker
-                  def={selectedSticker}
-                  size={size}
-                  color={displayColor}
-                  rotate={rotation}
-                  className="drop-shadow-[0_6px_10px_rgba(0,0,0,0.08)] transition-[color] duration-200"
-                />
-              ) : (
-                <span
-                  aria-hidden
-                  style={{ width: size, height: size }}
-                  className="block animate-pulse rounded-2xl bg-muted/70"
-                />
-              )}
-            </m.span>
-          </AnimatePresence>
-        </div>
+        <StickerDetailPreview
+          id={selectedStickerMeta.id}
+          sticker={selectedSticker}
+          size={size}
+          color={displayColor}
+          rotation={rotation}
+        />
+
+        <DetailInstallCommand />
 
         {/* Controls */}
         <div className="flex flex-col gap-2 px-0.5 sm:gap-1">
@@ -2327,7 +2340,7 @@ export const TrazoOverlay = memo(function TrazoOverlay({
 
   if (isMobile) {
     return (
-      <LazyOverlayMobileDrawer
+      <OverlayMobileDrawer
         open={overlayOpen}
         onOpenChange={setOverlayOpen}
         overlayView={overlayView}
@@ -2340,6 +2353,11 @@ export const TrazoOverlay = memo(function TrazoOverlay({
     <Dialog open={overlayOpen} onOpenChange={setOverlayOpen}>
       <DialogContent
         showCloseButton={false}
+        onOpenAutoFocus={(event) => {
+          if (overlayView !== "detail" || !(event.target instanceof HTMLElement)) return;
+          event.preventDefault();
+          event.target.focus({ preventScroll: true });
+        }}
         className={cn(
           overlayDialogClass,
           overlayView === "grid" ? "max-w-[640px]" : "max-w-[480px]",
