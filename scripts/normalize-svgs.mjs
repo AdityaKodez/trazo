@@ -63,6 +63,7 @@ function main() {
     "school",
     "food",
     "games",
+    "music",
   ];
   const catalogDir = path.join(rootDir, "packages/trazo/src/catalog");
   fs.mkdirSync(catalogDir, { recursive: true });

@@ -873,6 +873,7 @@ async function main() {
     "school",
     "food",
     "games",
+    "music",
   ];
 
   for (const category of categories) {

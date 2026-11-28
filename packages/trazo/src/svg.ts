@@ -102,6 +102,15 @@ import {
   coralKeyDef,
 } from "./catalog/games";
 import {
+  musicStickers,
+  headphonesDef,
+  cassetteDef,
+  vinylRecordDef,
+  electricGuitarDef,
+  microphoneDef,
+  musicNotesDef,
+} from "./catalog/music";
+import {
   catsStickers,
   heartCatDef,
   daisyCatDef,
@@ -153,6 +162,7 @@ export {
   heartsStickers,
   symbolsStickers,
   gamesStickers,
+  musicStickers,
   catsStickers,
   charactersStickers,
   schoolStickers,
@@ -265,6 +275,12 @@ export {
   xpBadgeDef,
   rewardChestDef,
   coralKeyDef,
+  headphonesDef,
+  cassetteDef,
+  vinylRecordDef,
+  electricGuitarDef,
+  microphoneDef,
+  musicNotesDef,
 };
 
 export const trazoCatalog: readonly StickerDef[] = [
@@ -374,6 +390,7 @@ export const trazoCatalog: readonly StickerDef[] = [
   xpBadgeDef,
   rewardChestDef,
   coralKeyDef,
+  ...musicStickers,
 ];
 
 const stickerById = new Map<string, StickerDef>(

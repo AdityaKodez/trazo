@@ -4,6 +4,7 @@ import type { StickerCategory, StickerDef } from "trazo/core";
 import { findStickerMeta } from "trazo/meta";
 
 export const ALL_STICKER_CATEGORIES: readonly StickerCategory[] = [
+  "music",
   "games",
   "ocean",
   "arrows",
@@ -17,6 +18,7 @@ export const ALL_STICKER_CATEGORIES: readonly StickerCategory[] = [
 ] as const;
 
 const categoryLoaders: Record<StickerCategory, () => Promise<readonly StickerDef[]>> = {
+  music: () => import("trazo/catalog/music").then((m) => m.musicStickers),
   games: () => import("trazo/catalog/games").then((m) => m.gamesStickers),
   ocean: async () => oceanStickers,
   arrows: () => import("trazo/catalog/arrows").then((m) => m.arrowsStickers),

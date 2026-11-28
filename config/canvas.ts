@@ -82,6 +82,12 @@ const zoneAnchors: readonly ZoneAnchor[] = [
     x: 0,
     y: 985,
   },
+  {
+    id: "music",
+    label: "Music",
+    x: 0,
+    y: -950,
+  },
 ] as const;
 
 export const canvasZones: readonly ZoneAnchor[] = zoneAnchors.map((zone) => ({
@@ -898,6 +904,49 @@ const stickerPlacements: readonly CanvasStickerPlacement[] = [
     y: 1125,
     size: 84,
     rotate: -4,
+  },
+  // FAR NORTH QUADRANT: Music (6 stickers)
+  {
+    id: "headphones",
+    x: -170,
+    y: -1080,
+    size: 96,
+    rotate: -7,
+  },
+  {
+    id: "cassette",
+    x: -35,
+    y: -1140,
+    size: 90,
+    rotate: 5,
+  },
+  {
+    id: "vinyl-record",
+    x: 158,
+    y: -1110,
+    size: 100,
+    rotate: 6,
+  },
+  {
+    id: "electric-guitar",
+    x: -162,
+    y: -952,
+    size: 102,
+    rotate: -7,
+  },
+  {
+    id: "microphone",
+    x: 172,
+    y: -965,
+    size: 91,
+    rotate: 6,
+  },
+  {
+    id: "music-notes",
+    x: 0,
+    y: -1033,
+    size: 82,
+    rotate: -8,
   },
 ] as const;
 

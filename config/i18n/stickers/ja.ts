@@ -69,6 +69,14 @@ const jaStickerNames: Readonly<Record<string, string>> = {
   "game-reward-chest": "宝箱",
   "game-coral-key": "コーラル色の鍵",
 
+  // Music (6)
+  headphones: "ヘッドホン",
+  cassette: "カセットテープ",
+  "vinyl-record": "レコード",
+  "electric-guitar": "エレキギター",
+  microphone: "マイク",
+  "music-notes": "音符",
+
   // Symbols (14)
   diamond: "ダイヤ",
   "anger-mark": "ぷんぷんマーク",

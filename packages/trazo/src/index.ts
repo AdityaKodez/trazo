@@ -95,6 +95,14 @@ import {
   coralKeyDef,
 } from "./catalog/games";
 import {
+  headphonesDef,
+  cassetteDef,
+  vinylRecordDef,
+  electricGuitarDef,
+  microphoneDef,
+  musicNotesDef,
+} from "./catalog/music";
+import {
   heartCatDef,
   daisyCatDef,
   huggingCatsDef,
@@ -241,3 +249,10 @@ export const MintGem = /*#__PURE__*/ createStickerComponent(mintGemDef);
 export const XpBadge = /*#__PURE__*/ createStickerComponent(xpBadgeDef);
 export const RewardChest = /*#__PURE__*/ createStickerComponent(rewardChestDef);
 export const CoralKey = /*#__PURE__*/ createStickerComponent(coralKeyDef);
+
+export const Headphones = /*#__PURE__*/ createStickerComponent(headphonesDef);
+export const Cassette = /*#__PURE__*/ createStickerComponent(cassetteDef);
+export const VinylRecord = /*#__PURE__*/ createStickerComponent(vinylRecordDef);
+export const ElectricGuitar = /*#__PURE__*/ createStickerComponent(electricGuitarDef);
+export const Microphone = /*#__PURE__*/ createStickerComponent(microphoneDef);
+export const MusicNotes = /*#__PURE__*/ createStickerComponent(musicNotesDef);

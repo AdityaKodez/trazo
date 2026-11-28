@@ -69,6 +69,14 @@ const zhCNStickerNames: Readonly<Record<string, string>> = {
   "game-reward-chest": "奖励宝箱",
   "game-coral-key": "珊瑚色钥匙",
 
+  // Music (6)
+  headphones: "头戴式耳机",
+  cassette: "磁带",
+  "vinyl-record": "黑胶唱片",
+  "electric-guitar": "电吉他",
+  microphone: "麦克风",
+  "music-notes": "音符",
+
   // Symbols (14)
   diamond: "菱形宝石",
   "anger-mark": "动漫青筋强调",

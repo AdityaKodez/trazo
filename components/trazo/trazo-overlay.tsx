@@ -148,6 +148,7 @@ const CATEGORY_TABS: readonly {
   iconId: string;
 }[] = [
   { id: "all", iconId: "solid-star" },
+  { id: "music", iconId: "music-notes" },
   { id: "games", iconId: "game-coin" },
   { id: "ocean", iconId: "dolphin" },
   { id: "arrows", iconId: "loop-arrow-orange" },

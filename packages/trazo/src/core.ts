@@ -8,7 +8,8 @@ export type StickerCategory =
   | "characters"
   | "school"
   | "food"
-  | "games";
+  | "games"
+  | "music";
 
 export interface StickerLayer {
   d: string;

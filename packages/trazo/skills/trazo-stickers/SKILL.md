@@ -77,6 +77,7 @@ const svg = toSvgString(heart, { size: 48, color: "#1f1e1b", title: "Heart cat" 
   - `arrows` (12): `curly-arrow`, `spiral`, `square-spiral`, `loop-ribbon`, `zigzag-scribble`, `loop-arrow-orange`, `vertical-zigzag`, `down-arrow`, `peach-coil`, `sky-coil`, `wavy-underline`, `paper-plane`
   - `symbols` (14): `diamond`, `anger-mark`, `triangle`, `circle-ring`, `asterisk`, `lightning-bolt`, `question-mark`, `exclamation-mark`, `diagonal-hatch`, `hashtag`, `trophy`, `rocket`, `speech-bubble`, `checkmark`
   - `games` (6): `game-coin`, `game-coin-stack`, `game-mint-gem`, `game-xp-badge`, `game-reward-chest`, `game-coral-key`
+  - `music` (6): `headphones`, `cassette`, `vinyl-record`, `electric-guitar`, `microphone`, `music-notes`
   - `hearts` (14): `crown-rays`, `heart-burst`, `six-star`, `heart-chevron`, `solid-star`, `sparkle-four`, `sparkle-cross`, `bowtie-loop`, `triple-heart-swirl`, `double-hearts`, `star-outline`, `crosshair-burst`, `party-popper`, `crown`
   - `nature` (12): `flower-red`, `puffy-cloud`, `flower-yellow`, `ocean-waves`, `sun-burst`, `splash-drops`, `triple-zigzag`, `spiky-grass`, `scalloped-wave`, `earth`, `mushroom`, `sleepy-fox`
   - `cats` (8): `heart-cat`, `daisy-cat`, `hugging-cats`, `flower-cat`, `bowtie-cat`, `stacked-cats`, `cheering-cat`, `heart-hug`
