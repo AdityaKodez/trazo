@@ -6,8 +6,7 @@ import { findSticker, toSvgString } from "trazo/svg";
 
 import { StickerJsonLd } from "@/components/seo/json-ld";
 import { DetailFirstPaint } from "@/components/trazo/detail-first-paint";
-import { StickerRelatedLinks } from "@/components/trazo/sticker-related-links";
-import { installCommands, siteConfig } from "@/config/site";
+import { siteConfig } from "@/config/site";
 
 export const dynamicParams = false;
 
@@ -99,10 +98,6 @@ export default async function StickerDetailPage({
                 className="paper-dot-grid flex h-40 shrink-0 items-center justify-center rounded-xl bg-[color:var(--scribble-paper)] ring-1 ring-inset ring-foreground/8 sm:h-48"
                 dangerouslySetInnerHTML={{ __html: toSvgString(artwork, { size: 48, title: sticker.name }) }}
               />
-              <div className="flex min-h-11 shrink-0 items-center justify-between gap-2 rounded-xl bg-muted/65 px-3 text-xs ring-1 ring-inset ring-foreground/10">
-                <code className="select-all font-mono">{installCommands.npm}</code>
-                <a href={siteConfig.npm} className="min-w-11 py-3 text-center font-medium text-muted-foreground underline underline-offset-2">npm</a>
-              </div>
               <div className="space-y-2 text-sm">
                 <p className="text-muted-foreground">
                   Download the original crayon artwork or use <code>{sticker.componentName}</code> in React, Vue, and Svelte.
@@ -115,7 +110,6 @@ export default async function StickerDetailPage({
                   Download SVG
                 </a>
               </div>
-              <StickerRelatedLinks sticker={sticker} />
             </div>
           </section>
         </DetailFirstPaint>

@@ -166,7 +166,6 @@ const ja: Messages = {
   },
   detail: {
     backToLibrary: "ライブラリへ戻る",
-    relatedStickers: "関連ステッカー",
     copyNameAriaLabel: (name) => `「${name}」をコピー`,
     locateOnCanvas: "キャンバス上で表示",
     close: "閉じる",

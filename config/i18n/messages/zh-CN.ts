@@ -165,7 +165,6 @@ const zhCN: Messages = {
   },
   detail: {
     backToLibrary: "返回贴纸库",
-    relatedStickers: "相关贴纸",
     copyNameAriaLabel: (name) => `复制「${name}」`,
     locateOnCanvas: "在画布中定位",
     close: "关闭",

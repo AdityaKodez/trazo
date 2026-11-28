@@ -73,7 +73,6 @@ import {
 import {
   CopyCooldownFill,
   CopyStatusIcon,
-  DetailInstallCommand,
 } from "@/components/trazo/install-command";
 import { OverlayMobileDrawer } from "@/components/trazo/overlay-mobile-drawer";
 import {
@@ -83,7 +82,6 @@ import {
 } from "@/components/trazo/overlay-layout";
 import { RotationDial } from "@/components/trazo/rotation-dial";
 import { findNearestStepIndex, SizeSlider } from "@/components/trazo/size-slider";
-import { StickerRelatedLinks } from "@/components/trazo/sticker-related-links";
 import {
   useTrazoActions,
   useTrazoCanvasState,
@@ -1699,8 +1697,6 @@ function StickerDetailView({
           rotation={rotation}
         />
 
-        <DetailInstallCommand />
-
         {/* Controls */}
         <div className="flex flex-col gap-2 px-0.5 sm:gap-1">
           <DetailRow
@@ -1932,7 +1928,6 @@ function StickerDetailView({
             </div>
           </div>
         </div>
-        <StickerRelatedLinks sticker={selectedStickerMeta} locale={locale} />
       </div>
 
       {/* Expanding outer-tray GitHub star prompt after export/copy */}

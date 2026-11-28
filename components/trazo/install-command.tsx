@@ -17,7 +17,6 @@ import {
 import {
   installCommands,
   PACKAGE_MANAGERS,
-  siteConfig,
   type PackageManager,
 } from "@/config/site";
 import { getMessages } from "@/config/i18n/messages";
@@ -383,57 +382,3 @@ export const InstallCommand = memo(function InstallCommand(props: InstallCommand
     </div>
   );
 });
-
-export function DetailInstallCommand() {
-  const t = getMessages(useLocale()).install;
-  const { status, copy, isCoolingDown } = useCopy();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [manualCopy, setManualCopy] = useState(false);
-  const command = installCommands.npm;
-
-  async function copyCommand() {
-    if (isCoolingDown) return;
-    if (await copy(command)) {
-      setManualCopy(false);
-      return;
-    }
-    const input = inputRef.current;
-    if (!input) return;
-    input.focus({ preventScroll: true });
-    input.select();
-    setManualCopy(true);
-  }
-
-  const copied = status === "copied";
-  const CopyIcon = copied ? Check : Copy;
-
-  return (
-    <div data-vaul-no-drag="" className="shrink-0">
-      <div className="flex min-h-11 items-center rounded-xl bg-muted/65 pl-2.5 pr-1 ring-1 ring-inset ring-foreground/10">
-        <input
-          ref={inputRef}
-          aria-label={command}
-          readOnly
-          onFocus={(event) => event.currentTarget.select()}
-          value={command}
-          className="h-10 min-w-0 flex-1 rounded bg-transparent font-mono text-xs text-foreground focus-visible:outline-2 focus-visible:outline-ring"
-        />
-        <button
-          type="button"
-          aria-label={copied ? t.copiedInstallAriaLabel : t.copyInstallAriaLabel}
-          aria-disabled={isCoolingDown || undefined}
-          onClick={() => void copyCommand()}
-          className="inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground micro-transition hover:bg-background focus-visible:outline-2 focus-visible:outline-ring"
-        >
-          <CopyIcon className={cn("size-4", copied && "text-success")} />
-        </button>
-        <a href={siteConfig.npm} className="inline-flex h-11 min-w-11 items-center justify-center rounded-lg text-xs font-medium text-muted-foreground underline underline-offset-2 hover:bg-background focus-visible:outline-2 focus-visible:outline-ring">
-          npm
-        </a>
-      </div>
-      <p role="status" className={manualCopy ? "mt-1 px-1 text-xs text-muted-foreground" : "sr-only"}>
-        {manualCopy ? t.manualCopy : copied ? t.copied : ""}
-      </p>
-    </div>
-  );
-}

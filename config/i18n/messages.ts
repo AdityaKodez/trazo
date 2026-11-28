@@ -117,7 +117,6 @@ export interface Messages {
   };
   detail: {
     backToLibrary: string;
-    relatedStickers: string;
     copyNameAriaLabel: (name: string) => string;
     locateOnCanvas: string;
     close: string;
@@ -352,7 +351,6 @@ export const en: Messages = {
   },
   detail: {
     backToLibrary: "Back to library",
-    relatedStickers: "Related stickers",
     copyNameAriaLabel: (name) => `Copy ${name}`,
     locateOnCanvas: "Locate on canvas",
     close: "Close",
