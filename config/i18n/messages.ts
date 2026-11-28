@@ -154,6 +154,9 @@ export interface Messages {
     svgSavedVerb: string;
     pngSavedVerb: string;
     copiedVerb: string;
+    relatedLabel: string;
+    relatedAriaLabel: string;
+    openRelatedAriaLabel: (name: string) => string;
   };
   skill: {
     title: string;
@@ -391,6 +394,9 @@ export const en: Messages = {
     svgSavedVerb: "SVG saved!",
     pngSavedVerb: "PNG saved!",
     copiedVerb: "Copied!",
+    relatedLabel: "Related",
+    relatedAriaLabel: "Related stickers",
+    openRelatedAriaLabel: (name) => `Inspect related sticker ${name}`,
   },
   skill: {
     title: "Trazo illustration style",

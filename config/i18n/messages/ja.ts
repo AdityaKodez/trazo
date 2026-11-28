@@ -206,6 +206,9 @@ const ja: Messages = {
     svgSavedVerb: "SVG を保存しました！",
     pngSavedVerb: "PNG を保存しました！",
     copiedVerb: "コピーしました！",
+    relatedLabel: "関連",
+    relatedAriaLabel: "関連ステッカー",
+    openRelatedAriaLabel: (name) => `関連ステッカー「${name}」を見る`,
   },
   skill: {
     title: "Trazo イラストレーションスキル",

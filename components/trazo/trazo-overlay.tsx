@@ -80,6 +80,7 @@ import {
   useIsMobile,
 } from "@/components/trazo/overlay-layout";
 import { RotationDial } from "@/components/trazo/rotation-dial";
+import { RelatedStickersFan } from "@/components/trazo/related-stickers-fan";
 import { findNearestStepIndex, SizeSlider } from "@/components/trazo/size-slider";
 import {
   useTrazoActions,
@@ -99,6 +100,10 @@ import {
 } from "@/config/palette";
 import { illustrationSkill, siteConfig } from "@/config/site";
 import { preloadCopySound } from "@/lib/sound";
+import {
+  recordSearchTaste,
+  recordStickerTaste,
+} from "@/lib/related-stickers";
 import type { StickerExportFormat } from "@/lib/sticker-export";
 import {
   getLoadedSticker,
@@ -1487,6 +1492,7 @@ function StickerDetailView({
   const {
     selectedStickerMeta,
     selectedSticker,
+    searchQuery,
     selectedSize,
     selectedRotation,
   } = useTrazoOverlayState();
@@ -1497,6 +1503,7 @@ function StickerDetailView({
   const {
     setSelectedSize,
     setSelectedRotation,
+    openStickerDetail,
     backToGrid,
     locateOnCanvas,
     setOverlayOpen,
@@ -1516,6 +1523,13 @@ function StickerDetailView({
   const [starPromptSeq, setStarPromptSeq] = useState(0);
   const [justStarred, setJustStarred] = useState(false);
   const starThankYouTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    recordStickerTaste(selectedStickerMeta.id, "view");
+    if (searchQuery.trim().length >= 2) {
+      recordSearchTaste(searchQuery);
+    }
+  }, [selectedStickerMeta.id, searchQuery]);
 
   useEffect(() => {
     return () => {
@@ -1553,6 +1567,8 @@ function StickerDetailView({
   const showStarTray =
     (starPromptStatus === "pending" && promptVerbKey !== null) || justStarred;
 
+  const activePalette = findPaletteOption(paletteId);
+  const activeSwatchHex = activePalette.kind === "swatch" ? activePalette.hex : undefined;
   const concreteColor = resolveStickerColor(paletteId);
   const displayColor = stickerColor(paletteId);
   const size = SIZE_STEPS[findNearestStepIndex(SIZE_STEPS, selectedSize)];
@@ -1627,6 +1643,7 @@ function StickerDetailView({
     const blob = new Blob([svgMarkup], { type: "image/svg+xml;charset=utf-8" });
     const suffix = rotation !== 0 ? `-${size}px-${rotation}deg` : `-${size}px`;
     downloadBlob(blob, `${selectedSticker.id}${suffix}.svg`);
+    recordStickerTaste(selectedSticker.id, "export");
     revealStarPrompt("svg");
   }
 
@@ -1635,6 +1652,7 @@ function StickerDetailView({
     try {
       const saved = await downloadStickerPng(selectedSticker, size, concreteColor, rotation);
       if (saved) {
+        recordStickerTaste(selectedSticker.id, "export");
         revealStarPrompt("png");
       }
     } catch {
@@ -1645,6 +1663,7 @@ function StickerDetailView({
   async function handleCopyCode() {
     const copied = await codeCopy.copy(codeSnippet);
     if (copied) {
+      recordStickerTaste(selectedStickerMeta.id, "export");
       revealStarPrompt("copied");
     }
   }
@@ -1678,7 +1697,13 @@ function StickerDetailView({
             </TooltipContent>
           </Tooltip>
         </div>
-        <IconAction label={t.locateOnCanvas} onClick={() => locateOnCanvas(selectedStickerMeta.id)}>
+        <IconAction
+          label={t.locateOnCanvas}
+          onClick={() => {
+            recordStickerTaste(selectedStickerMeta.id, "locate");
+            locateOnCanvas(selectedStickerMeta.id);
+          }}
+        >
           <Compass className="size-4" />
         </IconAction>
         <IconAction label={t.close} onClick={() => setOverlayOpen(false)}>
@@ -1932,6 +1957,15 @@ function StickerDetailView({
         </div>
       </div>
 
+      {/* Quiet Peeking Fan related stickers in outer tray */}
+      <RelatedStickersFan
+        stickerId={selectedStickerMeta.id}
+        displayColor={displayColor}
+        activeColorHex={activeSwatchHex}
+        searchQuery={searchQuery}
+        onSelect={openStickerDetail}
+      />
+
       {/* Expanding outer-tray GitHub star prompt after export/copy */}
       <AnimatePresence initial={false}>
         {showStarTray ? (
@@ -1946,7 +1980,7 @@ function StickerDetailView({
             <div
               role="status"
               aria-live="polite"
-              className="flex items-center justify-between gap-2 px-2 pb-0.5 pt-2 sm:px-2.5"
+              className="mt-1 flex items-center justify-between gap-2 border-t border-foreground/[0.07] px-2 pb-0.5 pt-2 sm:px-2.5"
             >
               <div className="flex min-w-0 items-center gap-2">
                 <m.span

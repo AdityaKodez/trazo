@@ -205,6 +205,9 @@ const zhCN: Messages = {
     svgSavedVerb: "SVG 已保存！",
     pngSavedVerb: "PNG 已保存！",
     copiedVerb: "已复制！",
+    relatedLabel: "相关贴纸",
+    relatedAriaLabel: "相关贴纸",
+    openRelatedAriaLabel: (name) => `查看相关贴纸「${name}」`,
   },
   skill: {
     title: "Trazo 插画风格 Agent Skill",
