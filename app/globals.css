@@ -326,17 +326,6 @@ html[lang="ja"] {
   }
 }
 
-body:has([role="dialog"] [data-trazo-detail-editor]) .trazo-detail-first-paint {
-  display: none;
-}
-
-body:has([role="dialog"] [data-trazo-overlay-view="grid"])
-  [data-trazo-route-preview="grid"],
-body:has([role="dialog"] [data-trazo-overlay-view="skill"])
-  [data-trazo-route-preview="skill"] {
-  display: none;
-}
-
 @keyframes trazo-testimonial-ink-flow {
   from {
     background-position: 100% 50%;

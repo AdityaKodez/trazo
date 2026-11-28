@@ -27,14 +27,6 @@ export interface OverlayMobileDrawerProps {
   }) => ReactNode;
 }
 
-function OverlayDrawerHeading({ className, children }: { className?: string; children: ReactNode }) {
-  return (
-    <DrawerTitle asChild className={className}>
-      <h1>{children}</h1>
-    </DrawerTitle>
-  );
-}
-
 export function OverlayMobileDrawer({
   open,
   onOpenChange,
@@ -52,7 +44,7 @@ export function OverlayMobileDrawer({
       >
         <div className="flex min-h-0 flex-1 flex-col pt-1">
           {renderBody({
-            Title: OverlayDrawerHeading,
+            Title: DrawerTitle,
             Description: DrawerDescription,
           })}
         </div>

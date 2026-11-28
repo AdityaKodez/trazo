@@ -365,7 +365,8 @@ function resolveDocumentTitle(pathname: string, locale: Locale): string {
 
 /**
  * Tiny client leaf component mounted once in `app/layout.tsx` that keeps
- * `<html lang>` and `document.title` synced across locale switches and route changes.
+ * `<html lang>` and `document.title` synced across locale switches, Next.js navigations,
+ * browser history (`popstate`), and overlay `history.pushState` route changes.
  */
 export function DocumentLocaleSync(): null {
   const locale = useLocale();
@@ -376,10 +377,22 @@ export function DocumentLocaleSync(): null {
       document.documentElement.lang = locale;
     }
 
-    const nextTitle = resolveDocumentTitle(pathname, locale);
-    if (document.title !== nextTitle) {
-      document.title = nextTitle;
-    }
+    const syncTitle = () => {
+      const nextTitle = resolveDocumentTitle(window.location.pathname, locale);
+      if (document.title !== nextTitle) {
+        document.title = nextTitle;
+      }
+    };
+
+    syncTitle();
+
+    window.addEventListener("popstate", syncTitle);
+    window.addEventListener("trazo:routechange", syncTitle);
+
+    return () => {
+      window.removeEventListener("popstate", syncTitle);
+      window.removeEventListener("trazo:routechange", syncTitle);
+    };
   }, [locale, pathname]);
 
   return null;

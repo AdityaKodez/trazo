@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { memo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { AnimatePresence, m, useReducedMotion } from "motion/react";
 import { STICKER_COUNT } from "trazo/meta";
@@ -366,7 +365,7 @@ function ResetStickersPill() {
 
 export const BottomDock = memo(function BottomDock() {
   const { paletteId } = useTrazoCanvasState();
-  const { centerCanvas } = useTrazoActions();
+  const { centerCanvas, openLibraryGrid } = useTrazoActions();
   const locale = useLocale();
   const reduceMotion = useReducedMotion();
   const t = getMessages(locale).dock;
@@ -419,9 +418,9 @@ export const BottomDock = memo(function BottomDock() {
       </DockSlot>
 
       <DockSlot index={2}>
-        <Link
-          href="/library"
-          scroll={false}
+        <button
+          type="button"
+          onClick={openLibraryGrid}
           aria-label={t.libraryAriaLabel(STICKER_COUNT)}
           aria-keyshortcuts="Meta+K Control+K"
           className={cn(
@@ -454,7 +453,7 @@ export const BottomDock = memo(function BottomDock() {
           >
             {modKey} K
           </kbd>
-        </Link>
+        </button>
       </DockSlot>
       </nav>
     </>
