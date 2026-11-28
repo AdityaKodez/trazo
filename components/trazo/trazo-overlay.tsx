@@ -947,7 +947,7 @@ function LibraryPalette({
 
   return (
     <div className={cn("flex min-h-0 flex-1 flex-col", isMobile && "h-full")}>
-      <Title className="shrink-0 px-3 pt-1 text-sm sm:px-3.5">{t.srTitle}</Title>
+      <Title className="sr-only">{t.srTitle}</Title>
       <Description className="sr-only">
         {t.srDescription(STICKER_COUNT, modKey)}
       </Description>
