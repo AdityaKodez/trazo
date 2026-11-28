@@ -27,10 +27,8 @@ import {
 import type { StickerCategory, StickerDef } from "trazo/core";
 import { Sticker } from "trazo/scribble";
 
-import { BottomDock } from "@/components/trazo/bottom-dock";
 import { CanvasTestimonialScribble } from "@/components/trazo/canvas-testimonials";
 import { HomeView } from "@/components/trazo/home-view";
-import { TopBar } from "@/components/trazo/top-bar";
 import {
   LOCATE_SHAKE_DELAY_MS,
   useTrazoActions,
@@ -373,23 +371,7 @@ const CanvasSticker = memo(function CanvasSticker({
   );
 });
 
-export const TrazoCanvasScene = memo(function TrazoCanvasScene({
-  npmDownloads,
-  stars,
-}: {
-  npmDownloads: number | null;
-  stars: number | null;
-}) {
-  return (
-    <>
-      <TopBar stars={stars} />
-      <TrazoCanvas npmDownloads={npmDownloads} />
-      <BottomDock />
-    </>
-  );
-});
-
-function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
+export function TrazoCanvas({ npmDownloads }: { npmDownloads: number | null }) {
   const { openStickerDetail, setStickerOffset } = useTrazoActions();
   const {
     paletteId,

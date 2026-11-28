@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 
-import { TrazoCanvasHost } from "@/components/trazo/trazo-canvas-host";
+import { BottomDock } from "@/components/trazo/bottom-dock";
+import { TopBar } from "@/components/trazo/top-bar";
+import { TrazoCanvas } from "@/components/trazo/trazo-canvas";
 import { TrazoProvider } from "@/components/trazo/trazo-experience";
 import { TrazoOverlayHost } from "@/components/trazo/trazo-overlay-host";
 import { siteConfig } from "@/config/site";
@@ -22,7 +24,9 @@ export default async function CanvasLayout({
   return (
     <TrazoProvider>
       <main className="relative h-dvh w-screen overflow-hidden">
-        <TrazoCanvasHost stars={stars} npmDownloads={npmDownloads} />
+        <TopBar stars={stars} />
+        <TrazoCanvas npmDownloads={npmDownloads} />
+        <BottomDock />
         <TrazoOverlayHost stars={stars} />
         {children}
       </main>
